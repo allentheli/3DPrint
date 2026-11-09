@@ -42,8 +42,8 @@ python -m charm_maker slots
 ```
 
 Print the cards (US Letter, print at "Actual size", not "Fit to page"). This writes
-blank cards for every product, half-drawn cards (cloud, heart, cat, star, bow) and, if
-slots are loaded, the optional marker calibration card into `output/cards/`:
+blank cards for every product and, if slots are loaded, the optional marker calibration
+card into `output/cards/` (`--half-drawn` adds cards with a pre-printed outline):
 
 ```bash
 python -m charm_maker cards
@@ -112,7 +112,7 @@ python -m charm_maker test-drive
 ```
 
 writes a printable pack: one page for the parent (how to print, what to draw, how to scan,
-what to look for) and six cards for one kid. Draw, scan, upload, and see the whole flow
+what to look for) and six blank cards for one kid. Draw, scan, upload, and see the whole flow
 before the party.
 
 ## Poop containers

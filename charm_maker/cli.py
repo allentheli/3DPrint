@@ -57,10 +57,11 @@ def cmd_cards(args: argparse.Namespace) -> int:
     out.mkdir(parents=True, exist_ok=True)
     blank = write_cards_pdf(cfg, products, out / "design-cards.pdf", count=args.count)
     print(f"Blank cards: {blank} ({len(products)} product(s) x {args.count or cfg['cards']['copies_per_type']})")
-    kid_products = [p for p in products if not cfg["products"][p].get("adults_only")]
-    half = write_cards_pdf(cfg, kid_products, out / "half-drawn-cards.pdf", numbers=half_drawn_numbers(cfg))
-    print(f"Half-drawn cards: {half} ({', '.join(cfg['cards']['half_drawn_shapes'])}, "
-          f"{cfg['cards']['half_drawn_copies']} of each for {', '.join(kid_products)})")
+    if args.half_drawn:
+        kid_products = [p for p in products if not cfg["products"][p].get("adults_only")]
+        half = write_cards_pdf(cfg, kid_products, out / "half-drawn-cards.pdf", numbers=half_drawn_numbers(cfg))
+        print(f"Half-drawn cards: {half} ({', '.join(cfg['cards']['half_drawn_shapes'])}, "
+              f"{cfg['cards']['half_drawn_copies']} of each for {', '.join(kid_products)})")
     palette = load_palette(cfg)
     if palette.ready:
         cal = write_calibration_pdf(cfg, palette, out / "calibration-card.pdf")
@@ -217,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("cards", help="write the design-card PDF")
     p.add_argument("--products", nargs="*", help="product keys from config (default: every product that builds)")
     p.add_argument("--count", type=int, default=None, help="cards per product (default from config)")
+    p.add_argument("--half-drawn", action="store_true", help="also make cards with a pre-printed outline to color in")
     p.add_argument("--out", default="output/cards", help="output folder")
     p.set_defaults(func=cmd_cards)
 

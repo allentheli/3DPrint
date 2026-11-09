@@ -9,11 +9,11 @@ from pathlib import Path
 # (product, card number, what it makes, what to draw)
 TEST_CARDS = [
     ("hair_clip", 1, "Hair clip charm", "A smiley face, a flower or a bug. Cover the circle."),
+    ("hair_clip", 2, "Hair clip charm", "A rainbow or a heart, colored in."),
     ("keychain", 1, "Keychain", "Her favorite animal, big."),
     ("keychain", 2, "Keychain", "Her name in big, fat letters."),
-    ("magnet_figure", 13, "Fridge magnet (half-drawn cat)", "Color in the cat and give it a face."),
-    ("pendant", 12, "Necklace (half-drawn heart)", "Color in the heart. Stripes or dots are great."),
-    ("hair_clip", 14, "Hair clip charm (half-drawn star)", "Color in the star."),
+    ("magnet_figure", 1, "Fridge magnet", "A person, a pet or a monster, standing on the line."),
+    ("pendant", 1, "Necklace", "Anything she loves, colored in."),
 ]
 
 

@@ -2,7 +2,8 @@
 
 ## Test drive (2026-11-09)
 
-- `test-drive`: a parent page and six cards (hair clip, two keychains, half-drawn cat magnet, heart necklace and star hair clip) for trying the whole flow with one kid. A test renders every card and reads it back.
+- `test-drive`: a parent page and six blank cards (two hair clips, two keychains, a magnet figure, a necklace) for trying the whole flow with one kid. A test renders every card and reads it back.
+- Half-drawn (pre-set outline) cards are now only made with `cards --half-drawn`.
 
 ## Poop containers (2026-11-09)
 

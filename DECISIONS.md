@@ -146,5 +146,6 @@ Allen's calls: kids fill the containers themselves; small see-through holes; a l
 
 ## Test drive
 
-- Six cards cover every product a kid can make except the clicker, both blank and half-drawn cards, and a name in letters (thin strokes, the hardest kid case). Card numbers reuse the party ranges (01-02 blank, 12-14 half-drawn); batches are separate, so stems do not clash.
+- Six blank cards cover every product a kid can make except the clicker, including a name in letters (thin strokes, the hardest kid case). Allen does not want pre-set shapes, so half-drawn cards are out of the pack and only made with `cards --half-drawn`.
+- The corner markers stay: they straighten the photo, set the exact scale and identify the card. Without them Allen would name each card's product and the size would be a guess.
 - The pack is one PDF (parent page first) so it prints in one go.

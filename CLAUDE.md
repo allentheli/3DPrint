@@ -68,7 +68,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | --- | --- |
 | Record a spool in a slot | `python -m charm_maker load <slot> "<spool>" [--color "#RRGGBB"]` |
 | Show slots and calibration | `python -m charm_maker slots` |
-| Print the cards | `python -m charm_maker cards` (blank, half-drawn and calibration PDFs in `output/cards/`) |
+| Print the cards | `python -m charm_maker cards` (blank cards, plus calibration if slots are loaded; `--half-drawn` adds pre-set outlines, which Allen said he does not need) |
 | Read a calibration scan | `python -m charm_maker calibrate <scan>` |
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch>` |
@@ -118,8 +118,8 @@ pick the file, choose **Load geometry only** if asked.
 
 `python -m charm_maker test-drive` writes `output/test-drive/test-drive-pack.pdf`: a parent
 page (print at Actual size, markers, what to draw on each card, how to scan with iPhone
-Notes, what to look for) and six cards: hair clip 01, keychain 01 and 02, half-drawn cat
-magnet 13, half-drawn heart pendant 12, half-drawn star hair clip 14. When Allen uploads
+Notes, what to look for) and six blank cards: hair clip 01 and 02, keychain 01 and 02,
+magnet figure 01, necklace pendant 01. When Allen uploads
 the scan and says "test drive", run it like any batch, show the contact sheet, and ask
 what his daughter liked and what looked wrong. Note which problems are real-world ones to
 fix (and add a regression test in `tests/test_real_world.py`).

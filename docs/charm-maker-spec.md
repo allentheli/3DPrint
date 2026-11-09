@@ -143,7 +143,8 @@ You generate the printable cards, so the markers on the cards always match what 
   - Pendant: a box with a small loop picture at the top.
 - Picture rules on every card, each with a small picture: "Use the colors in the printer" (a small printer), "Big and bold," "Color it in." The same cards serve kids and adults.
 - A name line outside the drawing box. Do not read the name with OCR. Just crop that area into the preview so Allen can match pieces to kids.
-- **Half-drawn cards** for the younger kids: the same cards with a simple outline pre-printed in black (a cloud, a heart, a cat head, a star, a bow). The reader treats the printed black outline as ink, so the outline is part of the kid's design.
+- **Half-drawn cards (optional, off by default; Allen does not think they are needed):** the same cards with a simple outline pre-printed in black (a cloud, a heart, a cat head, a star, a bow). The reader treats the printed black outline as ink, so the outline is part of the kid's design.
+- **Corner markers, explained for parents:** the four square markers look like QR codes but are position markers. They straighten a tilted photo, set the exact size, and say which product and card number it is.
 - **Marker calibration card (optional):** generated from the loaded slots in config (section 8). Same corner markers as the other cards, and one box per loaded filament, labeled with its slot number and spool name. Allen fills each box solid with the marker that matches that spool and scans the card. The reader stores each marker's photographed color with its slot and from then on reads kid ink by the nearest calibrated marker. Allen rescans it whenever he changes spools or markers. The white base spool gets no box, because white is the paper.
 
 ### Other inputs to accept
