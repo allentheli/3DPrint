@@ -116,3 +116,9 @@ def move_to(solid: m3d.Manifold, x: float, y: float) -> m3d.Manifold:
 
 def translate_shape(shape, dx: float, dy: float):
     return affinity.translate(shape, dx, dy)
+
+
+def count_bodies(solid: m3d.Manifold, min_volume: float = 1e-3) -> int:
+    """Connected parts with real volume. Booleans between touching parts can leave
+    zero-volume shells, which are not pieces."""
+    return sum(1 for part in solid.decompose() if abs(part.volume()) > min_volume)

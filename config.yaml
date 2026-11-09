@@ -201,3 +201,43 @@ fit_test:
   stem_boss_diameter: 8.0
   stem_boss_height: 4.5
   stem_socket_depth: 4.0
+
+# Design cards (the printable PDF). Lengths in mm on the card.
+cards:
+  page_size: [215.9, 279.4]       # US Letter
+  margin: 10
+  marker_size: 20
+  marker_dictionary: DICT_5X5_1000
+  guide_color: "#B9E4F5"          # very light cyan: far from yellow, removed by the reader
+  guide_line_width: 0.5
+  name_box: [52, 60, 110, 12]     # x, y, width, height (y from the page bottom)
+  copies_per_type: 10             # cards numbered 01..N per product in one PDF
+  # Marker type ids. Never renumber: printed cards must keep reading correctly.
+  type_ids:
+    hair_clip: 0
+    keychain: 1
+    clicker: 2
+    magnet_figure: 3
+    earrings: 4
+    pendant: 5
+
+# Photo reader and ink separation.
+reader:
+  px_per_card_mm: 6               # rectified page resolution (18 px per real mm)
+  box_margin: 3                   # read this far outside the drawing box (card mm)
+  edge_band: 1.5                  # ignore this band along the box edge (card mm)
+  ink_value_max: 0.60             # darker than this is ink
+  ink_saturation_min: 0.40        # more colorful than this is ink
+  black_saturation_max: 0.35      # ink this gray is black
+  black_value_max: 0.55
+  guide_hue: 197                  # hue of the guide color, degrees
+  guide_hue_tolerance: 25
+  guide_saturation_max: 0.45      # pale pixels near the guide hue are guides, not ink
+  hue_merge_deg: 30               # hues closer than this are one color
+  min_color_fraction: 0.03        # a color with fewer pixels than this share is merged away
+
+preview:
+  dpi: 300
+  zoom: 4
+  bed_margin: 8                   # keep pieces this far from the plate edge
+  piece_gap: 6                    # space between pieces on a plate

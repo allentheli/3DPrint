@@ -22,9 +22,16 @@ pip install -r requirements.txt
 python -m pytest -q
 ```
 
-## When Allen uploads photos or images (milestone 1 onward)
+## When Allen uploads photos or images
+
+Put the uploads in a folder (not in git), then:
+
+```bash
+python -m charm_maker run <folder or files> --out output/<batch-name>
+```
 
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
+   For a drawing without card markers, pass `--product <key>` (keys are in `config.yaml`).
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
 3. Ask only if a card is unreadable or a color mapping is genuinely unclear.
 4. Hand over the plate files (as downloads in a cloud session) and say, for each plate,
@@ -32,12 +39,15 @@ python -m pytest -q
 5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets),
    rings (keychains, earrings, pendants), switch insertion (clickers).
 
-The pipeline is not built yet. Until milestone 1 lands, the commands are below.
+Hair clips and keychains work today. Clicker, earrings, pendant and magnet figure
+products are in config but their attachments are not built yet (milestones 3 to 5).
 
 ## Commands that exist today
 
 | Task | Command |
 | --- | --- |
+| Print the design cards | `python -m charm_maker cards` (writes `output/cards/design-cards.pdf`) |
+| Photos to plates | `python -m charm_maker run photos/ --out output/<batch>` |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
@@ -54,10 +64,23 @@ the new coupons (one small plate).
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 7-9 jump-ring hole, 10-12 magnet pocket, 13-15 switch cutout, 16-18 stem socket.
 
+## Reading the results
+
+- `contact-sheet.png`: every design, actual size and zoomed, with its fixes. Show this first.
+- `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
+- `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
+- `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
+- Any `check:` line in the run output means something Allen should look at: an untested fit
+  value, a merged extra color, fewer than 4 markers found, a renamed duplicate card.
+
+Filament overrides in plain words ("card 3's pink should be Magenta") become
+`--map "clip-03 pink=Magenta"`; run again. Filament names come from `filaments:` in
+`config.yaml`; while that list is empty a generic palette is used and the notes say so.
+
 ## Handing files over
 
-In a cloud session, send `output/.../*.3mf`, the preview PNGs and the guide PDF with the
-file tool. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
+In a cloud session, send `output/.../plates/*.3mf`, the contact sheet and `PRINT_NOTES.md`
+with the file tool. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 
 ## Housekeeping

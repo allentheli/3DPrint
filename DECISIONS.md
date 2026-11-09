@@ -19,3 +19,24 @@ One line each, for choices the spec left open.
 - The fit guide is generated from config (Markdown and a PDF via ReportLab) so the printed sheet always matches the plate.
 - Previews are drawn with a small software renderer on Pillow (no GPU in cloud sessions); the plan view is actual size at 300 dpi.
 - Outputs are gitignored even for the fit test; the committed copy of the guide lives in `docs/FIT_TEST.md`.
+
+## Milestone 1
+
+- Marker ids on a card encode corner, product type and card number (`corner*250 + type*30 + number`, 5x5 dictionary), so one marker alone identifies the card and all found marker corners feed one homography.
+- Cards are one per US Letter page, 3x scale, 20 mm markers 10 mm from the page edges; the keychain box is 161 mm (max drawing 53.8 mm, the page is too short for 165 mm with the name line).
+- File stems are `<type>-<number>` (clip-03, key-07) instead of a bare number, because numbers repeat across products. Duplicate stems in one batch get `-b`, `-c` suffixes and a warning.
+- Guide color is light cyan #B9E4F5 (hue 197): far from yellow, and removed by hue plus low saturation. Verified only on synthetic photos so far; the first real scan with a yellow marker decides.
+- The name line is cropped from the straightened photo and pasted into the preview; no OCR.
+- Ink rule: a pixel is ink when it is dark (V < 0.60) or colorful (S > 0.40); black when also gray (S < 0.35, V < 0.55). Hues are clustered at 5 degree bins and merged within 30 degrees; extra colors beyond the card limit merge into the nearest kept one with a warning if they held at least 3% of the color pixels.
+- A 1.5 mm band along the printed box edge is ignored as a backstop for the guide line; the rest of the guides go by color only, so ink crossing the circle is kept.
+- Lighting is flattened per channel with a quadratic fit through paper tiles, so a fully filled shape is not mistaken for shadow.
+- Color fringe where two inks meet (camera and JPEG) is removed by a 0.4 mm majority vote before specks are counted.
+- Thin ink is thickened along its skeleton to exactly 1.0 mm; ragged edges of thick areas are left alone.
+- Pieces farther apart than twice the border are joined by 2.5 mm strips between nearest points, logged as bridges.
+- Vectorized masks get a 0.15 mm closing only; an opening shaved 0.09 mm off every shape.
+- Clip pocket: center of the largest inscribed circle; border grows in 0.5 mm steps to 3 mm, then a full-thickness backer disc is unioned in (a back-only disc would print as an overhang face-down).
+- Keychain tab: a 10 mm rounded tab at the highest point of the shape eroded by 2 mm (so thin spikes do not win), 1 mm overlap, 1 mm fillet; other positions rotate the shape, build at the top, rotate back.
+- Multi-part 3MF follows the Bambu Studio project layout: one object per charm, components for parts, `Metadata/model_settings.config` with an `extruder` per part. A plain 3MF with named objects is written next to it as a fallback. Both untested in Bambu Studio until Allen opens one.
+- Face-down build: the front face is at z=0 so the colors are flush with the bed; pockets open upward.
+- Plates: shelf packing with 6 mm gaps and an 8 mm bed margin; pieces sorted by filament count then size, each plate limited to 4 filaments; generic-palette slots are numbered white, black, then the rest.
+- Previews use a small software depth-buffer renderer on Pillow (no GPU in the cloud).
