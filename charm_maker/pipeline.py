@@ -1,0 +1,427 @@
+"""Photos in, plates out. Orchestrates reader -> inks -> fixes -> product -> plates."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from .config import load_config
+from .filaments import Filament, parse_overrides
+from .inks import separate_colors, separate_inks
+from .palette import Palette, color_distance, load_palette, spool_word
+from .plates import Plate, assign_filaments, pack_plates, unanswered_off_palette, write_plates
+from .products import Piece, build_piece
+from .reader import CardRead, load_image, pdf_page_count, read_card
+from .shape import Design, fix_design
+
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".heic", ".heif", ".pdf", ".tif", ".tiff", ".bmp", ".webp"}
+
+
+@dataclass
+class BatchResult:
+    pieces: list[Piece]
+    plates: list[Plate]
+    files: dict
+    palette_ready: bool
+    problems: list[str] = field(default_factory=list)
+    question: str | None = None
+    calibration: list[str] = field(default_factory=list)
+
+
+def collect_inputs(paths: list[Path]) -> list[Path]:
+    out: list[Path] = []
+    for p in paths:
+        p = Path(p)
+        if p.is_dir():
+            out.extend(sorted(q for q in p.iterdir() if q.suffix.lower() in IMAGE_SUFFIXES))
+        elif p.exists():
+            out.append(p)
+        else:
+            raise FileNotFoundError(p)
+    return out
+
+
+def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
+                     name: str, palette: Palette | None = None) -> Design:
+    pr = cfg["process"]
+    scale = pr["card_scale"]
+    if border is None:
+        border = pr["border_default"]
+    if read.layout is not None:
+        product = read.layout.product
+        px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
+        # Ignore a thin band along the printed box edge (the guide line lives there).
+        ignore = _box_edge_band(cfg, read)
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
+                               guide_zone=_guide_zone(cfg, read))
+        design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product)
+        design.paper_rgb = inks.paper_rgb
+        design.warnings.extend(inks.notes + read.notes)
+        design.name_image = read.name_image
+        return design
+
+    # Fallback: no markers. Use the whole image, scale the ink to the default size.
+    product = product_hint
+    assert product is not None
+    img = read.box_image
+    h, w = img.shape[:2]
+    f = min(1.0, 1600.0 / max(h, w))
+    small = cv2.resize(img, (int(w * f), int(h * f)), interpolation=cv2.INTER_AREA) if f < 1 else img
+    coarse = separate_inks(cfg, small, 3)
+    union = np.zeros(small.shape[:2], bool)
+    for layer in coarse.layers:
+        union |= layer.mask
+    union = cv2.morphologyEx(union.astype(np.uint8), cv2.MORPH_OPEN, np.ones((5, 5), np.uint8)).astype(bool)
+    if not union.any():
+        raise ValueError("no ink found in the image")
+    ys, xs = np.nonzero(union)
+    longest_px = max(xs.max() - xs.min(), ys.max() - ys.min()) + 1
+    size_mm = cfg["products"][product]["default_size"]
+    target_ppm = cfg["reader"]["px_per_card_mm"] * scale
+    resize = target_ppm * size_mm / longest_px
+    pad = 10
+    crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
+    crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
+    inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
+    design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product)
+    design.paper_rgb = inks.paper_rgb
+    design.warnings.extend(inks.notes + read.notes)
+    design.fixes.append(f"scaled so the longest side is {size_mm} mm (no card markers)")
+    return design
+
+
+def _box_edge_band(cfg: dict, read: CardRead) -> np.ndarray:
+    lay = read.layout
+    ppm = read.px_per_card_mm
+    bx, by, bw, bh = lay.box
+    ox, oy = read.box_origin_mm          # crop top-left in card mm (y up)
+    band = cfg["reader"]["edge_band"]
+    h, w = read.box_image.shape[:2]
+    mask = np.zeros((h, w), np.uint8)
+    # Rectangle corners of the box in crop pixels.
+    x0, x1 = (bx - ox) * ppm, (bx + bw - ox) * ppm
+    y0, y1 = (oy - (by + bh)) * ppm, (oy - by) * ppm
+    r = 3 * ppm   # the box has 3 mm rounded corners
+    pts = _rounded_rect_pts(x0, y0, x1, y1, r)
+    cv2.polylines(mask, [pts], True, 1, thickness=max(1, int(round(2 * band * ppm))))
+    # Also everything outside the box plus margin is not a drawing.
+    outside = np.ones((h, w), np.uint8)
+    cv2.fillPoly(outside, [_rounded_rect_pts(x0 - band * ppm, y0 - band * ppm, x1 + band * ppm, y1 + band * ppm, r)], 0)
+    return (mask | outside).astype(bool)
+
+
+def _guide_zone(cfg: dict, read: CardRead) -> np.ndarray:
+    """Where guides are printed inside the crop (with a margin): the box label, the
+    cover-the-circle ring and label, the ground line and its label. Guide-colored pixels
+    elsewhere are drawing, not guide."""
+    lay = read.layout
+    ppm = read.px_per_card_mm
+    ox, oy = read.box_origin_mm
+    h, w = read.box_image.shape[:2]
+    m = cfg["reader"]["guide_zone_margin"]
+    zone = np.zeros((h, w), np.uint8)
+
+    def px(x, y):
+        return int(round((x - ox) * ppm)), int(round((oy - y) * ppm))
+
+    def rect(x0, y0, x1, y1):
+        cv2.rectangle(zone, px(x0 - m, y1 + m), px(x1 + m, y0 - m), 1, -1)
+
+    bx, by, bw, bh = lay.box
+    rect(bx + 1, by + bh - 7, bx + 40, by + bh - 1)                 # "draw inside the box"
+    if "cover_circle" in lay.zones:
+        cx, cy, d = lay.zones["cover_circle"]
+        cv2.circle(zone, px(cx, cy), int(round(d / 2 * ppm)), 1, int(round(2 * m * ppm)) + 1)
+        rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the circle"
+    if "ground_line" in lay.zones:
+        x0, y0, x1, y1 = lay.zones["ground_line"]
+        rect(x0, y0, x1, y1)
+        rect(x0 - 1, y0 - 6, x0 + 20, y0 - 1)                        # "stand here"
+    for key in ("ring", "bail"):
+        if key in lay.zones:
+            cx, cy, d = lay.zones[key]
+            rect(cx - d / 2, cy - d / 2, cx + d / 2 + 30, cy + d / 2)
+    return zone.astype(bool)
+
+
+def _rounded_rect_pts(x0, y0, x1, y1, r, n=8):
+    pts = []
+    for cx, cy, a0 in ((x1 - r, y0 + r, 270), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)):
+        for i in range(n + 1):
+            a = np.radians(a0 + 90 * i / n)
+            pts.append((cx + r * np.cos(a), cy + r * np.sin(a)))
+    return np.array(pts, np.int32).reshape(-1, 1, 2)
+
+
+def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str | None = None,
+              border: bool | None = None, tab: str | None = None, overrides: list[str] | None = None,
+              batch_name: str | None = None, off_palette: str | None = "nearest",
+              config_path: Path | None = None, allow_uncalibrated: bool = True,
+              styles: dict[str, str] | None = None) -> BatchResult:
+    """Photos in, plates out. Every distinct ink color is its own part; parts are
+    pre-assigned to the nearest loaded spool as a head start, and Allen can change any
+    of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
+    stops and asks about colors that aren't loaded. Calibration cards are optional and
+    applied first when present."""
+    from .calibrate import measure_markers
+    from .notes import write_print_notes, write_question
+    from .palette import save_calibration
+    from .preview import render_contact_sheet, render_design_preview, render_shaded
+
+    if off_palette not in (None, "nearest", "swap"):
+        raise ValueError("off_palette must be 'nearest' or 'swap'")
+    from .relief import STYLES
+
+    styles = dict(styles or {})
+    for key, st in styles.items():
+        if st not in STYLES:
+            raise ValueError(f"unknown style {st!r} for {key}; use one of {', '.join(STYLES)}")
+
+    def style_for(card: str) -> str:
+        return styles.get(card) or styles.get("*") or cfg["relief"]["default_style"]
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    designs_dir = out_dir / "designs"
+    designs_dir.mkdir(exist_ok=True)
+    ov = parse_overrides(overrides or [])
+    problems: list[str] = []
+    calibration_lines: list[str] = []
+
+    # Pass 1: read every image.
+    reads: list[tuple[str, Path, CardRead]] = []
+    for path in collect_inputs(inputs):
+        pages = pdf_page_count(path) if path.suffix.lower() == ".pdf" else 1
+        for page in range(pages):
+            label = f"{path.name}" + (f" page {page + 1}" if pages > 1 else "")
+            try:
+                image = load_image(path, page)
+                for read in read_card(cfg, image, product_hint):
+                    reads.append((label, path, read))
+            except Exception as e:  # noqa: BLE001
+                problems.append(f"{label}: {e}")
+
+    # Calibration cards first, so the drawings in the same batch use them.
+    drawings = []
+    for label, path, read in reads:
+        if read.layout is not None and read.layout.product == "calibration":
+            markers, notes = measure_markers(cfg, read)
+            calibration_lines += [f"{label}: {n}" for n in notes]
+            if config_path is not None:
+                calibration_lines += save_calibration(config_path, markers)
+                cfg = load_config(config_path)
+            else:
+                for slot, rgb in markers.items():
+                    entry = (cfg.get("loaded") or {}).get(slot)
+                    if entry:
+                        entry["marker"] = "#%02X%02X%02X" % rgb
+                        calibration_lines.append(f"slot {slot}: marker {entry['marker']} (not saved)")
+        else:
+            drawings.append((label, path, read))
+    palette = load_palette(cfg)
+
+    # Pass 2: drawings to pieces.
+    pieces: list[Piece] = []
+    used_names: dict[str, int] = {}
+    for label, path, read in drawings:
+        base_name = read.layout.stem if read.layout else _safe_stem(path.stem)
+        name = base_name
+        if name in used_names:
+            used_names[name] += 1
+            name = f"{base_name}-{chr(ord('a') + used_names[base_name] - 1)}"
+        else:
+            used_names[name] = 1
+        try:
+            design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette)
+            design.source = label
+            if name != base_name:
+                design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
+            new = []
+            for copy_design in _copies(cfg, design):
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(base_name))
+                _check_piece(piece)
+                _map_to_palette(cfg, piece, palette)
+                _set_base_slot(cfg, piece, palette)
+                new.append(piece)
+        except Exception as e:  # noqa: BLE001
+            problems.append(f"{label}: {e}")
+            continue
+        pieces.extend(new)
+
+    if not pieces:
+        return BatchResult([], [], {}, palette.ready, problems, None, calibration_lines)
+
+    assignments = {}
+    for piece in pieces:
+        try:
+            assignments[piece.name] = assign_filaments(piece, palette, ov, off_palette)
+        except ValueError as e:
+            problems.append(f"{piece.name}: {e}")
+    pieces = [p for p in pieces if p.name in assignments]
+
+    files: dict = {}
+    question = None
+    unanswered = [(p, part) for p in pieces for part in unanswered_off_palette(p, assignments[p.name])]
+    uncalibrated = []
+    if palette.ready and not allow_uncalibrated:
+        uncalibrated = [f"slot {s.slot} {s.filament.name}" for s in palette.ink_slots() if not s.marker_rgb]
+    plates: list[Plate] = []
+    slot_labels: dict[str, dict[str, str]] = {p.name: {} for p in pieces}
+    if unanswered or uncalibrated:
+        off = []
+        for p, part in unanswered:
+            info = dict(p.part_off_palette[part])
+            info["card"] = p.name
+            off.append(info)
+            slot_labels[p.name][part] = "answer the question first"
+        files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
+    else:
+        try:
+            plates = pack_plates(cfg, pieces, palette, assignments)
+        except ValueError as e:
+            problems.append(str(e))
+        if plates:
+            files["plates"] = write_plates(cfg, plates, out_dir / "plates")
+            for plate in plates:
+                slots = plate.slots()
+                for pp in plate.pieces:
+                    for part, f in pp.assignments.items():
+                        swap = any(sw.put_in == f for sw in plate.swaps)
+                        slot_labels[pp.piece.name][part] = f"slot {slots[f]}, plate {plate.number}" + (" after a spool swap" if swap else "")
+
+    previews = []
+    for piece in pieces:
+        d = designs_dir
+        a = assignments[piece.name]
+        colors = {n: a[n].rgb for n in piece.parts}
+        # Turn the piece over (about the vertical axis, like turning a page) to see the
+        # other side: the face of a face-down piece, the back of a face-up one.
+        turned = {n: s.rotate([0.0, 180.0, 0.0]) for n, s in piece.parts.items()}
+        front, back = (piece.parts, turned) if piece.face_up else (turned, piece.parts)
+        render_shaded(back, d / f"{piece.name}-back.png", view=(40.0, 20.0), px_per_mm=12,
+                      labels=False, colors=colors)
+        front_png = render_shaded(front, d / f"{piece.name}-front.png", view=(40.0, 20.0), px_per_mm=12,
+                                  labels=False, colors=colors)
+        p = render_design_preview(cfg, piece, a, d / f"{piece.name}-preview.png", palette_ready=palette.ready,
+                                  slot_labels=slot_labels[piece.name], render_path=front_png)
+        previews.append(p)
+        (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, a, slot_labels[piece.name]), indent=2))
+    files["contact_sheet"] = render_contact_sheet(previews, out_dir / "contact-sheet.png", title=batch_name or out_dir.name)
+    if plates:
+        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems)
+    return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
+
+
+def _copies(cfg: dict, design: Design) -> list[Design]:
+    """Earrings come as a pair: identical, or the second mirrored."""
+    import copy
+
+    from shapely import affinity
+
+    prod = cfg["products"][design.product]
+    n = int(prod.get("copies", 1))
+    if n <= 1:
+        return [design]
+    base = design.name
+    out = []
+    for i in range(n):
+        d = copy.deepcopy(design)
+        d.name = f"{base}-{i + 1}"
+        if i and prod.get("pair_mode") == "mirrored":
+            d.outline = affinity.scale(d.outline, -1, 1, origin=(0, 0))
+            for ink in d.inks:
+                ink.geometry = affinity.scale(ink.geometry, -1, 1, origin=(0, 0))
+            d.fixes.append("mirror image of the first one")
+        out.append(d)
+    out[0].fixes.append(f"made as a pair: {base}-1 and {base}-2")
+    return out
+
+
+def _map_to_palette(cfg: dict, piece: Piece, palette: Palette) -> None:
+    """Head start only: give each color part the nearest loaded spool. Parts stay
+    separate even when two land on the same spool, and the preview says so."""
+    if not palette.ready:
+        return
+    pc = cfg["palette"]
+    thr = pc["off_palette_distance"] if palette.calibrated else pc["off_palette_distance_uncalibrated"]
+    inks = palette.ink_slots()
+    if not inks:
+        return
+    seen: dict[int, str] = {}
+    for part, rgb in piece.part_colors.items():
+        if part == piece.base_part:
+            continue
+        best = min(inks, key=lambda s: color_distance(rgb, s.reference_rgb))
+        dist = color_distance(rgb, best.reference_rgb)
+        short = part[len(piece.name) + 1:]
+        if dist > thr:
+            area = sum(i.geometry.area for i in piece.design.inks if i.name == short)
+            piece.part_off_palette[part] = {"color": short, "rgb": rgb, "nearest_slot": best.slot,
+                                            "nearest_name": spool_word(best.filament),
+                                            "distance": round(dist, 1), "area_mm2": round(area, 1),
+                                            "suggested": palette.suggest_spool(rgb)}
+            piece.part_slots[part] = None
+            piece.design.warnings.append(f"{short} doesn't match a loaded spool; set to the nearest, "
+                                         f"{best.filament.name} (slot {best.slot}). Change it in Bambu Studio if you like.")
+        else:
+            piece.part_slots[part] = best.slot
+        target = piece.part_slots[part] or best.slot
+        if target in seen and seen[target] != short:
+            piece.design.warnings.append(f"{seen[target]} and {short} are separate parts but both start as "
+                                         f"{best.filament.name}; change one in Bambu Studio if you like.")
+        seen.setdefault(target, short)
+
+
+def _set_base_slot(cfg: dict, piece: Piece, palette: Palette) -> None:
+    if not palette.ready:
+        return
+    if cfg["process"]["base_color"] == "kid_color":
+        slots = [s for n, s in piece.part_slots.items() if s is not None and n != piece.base_part]
+        if slots:
+            piece.part_slots[piece.base_part] = slots[-1]
+            return
+    base = palette.base_slot(piece.design.paper_rgb)
+    piece.part_slots[piece.base_part] = base.slot
+    if not base.is_white:
+        piece.design.warnings.append(f"no white spool loaded: the base prints in {base.filament.name} (slot {base.slot})")
+
+
+def _safe_stem(s: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in s)[:40] or "drawing"
+
+
+def _check_piece(piece: Piece) -> None:
+    """Every part sound, and all parts together form one connected piece."""
+    from .geom import count_bodies, to_trimesh
+
+    union = None
+    for name, solid in piece.parts.items():
+        if solid.is_empty():
+            raise ValueError(f"part {name} is empty")
+        if not to_trimesh(solid).is_watertight:
+            raise ValueError(f"part {name} is not watertight")
+        union = solid if union is None else union + solid
+    if count_bodies(union) != 1:
+        raise ValueError("the piece is not one connected part")
+
+
+def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: dict[str, str]) -> dict:
+    d = piece.design
+    w, h = piece.size()
+    return {
+        "name": d.name,
+        "product": d.product,
+        "source": d.source,
+        "size_mm": [round(w, 2), round(h, 2), piece.thickness],
+        "style": piece.style,
+        "prints": "face-up" if piece.face_up else "face-down (built mirrored)",
+        "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
+        "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
+        "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()
+                       if k not in ("hole", "solid", "hole_solid")},
+        "fixes": d.fixes,
+        "warnings": d.warnings,
+    }

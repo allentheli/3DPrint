@@ -1,0 +1,348 @@
+# Charm Maker configuration. Every size, tolerance and filament lives here.
+# All lengths are millimetres unless the key says otherwise.
+#
+# Values under `fit:` are fit-critical. They start as guesses and are replaced by
+# the milestone 0 fit-test results. Do not trust a value whose `tested` is false.
+
+printer:
+  name: Bambu Lab X2D with AMS
+  # Usable plate size. Checked against the Bambu documentation before milestone 2.
+  bed_size: [256, 256]
+  ams_slots: 4                    # one AMS
+  max_filaments_per_plate: 4      # one AMS
+  layer_height_charms: 0.12       # charms, figures, earrings, pendants, keycaps
+  layer_height_cases: 0.20        # clicker cases and figure stands
+  nozzle: 0.4
+
+# Spools Allen owns. Fill in once. `color` is a hex code close to the real
+# filament color. Used to suggest a spool when a drawing needs a color that
+# isn't loaded.
+filaments: []
+# Example:
+#  - {name: "White PLA", color: "#F2F2F2"}
+#  - {name: "Orange PLA", color: "#F77F00"}
+
+# Which spool is in which AMS slot right now. The kids' palette is exactly these
+# colors. Allen says swaps in plain words ("pink is in slot 3 now"); Claude runs
+# `python -m charm_maker load 3 "Pink PLA" --color "#EC4899"`. `marker` is the
+# photographed color of the matching marker, written by the calibration card scan
+# and cleared when the spool in that slot changes.
+loaded: {}
+# Example:
+#  1: {spool: "White PLA", color: "#F2F2F2"}
+#  3: {spool: "Pink PLA", color: "#EC4899", marker: "#E0508C", calibrated: "2026-11-09"}
+
+# Matching kid ink to the loaded colors.
+palette:
+  # Only used with --ask-colors (the strict mode): stop and ask about colors that
+  # aren't loaded and about an unscanned calibration card.
+  off_palette_distance: 25        # ink farther than this from every calibrated marker is not loaded
+  off_palette_distance_uncalibrated: 35   # same, while matching against spool colors only
+  off_palette_min_area_mm2: 3.0   # smaller patches are camera fringe, not a drawn color
+  lightness_weight: 0.3           # streaky or pale fill changes lightness and chroma, not hue
+  chroma_weight: 0.5
+  calibration_min_coverage: 0.3   # a calibration box needs this much ink to count
+
+# Filament chips: one per loaded filament, printed live as the kids' printer tour.
+chips:
+  width: 26
+  length: 18
+  thickness: 1.2
+  corner_radius: 3
+  number_height: 9
+  number_stroke: 1.6
+  number_depth: 0.6               # slot number cut into the top face
+  gap: 15                         # roomy, for Print sequence: By object
+  layer_height: 0.20
+  budget_minutes: 15
+  # Rough time model (not the slicer): start-up, effective flow, one AMS swap.
+  estimate_startup_minutes: 5.0
+  estimate_flow_mm3_per_s: 8.0
+  estimate_swap_minutes: 1.5
+
+# Image to print pipeline settings.
+process:
+  card_scale: 3                   # drawing box is 3x the product's real size
+  color_face_depth: 0.6           # front layers that hold the colors, flush
+  border: 1.5                     # die-cut style border in the base color
+  border_default: true            # on for everyone; --no-border turns it off for a run
+  min_ink_width: 1.0              # thinner ink gets thickened to this
+  min_speck_area_mm2: 1.0         # smaller specks are removed...
+  speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
+  coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
+  min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
+  corner_round: 0.5
+  base_color: white               # "white" or "kid_color"
+  # Colors: every distinct ink color becomes its own named part, so Bambu Studio
+  # shows the separation; Allen assigns spools there. Matching to loaded spools is
+  # only a head start.
+  max_ink_colors: 3               # plus the white base = one AMS; extra colors merge into the nearest
+  color_merge_distance: 20        # inks closer than this are one color (hue-weighted Lab)
+  min_color_area_mm2: 3.0         # smaller patches are camera fringe, not a color
+
+# Fit-critical values. Each has a `value` (used by the pipeline), `tested`
+# (true once set from a real print) and the `candidates` printed on the fit-test
+# plate, in piece-number order. `python -m charm_maker fit-results` writes them.
+fit:
+  clip_pocket_diameter:
+    value: 11.5
+    tested: false
+    candidates: [11.2, 11.5, 11.8]
+    note: round pocket on the back of a hair clip charm for the clip's 11 mm pad
+  keyring_hole_diameter:
+    value: 5.0
+    tested: false
+    candidates: [4.5, 5.0, 5.5]
+    note: hole in a keychain's ring tab for a 25 mm split ring
+  earring_hole_diameter:
+    value: 2.0
+    tested: false
+    candidates: [1.8, 2.0, 2.3]
+    note: sideways hole (left to right) in the earring's top loop; the hook goes straight through
+  switch_cutout:
+    value: 14.0
+    tested: false
+    candidates: [13.9, 14.0, 14.1]
+    note: square cutout in the 1.5 mm clicker top plate for an MX-style switch
+  stem_socket_clearance:
+    value: 0.25
+    tested: false
+    candidates: [0.15, 0.25, 0.35]
+    note: added to each arm width of the keycap's cross socket for the MX stem
+  necklace_hole_diameter:
+    value: 3.5
+    tested: false
+    candidates: [3.0, 3.5, 4.0]
+    note: sideways hole (left to right) in the pendant's top loop; the chain goes straight through
+
+# Hardware sizes that are not tolerances (measured or from the manufacturer).
+hardware:
+  clip_pad_diameter: 11.0
+  clip_pocket_depth: 0.6
+  clip_pocket_min_wall: 1.5
+  clip_min_circle: 13.0           # if no circle this big fits, grow the border or add a backer
+  clip_backer_diameter: 14.0
+  magnet_diameter: 10.0
+  magnet_thickness: 2.0
+  magnet_height_above_bottom: 12.0  # glue the magnet about here so figures line up with the stand
+  keyring_hole_min_wall: 2.5
+  # Side loops for pendants and earrings: a loop on top with a hole running left to
+  # right, so the piece hangs facing forward. The loop sits flush with the front face
+  # and stands taller than the charm on the back.
+  earring_loop: {wall: 1.0, length: 4.5}
+  necklace_loop: {wall: 1.2, length: 7.0}
+  loop_overlap: 2.0               # how far the loop reaches into the charm
+  loop_gap: 0.8                   # plastic between the hole and the charm's top edge
+  washer_diameter: 25.4           # 1 inch zinc-plated steel fender washer
+  washer_thickness: 1.6
+  mx_stem_span: 4.1               # length of each arm of the plus-shaped stem
+  mx_stem_arm_x: 1.17             # width of the arm that runs left-right
+  mx_stem_arm_y: 1.31             # width of the arm that runs front-back
+  mx_stem_height: 3.6
+  mx_plate_thickness: 1.5
+  mx_cavity_size: 15.6            # closed cavity under the plate, square
+  mx_cavity_depth: 9.0
+  mx_full_travel: 4.0
+
+# Products. Flat products share the same pipeline; `attachment` picks the extra
+# feature. New flat products can be added here without new code.
+products:
+  hair_clip:
+    label: Hair clip charm
+    size_min: 14
+    size_max: 25
+    default_size: 22
+    thickness: 2.4
+    attachment: clip_pocket
+    copies: 1
+    card: hair_clip
+  keychain:
+    label: Keychain
+    size_min: 35
+    size_max: 55
+    default_size: 45
+    thickness: 3.2
+    attachment: ring_tab
+    tab_position: top             # top, top-left, top-right, left, right
+    copies: 1
+    card: keychain
+  clicker:
+    label: Clicker keychain
+    size_min: 16
+    size_max: 22
+    default_size: 19
+    thickness: 2.4                # keycap top plate; the socket boss sits behind it
+    attachment: stem_socket
+    glue_on_fallback: false       # true makes a flat charm for a store-bought blank keycap
+    copies: 1
+    card: clicker
+  magnet_figure:
+    label: Magnet figure
+    size_min: 30
+    size_max: 55
+    default_size: 45
+    thickness: 3.2
+    attachment: flat_back         # the magnet is glued onto the flat back
+    copies: 1
+    card: magnet_figure
+  earrings:
+    label: Earrings (a pair)
+    adults_only: true
+    size_min: 15
+    size_max: 35
+    default_size: 25
+    thickness: 1.8
+    attachment: side_loop
+    loop: earring                 # hardware.earring_loop, fit.earring_hole_diameter
+    style: hook                   # hook (side loop) or stud (flat back, no loop)
+    pair_mode: identical          # identical or mirrored
+    copies: 2
+    card: earrings
+  pendant:
+    label: Necklace pendant
+    size_min: 25
+    size_max: 45
+    default_size: 35
+    thickness: 2.6
+    attachment: side_loop
+    loop: necklace                # hardware.necklace_loop, fit.necklace_hole_diameter
+    copies: 1
+    card: pendant
+
+# Shape styles. "flat" is the default (face-down, colors flush on the smooth bed side).
+# The others print face-up with the colors on top:
+#   puffy           the piece swells into a pillow, highest in the middle
+#   outlined        flat, with the dark outline raised as a rounded ridge
+#   puffy-outlined  both
+relief:
+  default_style: flat
+  edge_round: 4.0                 # how far in from the edge the puff takes to reach full height
+  outline_raise: 0.6              # height of the raised outline ridge
+  outline_round: 0.5              # rounded shoulders on the ridge (less snagging, less snapping)
+  outline_max_lightness: 50       # only an ink this dark counts as the outline
+  sample: 0.4                     # mesh resolution for curved surfaces
+  products:                       # base slab and puff height per product, for puffy styles
+    hair_clip: {base: 1.2, puff: 1.2}
+    keychain: {base: 2.4, puff: 2.0}
+    pendant: {base: 1.8, puff: 1.8}
+    earrings: {base: 1.0, puff: 1.0}
+    magnet_figure: {base: 2.0, puff: 2.0}
+    clicker: {base: 1.6, puff: 1.2}
+
+# Poop jars: see-through mesh jars with a screw lid that kids fill with printer
+# poop (purge waste) themselves and take home. Printed upright, lid upside down,
+# no supports: the mesh holes are diamonds (45 degree roofs) and the thread is a
+# smooth two-start helix that closes in one turn.
+poop_jar:
+  wall: 1.8
+  floor: 1.6
+  hole: 4.0                       # diamond hole, corner to corner (width and height)
+  strut: 1.4                      # plastic between holes
+  bottom_band: 6.0                # solid band above the floor
+  top_band: 3.0                   # solid band between the mesh and the thread
+  thread_height: 10.0
+  thread_lead: 10.0               # one full turn closes the lid
+  thread_amplitude: 0.7           # ridge stands 2x this proud of the neck
+  thread_clearance: 0.4           # fit-critical: try the first lid before printing a batch
+  lid_wall: 2.0
+  lid_top: 2.0
+  lid_ribs: 30
+  shoulder_slope: 1.0             # hex jars: run/rise of the shoulder (1.0 = 45 degrees)
+  sizes:                          # diameter = outside of a round jar, across the flats of a hex jar
+    small: {diameter: 40, height: 45}
+    medium: {diameter: 50, height: 60}
+    tall: {diameter: 40, height: 80}
+  layer_height: 0.20
+  estimate_flow_mm3_per_s: 8.0
+  estimate_mesh_factor: 1.8       # mesh walls mean lots of short moves
+
+poop_critters:
+  duck:
+    scale: {small: 0.85, medium: 1.0, tall: 1.0}
+  outline_scale: 1.35             # heart, star and cloud jars: width = size diameter x this
+
+# The universal figure stand (one design, no drawing).
+stand:
+  base_width: 44
+  base_depth: 34
+  base_thickness: 3.0
+  base_corner_radius: 4.0
+  upright_width: 36
+  upright_height: 34              # above the base, measured along the tilted face
+  upright_thickness: 2.6
+  upright_tilt_deg: 10            # leans backward
+  upright_from_back_edge: 8.0
+  front_wall: 0.6                 # plastic between the magnet and the washer
+  washer_recess_clearance: 0.4    # added to the washer diameter
+  washer_recess_depth: 2.0
+  lip_gap: 4.5                    # room for the figure's bottom in front of the upright
+  lip_thickness: 2.0
+  lip_height: 1.5
+
+# Fit-test plate (milestone 0) coupon sizes. Not fit-critical.
+fit_test:
+  gap: 5.0                        # space between pieces
+  label_height: 4.0
+  label_stroke: 0.8
+  label_raise: 0.4
+  coupon_corner_radius: 2.0
+  clip_coupon: [17, 26, 2.4]      # width, length, thickness
+  keyring_coupon: [12, 22, 3.2]
+  switch_coupon: [22, 32, 1.5]
+  stem_coupon: [16, 26, 2.4]
+  earring_loop_coupon: [10, 16, 1.8]
+  necklace_loop_coupon: [12, 18, 2.6]
+  stem_boss_diameter: 8.0
+  stem_boss_height: 4.5
+  stem_socket_depth: 4.0
+
+# Design cards (the printable PDF). Lengths in mm on the card.
+cards:
+  page_size: [215.9, 279.4]       # US Letter
+  margin: 10
+  marker_size: 20
+  marker_dictionary: DICT_5X5_1000
+  guide_color: "#B9E4F5"          # very light cyan: far from yellow, removed by the reader
+  guide_line_width: 0.5
+  name_box: [52, 60, 110, 12]     # x, y, width, height (y from the page bottom)
+  copies_per_type: 10             # blank cards numbered 01..N per product
+  half_drawn_shapes: [cloud, heart, cat, star, bow]
+  half_drawn_first_number: 11     # half-drawn cards are 11, 12... so they never clash with blanks
+  half_drawn_copies: 2            # of each shape
+  half_drawn_line: 4.5            # card mm, like a fat marker (1.5 mm on the print)
+  # Marker type ids. Never renumber: printed cards must keep reading correctly.
+  type_ids:
+    hair_clip: 0
+    keychain: 1
+    clicker: 2
+    magnet_figure: 3
+    earrings: 4
+    pendant: 5
+    calibration: 7
+
+# Photo reader and ink separation.
+reader:
+  px_per_card_mm: 6               # rectified page resolution (18 px per real mm)
+  box_margin: 3                   # read this far outside the drawing box (card mm)
+  edge_band: 1.5                  # ignore this band along the box edge (card mm)
+  ink_value_max: 0.60             # darker than this is ink
+  ink_saturation_min: 0.40        # more colorful than this is ink
+  faint_chroma_min: 10            # a faint pen line counts as ink if it is this colorful...
+  faint_delta_min: 18             # ...and this different from the paper (Lab); gray shadows and pencil do not
+  halo_delta_min: 8               # soft edges of a line: this different from paper and next to ink
+  halo_px: 2
+  min_blob_px: 6                  # smaller isolated dots are camera noise
+  guide_zone_margin: 2.0          # guide-colored ink is only removed this close to a printed guide (card mm)
+  black_saturation_max: 0.35      # ink this gray is black
+  black_value_max: 0.55
+  guide_hue: 197                  # hue of the guide color, degrees
+  guide_hue_tolerance: 25
+  guide_saturation_max: 0.45      # pale pixels near the guide hue are guides, not ink
+  hue_merge_deg: 30               # hues closer than this are one color
+  min_color_fraction: 0.03        # a color with fewer pixels than this share is merged away
+
+preview:
+  dpi: 300
+  zoom: 4
+  bed_margin: 8                   # keep pieces this far from the plate edge
+  piece_gap: 6                    # space between pieces on a plate

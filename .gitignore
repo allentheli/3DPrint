@@ -1,0 +1,18 @@
+# Drawings and generated print files stay out of git (privacy rule).
+photos/
+input/
+output/
+*.3mf
+*.stl
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.pdf
+!docs/**/*.png
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
