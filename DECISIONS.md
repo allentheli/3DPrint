@@ -101,3 +101,16 @@ My choices while building it:
 - Magnet figures keep 3.2 mm thickness for stiffness; print notes say to glue the magnet about 12 mm above the bottom to line up with the stand.
 - Half-drawn cards are made for every product except earrings.
 - Keychain ring tabs still go on the highest point (unchanged); only hanging loops use the balance point.
+
+## Shape styles
+
+Allen's calls: shaped pieces as an option, puffy and a raised outline, and hair clips and earrings may be shaped too.
+
+- Four styles for every product: flat (default), puffy, outlined, puffy-outlined; chosen per run or per card.
+- Puffy height = base + puff x quarter-circle profile of the distance to the outline (full height 4 mm in from the edge), from a 0.05 mm distance raster sampled on a 0.4 mm mesh.
+- Base and puff per product: hair clip 1.2 + 1.2, keychain 2.4 + 2.0 (the ring tab stays strong), pendant 1.8 + 1.8, earrings 1.0 + 1.0 (light), magnet figure 2.0 + 2.0.
+- The raised outline is the darkest ink if its lightness is under 50 (black normally); 0.6 mm tall with 0.5 mm rounded shoulders. If no ink is that dark, nothing is raised and the preview says so.
+- Each shaped piece is one solid split into colors (the colors are cut out of the whole), so neighbouring parts share exact surfaces: one body, zero overlap. The ridge is its own solid over the outline ink, so it does not leak onto neighbours.
+- Shaped pieces print face-up; the back is flat. The clip pocket stays on the back and is bridged; loops keep their flat bottom on the bed.
+- Found and fixed while building this: flat pieces were not mirrored, so their faces would have read backwards once turned over. Flat pieces are now built mirrored; 3D previews turn pieces over like a page.
+- Previews now include a 3D view of the front.

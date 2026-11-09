@@ -51,17 +51,21 @@ def test_loops_run_left_to_right(cfg, batch, name, kind):
     assert att["kind"] == "side_loop" and att["loop"] == kind
     loop = cfg["hardware"][f"{kind}_loop"]
     x_c, y_c = att["center"]
-    loop_hole_check(p.parts[p.base_part], x_c, y_c, att["hole_diameter"], loop["wall"], loop["length"])
+    sx, sy = p.solid_xy(x_c, y_c)
+    loop_hole_check(p.parts[p.base_part], sx, sy, att["hole_diameter"], loop["wall"], loop["length"])
     union = _sound(p)
     bb = union.bounding_box()
     assert bb[2] == pytest.approx(0.0, abs=1e-6), "front face flat on the bed"
     assert bb[5] == pytest.approx(att["height"], abs=0.01), "loop stands taller than the charm on the back"
     assert att["height"] > p.thickness
     # It hangs straight: the loop is above the balance point of the drawing.
+    from shapely import affinity
     from shapely.ops import unary_union
     inks = unary_union([i.geometry for i in p.design.inks])
     assert x_c == pytest.approx(inks.centroid.x, abs=0.6)
-    # The loop never covers the colors on the front face.
+    # The loop never covers the colors on the front face (in solid coordinates).
+    if p.mirrored:
+        inks = affinity.scale(inks, -1, 1, origin=(0, 0))
     from functools import reduce
     contours = [Polygon(q) for q in p.parts[p.base_part].slice(0.3).to_polygons()]
     face = reduce(lambda a, b: a.symmetric_difference(b), contours)   # even-odd: holes stay holes

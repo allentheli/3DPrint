@@ -207,6 +207,26 @@ products:
     copies: 1
     card: pendant
 
+# Shape styles. "flat" is the default (face-down, colors flush on the smooth bed side).
+# The others print face-up with the colors on top:
+#   puffy           the piece swells into a pillow, highest in the middle
+#   outlined        flat, with the dark outline raised as a rounded ridge
+#   puffy-outlined  both
+relief:
+  default_style: flat
+  edge_round: 4.0                 # how far in from the edge the puff takes to reach full height
+  outline_raise: 0.6              # height of the raised outline ridge
+  outline_round: 0.5              # rounded shoulders on the ridge (less snagging, less snapping)
+  outline_max_lightness: 50       # only an ink this dark counts as the outline
+  sample: 0.4                     # mesh resolution for curved surfaces
+  products:                       # base slab and puff height per product, for puffy styles
+    hair_clip: {base: 1.2, puff: 1.2}
+    keychain: {base: 2.4, puff: 2.0}
+    pendant: {base: 1.8, puff: 1.8}
+    earrings: {base: 1.0, puff: 1.0}
+    magnet_figure: {base: 2.0, puff: 2.0}
+    clicker: {base: 1.6, puff: 1.2}
+
 # The universal figure stand (one design, no drawing).
 stand:
   base_width: 44

@@ -59,7 +59,16 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         products |= kinds
         layer = pr["layer_height_charms"]
         lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
-        lines.append("- Plate: smooth PEI for a glossy face, textured PEI for a matte, sparkly face. The design face is on the bed.")
+        up = [pp.piece.name for pp in plate.pieces if pp.piece.face_up]
+        down = [pp.piece.name for pp in plate.pieces if not pp.piece.face_up]
+        if down:
+            lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
+        if up:
+            lines.append(f"- Puffy and outlined pieces ({', '.join(up)}) print face-up with the colors on top. "
+                         "Their colors change over more layers than flat ones, so they print slower and purge more. "
+                         "Keep 0.12 mm layers so the curves stay smooth.")
+            if any(pp.piece.face_up and pp.piece.attachment.get("kind") == "clip_pocket" for pp in plate.pieces):
+                lines.append("- On face-up hair clips the clip pocket is on the bed side; the printer bridges over it.")
         lines.append("- Pieces: " + ", ".join(f"{pp.piece.name} ({pp.piece.size()[0]:.0f} x {pp.piece.size()[1]:.0f} mm)" for pp in plate.pieces))
         lines.append("")
     lines.append("## After printing")

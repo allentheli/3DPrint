@@ -74,6 +74,9 @@ The cards tell the tool which product each drawing is. For a drawing on plain pa
 a filament. Output: `plates/plate-N.3mf`, `designs/<card>-preview.png`, `contact-sheet.png`,
 `PRINT_NOTES.md`.
 
+Shapes: add `--style puffy`, `--style outlined` (raised outline) or `--style puffy-outlined`
+for the whole run, or per card like `--style clip-03=puffy`. Flat is the default.
+
 The run never stops to ask about colors. Each color is a separate named part; parts
 start on the nearest loaded spool when slots are set. `--ask-colors` turns on a strict
 mode that stops with `QUESTION.md` for colors that aren't loaded.
@@ -121,7 +124,8 @@ the first real import.
 ## Files
 
 - `config.yaml`: every product size, tolerance, hardware size and the filament list.
-- `charm_maker/`: the code. `palette.py` holds the loaded slots and color matching,
+- `charm_maker/`: the code. `relief.py` builds puffy and raised-outline shapes,
+  `palette.py` holds the loaded slots and color matching,
   `calibrate.py` reads the calibration card, `chips.py` builds the chip plate,
   `cards.py` makes the card PDFs and defines the card layouts,
   `reader.py` finds the markers and straightens photos, `inks.py` separates black and colors,

@@ -224,7 +224,7 @@ def _dashed_circle(draw, x, y, r, color, width, dashes=24):
 
 
 def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, palette_ready: bool,
-                          slot_labels: dict | None = None) -> Path:
+                          slot_labels: dict | None = None, render_path: Path | None = None) -> Path:
     """Actual size (at preview dpi) and zoomed views, swatches, the name crop and the fix list."""
     pv = cfg["preview"]
     dpi, zoom = pv["dpi"], pv["zoom"]
@@ -243,7 +243,12 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
     text_w = 620
     width = pad + actual.size[0] + pad + big.size[0] + pad + text_w + pad
     height = max(actual.size[1], big.size[1]) + 2 * pad + 60
-    lines = [f"{d.name}: {cfg['products'][d.product]['label']}", f"size {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm, {piece.thickness} mm thick", ""]
+    style_word = {"flat": "flat, prints face-down", "puffy": "puffy, prints face-up",
+                  "outlined": "raised outline, prints face-up",
+                  "puffy-outlined": "puffy + raised outline, prints face-up"}.get(getattr(piece, "style", "flat"), "")
+    lines = [f"{d.name}: {cfg['products'][d.product]['label']}",
+             f"size {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm, {piece.thickness} mm thick",
+             f"style: {style_word}", ""]
     lines.append("Colors:")
     swatches = []
     for part, f in assignments.items():
@@ -275,7 +280,13 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
         name_img = name_img.resize((int(name_img.size[0] * f), int(name_img.size[1] * f)), Image.LANCZOS)
     n_text = sum(len(_wrap(l, small, text_w - 10)) for l in lines_att + fixes + warns) + 2
     n_text += sum(len(_wrap(l, small, text_w - 46)) for _, l in swatches)
+    shot = None
+    if render_path is not None and Path(render_path).exists():
+        shot = Image.open(render_path).convert("RGB")
+        f = min(1.0, (text_w - 10) / shot.size[0], 380 / shot.size[1])
+        shot = shot.resize((max(1, int(shot.size[0] * f)), max(1, int(shot.size[1] * f))), Image.LANCZOS)
     text_h = 40 * len(lines) + 4 * len(swatches) + 30 * n_text + (name_img.size[1] + 40 if name_img else 0) + 40
+    text_h += shot.size[1] + 40 if shot else 0
     height = max(height, text_h + 2 * pad)
     sheet = Image.new("RGB", (int(width), int(height)), (255, 255, 255))
     sheet.paste(actual, (pad, pad + 40))
@@ -307,6 +318,11 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
         y += 32
         sheet.paste(name_img, (x, y))
         draw.rectangle([x, y, x + name_img.size[0], y + name_img.size[1]], outline=(120, 120, 120))
+        y += name_img.size[1] + 12
+    if shot is not None:
+        draw.text((x, y), "3D view of the front:", fill=(0, 0, 0), font=small)
+        y += 32
+        sheet.paste(shot, (x, y))
     sheet.save(path, dpi=(dpi, dpi))
     return path
 

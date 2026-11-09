@@ -33,7 +33,7 @@ First use: a design party for four girls aged 5 and 8 (two families), with the p
 ## 3. Hard rules
 
 1. **Stay faithful to the drawing.** Fix only what is needed to print: thicken thin lines, remove specks, add a border, round sharp corners. Never redraw, restyle or "improve" a design. No AI image generation or AI image-to-3D in the pipeline.
-2. **Flat, flush, face-down.** Every design piece is a flat plate with its colors flush on the front face, printed face-down. No raised lines: they snag hair and snap off.
+2. **Flat by default, shaped on request.** The default is a flat plate with its colors flush on the front face, printed face-down (and built mirrored, so the face reads right when the piece is turned over). Optional styles for every product: puffy, a raised outline, or both (section 5). They print face-up with the colors on top. Raised parts are rounded so they snag and snap less.
 3. **One solid piece.** Every design prints as one connected part. Separate bits get joined by the border (section 7).
 4. **Preview before print.** Every output comes with an actual-size preview showing the colors, the filament each color maps to, and every fix you made.
 5. **Drawings stay private.** No network calls while processing. Never commit photos or outputs to git (add them to `.gitignore`). Never send anything to the printer.
@@ -60,6 +60,17 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 | Magnet figure | 30 to 55 mm | About 3.2 mm | Flat back; the magnet is glued on | 1 |
 | Earrings | 15 to 35 mm | 1.8 mm | Top loop with a 2.0 mm hole running left to right*, or a flat back for glue-on studs | 2 |
 | Pendant | 25 to 45 mm | 2.6 mm | Top loop with a 3.5 mm hole running left to right* | 1 |
+
+### Shape styles
+
+Every product can be flat (the default) or shaped. All shapes come straight from the drawing; nothing is redrawn.
+
+- **Puffy:** the piece swells into a pillow, from a base slab at the edge to full height in the middle, with a rounded quarter-circle rise. The height at a point comes from its distance to the outline.
+- **Outlined:** the drawing's dark outline (black, or the darkest ink if it is dark enough) stands up as a rounded 0.6 mm ridge.
+- **Puffy-outlined:** both.
+- Shaped pieces print face-up with the colors on top, back flat on the bed. The clip pocket stays on the back (the printer bridges over it); loops stay flush with the back; magnets still glue onto the flat back.
+- Per product base and puff heights live in config. The style is chosen per run or per card in plain words ("make card 3 puffy").
+- Trade-off: colors change over more layers, so shaped pieces print slower and purge more, and the front shows fine layer lines instead of the glossy bed finish.
 
 ### Loops for pendants and earrings
 

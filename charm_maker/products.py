@@ -27,6 +27,13 @@ class Piece:
     notes: list[str] = field(default_factory=list)
     part_slots: dict[str, int | None] = field(default_factory=dict)
     part_off_palette: dict[str, dict] = field(default_factory=dict)
+    style: str = "flat"
+    face_up: bool = False          # True for puffy and outlined styles: colors on top
+    mirrored: bool = False         # flat pieces print face-down, so they are built mirrored
+
+    def solid_xy(self, x: float, y: float) -> tuple[float, float]:
+        """Where a point of the drawing ends up in the printed solid."""
+        return (-x, y) if self.mirrored else (x, y)
 
     @property
     def name(self) -> str:
@@ -40,7 +47,7 @@ class Piece:
 TAB_ANGLES = {"top": 0.0, "top-left": 45.0, "top-right": -45.0, "left": 90.0, "right": -90.0}
 
 
-def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -> Piece:
+def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat") -> Piece:
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
@@ -74,6 +81,23 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
                 design.fixes.append(f"{ink.name} ink trimmed around the hole")
     design.outline = outline if isinstance(outline, Polygon) else max(outline.geoms, key=lambda g: g.area)
 
+    if style != "flat":
+        from .relief import build_relief_parts
+
+        parts, base_name, height, notes = build_relief_parts(cfg, design, attachment, info, style)
+        design.fixes.extend(notes)
+        colors = {base_name: design.paper_rgb if cfg["process"]["base_color"] == "white" else design.inks[-1].rgb}
+        slots: dict[str, int | None] = {base_name: None}
+        off: dict[str, dict] = {}
+        for ink in design.inks:
+            name = f"{design.name} {ink.name}"
+            colors[name] = ink.rgb
+            slots[name] = ink.slot
+        info = {k: v for k, v in info.items() if k not in ("solid", "hole_solid", "hole")} | (
+            {"hole": info["hole"]} if "hole" in info else {})
+        return Piece(design, round(height, 2), parts, colors, base_name, info, part_slots=slots,
+                     part_off_palette=off, style=style, face_up=True)
+
     face = cfg["process"]["color_face_depth"]
     parts: dict[str, m3d.Manifold] = {}
     colors: dict[str, tuple[int, int, int]] = {}
@@ -98,7 +122,11 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
         slots[name] = ink.slot
         if ink.off_palette:
             off[name] = ink.off_palette
-    return Piece(design, t, parts, colors, base_name, info, part_slots=slots, part_off_palette=off)
+    # Face-down: the face is the side that touched the bed. Seen from the front after
+    # flipping the piece over, it reads mirrored unless the solid is built mirrored.
+    parts = {n: solid.mirror([1.0, 0.0, 0.0]) for n, solid in parts.items()}
+    return Piece(design, t, parts, colors, base_name, info, part_slots=slots, part_off_palette=off,
+                 mirrored=True)
 
 
 # ---------------------------------------------------------------------------

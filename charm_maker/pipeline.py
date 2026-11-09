@@ -125,7 +125,8 @@ def _rounded_rect_pts(x0, y0, x1, y1, r, n=8):
 def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str | None = None,
               border: bool | None = None, tab: str | None = None, overrides: list[str] | None = None,
               batch_name: str | None = None, off_palette: str | None = "nearest",
-              config_path: Path | None = None, allow_uncalibrated: bool = True) -> BatchResult:
+              config_path: Path | None = None, allow_uncalibrated: bool = True,
+              styles: dict[str, str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -138,6 +139,15 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     if off_palette not in (None, "nearest", "swap"):
         raise ValueError("off_palette must be 'nearest' or 'swap'")
+    from .relief import STYLES
+
+    styles = dict(styles or {})
+    for key, st in styles.items():
+        if st not in STYLES:
+            raise ValueError(f"unknown style {st!r} for {key}; use one of {', '.join(STYLES)}")
+
+    def style_for(card: str) -> str:
+        return styles.get(card) or styles.get("*") or cfg["relief"]["default_style"]
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
@@ -196,7 +206,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab)
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(base_name))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)
@@ -251,15 +261,18 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     for piece in pieces:
         d = designs_dir
         a = assignments[piece.name]
-        p = render_design_preview(cfg, piece, a, d / f"{piece.name}-preview.png", palette_ready=palette.ready,
-                                  slot_labels=slot_labels[piece.name])
-        previews.append(p)
         colors = {n: a[n].rgb for n in piece.parts}
-        render_shaded(piece.parts, d / f"{piece.name}-back.png", view=(40.0, 20.0), px_per_mm=12,
+        # Turn the piece over (about the vertical axis, like turning a page) to see the
+        # other side: the face of a face-down piece, the back of a face-up one.
+        turned = {n: s.rotate([0.0, 180.0, 0.0]) for n, s in piece.parts.items()}
+        front, back = (piece.parts, turned) if piece.face_up else (turned, piece.parts)
+        render_shaded(back, d / f"{piece.name}-back.png", view=(40.0, 20.0), px_per_mm=12,
                       labels=False, colors=colors)
-        face_up = {n: s.rotate([180.0, 0.0, 0.0]) for n, s in piece.parts.items()}
-        render_shaded(face_up, d / f"{piece.name}-front.png", view=(40.0, 20.0), px_per_mm=12,
-                      labels=False, colors=colors)
+        front_png = render_shaded(front, d / f"{piece.name}-front.png", view=(40.0, 20.0), px_per_mm=12,
+                                  labels=False, colors=colors)
+        p = render_design_preview(cfg, piece, a, d / f"{piece.name}-preview.png", palette_ready=palette.ready,
+                                  slot_labels=slot_labels[piece.name], render_path=front_png)
+        previews.append(p)
         (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, a, slot_labels[piece.name]), indent=2))
     files["contact_sheet"] = render_contact_sheet(previews, out_dir / "contact-sheet.png", title=batch_name or out_dir.name)
     if plates:
@@ -368,6 +381,8 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
         "product": d.product,
         "source": d.source,
         "size_mm": [round(w, 2), round(h, 2), piece.thickness],
+        "style": piece.style,
+        "prints": "face-up" if piece.face_up else "face-down (built mirrored)",
         "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
         "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
         "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()

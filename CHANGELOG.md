@@ -1,5 +1,12 @@
 # Changelog
 
+## Shape styles (2026-11-09)
+
+- New styles for every product: puffy, outlined (raised dark outline) and puffy-outlined, per run or per card with `--style`. Flat stays the default.
+- Fix: flat pieces are now built mirrored. They print face-down, so without this the face read backwards when turned over.
+- Previews show the style and a 3D view of the front; print notes explain face-up printing.
+- 30 new tests: every style on every product is one watertight body with no overlapping parts, colors on top, the outline raised by 0.6 mm, the clip pocket and sideways loops still correct, flat faces reading right when turned over.
+
 ## Simplified, plus pendant, earrings and magnet figures (2026-11-09)
 
 - Every distinct ink color becomes its own named part; the run never stops to ask about colors. Loaded slots, if set, give each part a starting spool. Calibration card, strict mode (`--ask-colors`), swap plates and chips are optional.

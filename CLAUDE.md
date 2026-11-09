@@ -52,6 +52,11 @@ figure (flat back, glued magnet), and earrings for adults (a pair, top loop with
 hole, or `style: stud` for a flat back). The clicker is not built yet: ask Allen for the
 switch brand or a photo first. A drawing without card markers needs `--product`.
 
+Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
+run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
+default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
+Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
+
 Optional extras, only when Allen asks: the marker calibration card (`calibrate`), strict
 color checking (`run --ask-colors`, which stops with `QUESTION.md` and exit code 2), swap
 plates (`--off-palette swap`), and the filament chip plate (`chips`).
