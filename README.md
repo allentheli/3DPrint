@@ -105,6 +105,24 @@ Run the geometry tests:
 python -m pytest
 ```
 
+## Poop containers
+
+Party favors: see-through containers kids fill with printer poop and twist shut.
+
+```bash
+python -m charm_maker poop-containers
+```
+
+builds a round jar, a hex jar, a bear (the head is the lid), a duck, a heart, a star and a
+cloud, each with a screw lid that closes in one turn and prints without supports. To give
+a downloaded poop-eater model (one you fill during a print pause) a twist-off head:
+
+```bash
+python -m charm_maker screw-top model.3mf --cut 50
+```
+
+Downloaded models keep their own license; the converted files are for your own printing.
+
 ## Opening a plate in Bambu Studio
 
 1. **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...** and pick `plates/plate-1.3mf`.

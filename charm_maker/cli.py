@@ -163,6 +163,36 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if result.pieces else 1
 
 
+def cmd_poop_containers(args: argparse.Namespace) -> int:
+    from .poopjar import KINDS, write_containers
+
+    cfg = load_config(args.config)
+    kinds = args.kinds or list(KINDS)
+    for r in write_containers(cfg, Path(args.out), kinds=kinds, sizes=args.sizes or ["medium"]):
+        con = r["container"]
+        print(f"{con.name}: {r['dir']}  (holes {con.info['holes']}, opening {con.info['opening_mm']:.0f} mm, "
+              f"about {con.info['volume_ml']:.0f} ml, rough {r['minutes']:.0f} min)")
+    return 0
+
+
+def cmd_screw_top(args: argparse.Namespace) -> int:
+    from .screwtop import add_screw_top, load_model, unscrew_check, write_screw_top
+
+    cfg = load_config(args.config)
+    model = load_model(Path(args.model), scale=args.scale)
+    st = add_screw_top(cfg, model, args.cut)
+    worst = unscrew_check(st, cfg["poop_jar"]["thread_lead"])
+    if worst > 0.5:
+        print(f"check: the head touches the body while unscrewing ({worst:.1f} mm³); try a higher --cut")
+    name = args.name or Path(args.model).stem
+    paths = write_screw_top(cfg, st, Path(args.out) / name, name)
+    print(f"{name}: opening {st.info['opening_mm']:.0f} mm, cut at {st.cut_z} mm, cleared {st.info['cleared_mm3']:.0f} mm³ of body near the head")
+    for k, p in paths.items():
+        if not str(k).startswith("stl:"):
+            print(f"  {k:16s} {p}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="charm_maker", description="Charm Maker")
     parser.add_argument("--config", default=None, help="path to config.yaml (default: repo config)")
@@ -214,6 +244,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("poop-containers", help="see-through poop containers kids fill and twist shut")
+    p.add_argument("--kinds", nargs="*", help="jar-round jar-hex duck bear heart star cloud (default: all)")
+    p.add_argument("--sizes", nargs="*", help="small medium tall (default: medium)")
+    p.add_argument("--out", default="output/poop-containers")
+    p.set_defaults(func=cmd_poop_containers)
+
+    p = sub.add_parser("screw-top", help="turn a downloaded poop-eater model's head into a twist-off lid")
+    p.add_argument("model", help="3MF or STL file")
+    p.add_argument("--cut", type=float, required=True, help="height (mm) to cut the head off at")
+    p.add_argument("--scale", type=float, default=1.0)
+    p.add_argument("--name", default=None)
+    p.add_argument("--out", default="output/screw-top")
+    p.set_defaults(func=cmd_screw_top)
 
     p = sub.add_parser("stand", help="build just the figure stand")
     p.add_argument("--out", default="output/stand", help="output folder")

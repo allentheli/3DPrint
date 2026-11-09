@@ -8,7 +8,8 @@ you build. Never say something works unless you ran it. Say what you could not t
 ## Hard rules (short form)
 
 - Stay faithful to the drawing. No redrawing, no AI image generation.
-- Flat, flush, face-down pieces. One solid part per design.
+- Flat pieces by default (face-down, colors flush, built mirrored); puffy and outlined
+  styles on request (face-up). One solid part per design.
 - Every output ships with a preview and a list of fixes.
 - Drawings stay private: no network calls while processing, never commit photos or outputs
   (`.gitignore` covers `photos/`, `input/`, `output/`, images, 3MF and STL), never print.
@@ -74,6 +75,8 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
+| Poop containers | `python -m charm_maker poop-containers [--kinds ...] [--sizes ...]` |
+| Screw top for a downloaded model | `python -m charm_maker screw-top <model> --cut <mm> [--scale 1.15]` |
 | Tests | `python -m pytest -q` |
 
 ## When Allen reports fit-test results
@@ -109,6 +112,34 @@ plate, and the print notes say what goes in and out of which slot.
 In a cloud session, send `output/.../plates/*.3mf`, the contact sheet and `PRINT_NOTES.md`
 with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
+
+## Poop containers (party favors)
+
+See-through containers kids fill with printer poop and twist shut. Everything prints with
+no supports and the lid closes in one turn (right-hand thread: clockwise to close).
+
+```bash
+python -m charm_maker poop-containers --kinds jar-round bear heart --sizes medium
+```
+
+Kinds: `jar-round`, `jar-hex`, `bear` (bear-head lid), `duck`, `heart`, `star`, `cloud`.
+Sizes: `small`, `medium`, `tall`. Each folder has the 3MF (body + lid parts), a preview
+with fake poop inside, the print layout and `PRINT_NOTES.md`. The thread clearance
+(`poop_jar.thread_clearance`, 0.4 mm) is untested: have Allen print one and try the lid.
+
+To give a downloaded "poop eater" (lattice body, solid head, filled by a print pause) a
+twist-off head:
+
+```bash
+python -m charm_maker screw-top path/to/model.3mf --cut 50 --name duck
+```
+
+`--cut` is the height to split the head off. Pick it from horizontal slices: above where the
+lattice wraps the neck and where the head is wide enough for the socket; the tool refuses a
+cut that leaves an opening under 18 mm and warns if the head would touch the body while
+unscrewing. Downloaded models keep their license: the output is for Allen's own printing.
+Never commit it. Sebo3D's duck (MakerWorld, Standard Digital File License) worked at
+`--cut 50`: 20 mm opening; its head still needs the original's tree supports for the beak.
 
 ## Checking against real drawings
 

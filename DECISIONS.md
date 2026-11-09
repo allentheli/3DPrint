@@ -128,3 +128,18 @@ Six real kids' drawings (Meta Animated Drawings examples, MIT) were placed on ca
 - The hue-weighted color distance ignored big lightness differences (dark brown vs pale peach scored 17.7). Lightness now counts at 30% for the first 15 units (streaky fill of one marker) and fully beyond (now 43.6). Separations that matter are unchanged: orange/yellow 42.7, blue/purple 27.0, black/dark blue 22.0.
 - Pale inks started on white and vanished. An ink's color is now taken from its strongest pixels, and inks never start on a white spool. Dark dull inks start on black or gray by lightness; clearly colored inks start on the colored filament with the closest hue.
 - Color words know brown and black, so eyes are named "brown" instead of "orange".
+
+## Poop containers and screw tops
+
+Allen's calls: kids fill the containers themselves; small see-through holes; a lid that opens and closes; character shapes (duck with a twist-off solid head, teddy bear, heart and more); "like Sebo3D's voronoi duck, but with a screw on top".
+
+- Mesh holes are 4 mm diamonds (corner to corner) with 1.4 mm struts: 45 degree roofs, about 44% open, small enough to keep purge blobs in. Straight-down diamond holes also go through sloped roofs and shoulders (vertical sides, no supports).
+- The thread is two-start, right-hand (clockwise closes), 10 mm lead (one turn), 1.4 mm deep, 0.4 mm radial clearance. Built as an even helical grid, not a twisted extrusion: the twisted extrusion's thin facets read as 64-90 degree overhangs; the grid's steepest flank is about 41 degrees.
+- Lids that print on their opening (heads) get a 45 degree cone ceiling in the socket; the plain lid prints upside down with a chamfered top edge and grip ribs that run to the bed.
+- Thread ridges start with a 45 degree ramp, so the ridge bottom never overhangs.
+- Heart, star and cloud are outline jars: straight mesh walls and a roof that is a 45 degree cone up to the neck (outside and inside ceiling both print). They reuse the half-drawn card outlines. They work, but most of the roof is solid; a converted lattice model looks better.
+- Heads (bear, duck) are a sphere on the lid collar with a 45 degree underside; eyes, nose, beak and muzzle are flush color inlays, so nothing sticks out underneath.
+- Every container is checked: one watertight body, no overlap closed, no overlap while unscrewing a full turn counterclockwise (and an overlap clockwise, so the handedness is right), no faces steeper than 45 degrees except about 10 mm² on the bear's ears.
+- Screw top for downloaded models: the head is the shell with most of its volume above the cut; the neck axis is the head's centroid 2 mm above the cut; the socket radius leaves 1 mm of head outside it over the whole thread height; the body keeps the lower head as a solid neck, gets a filling hole bored straight down, and loses any material the turning head (beak included) would sweep through, plus 1 mm. Overlapping shells are unioned into one body.
+- Sebo3D's duck: cut at 50 mm (the lattice wraps the neck up to 54 mm; the head is 33 mm across at 50 mm and wider above). Opening 20 mm, 777 mm³ of lattice cleared near the head, unscrews cleanly. The head keeps the original's own overhangs (beak), so it still needs tree supports like the original. The original's mid-print pause is no longer needed.
+- Converted downloaded models are never committed and are only for Allen's own printing.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Poop containers (2026-11-09)
+
+- `poop-containers`: see-through party favors kids fill with printer poop and twist shut: round and hex jars, a bear whose head is the lid, a duck, and heart, star and cloud jars. Diamond mesh, right-hand screw lid that closes in one turn, no supports.
+- `screw-top`: turns a downloaded poop-eater model's head into a twist-off lid (cut, threaded neck, threaded socket with a cone ceiling, filling hole, clearance for the turning head). Done for Sebo3D's voronoi duck.
+- 32 new tests: watertight single bodies, no overlap closed or while unscrewing, right-hand thread, no supports, see-through and fillable, screw top on a stand-in model.
+
 ## Real drawings (2026-11-09)
 
 - Tested on six real kids' drawings (MIT-licensed examples) placed on cards: bold marker, crayon, thin gray pen, faint pink pen, ballpoint with a hard shadow, faint light-blue pen. Before: two found no ink, faces lost their smiles, crayon striped, eyes vanished, pale inks started on white. After: all six come out faithful.

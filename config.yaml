@@ -229,6 +229,38 @@ relief:
     magnet_figure: {base: 2.0, puff: 2.0}
     clicker: {base: 1.6, puff: 1.2}
 
+# Poop jars: see-through mesh jars with a screw lid that kids fill with printer
+# poop (purge waste) themselves and take home. Printed upright, lid upside down,
+# no supports: the mesh holes are diamonds (45 degree roofs) and the thread is a
+# smooth two-start helix that closes in one turn.
+poop_jar:
+  wall: 1.8
+  floor: 1.6
+  hole: 4.0                       # diamond hole, corner to corner (width and height)
+  strut: 1.4                      # plastic between holes
+  bottom_band: 6.0                # solid band above the floor
+  top_band: 3.0                   # solid band between the mesh and the thread
+  thread_height: 10.0
+  thread_lead: 10.0               # one full turn closes the lid
+  thread_amplitude: 0.7           # ridge stands 2x this proud of the neck
+  thread_clearance: 0.4           # fit-critical: try the first lid before printing a batch
+  lid_wall: 2.0
+  lid_top: 2.0
+  lid_ribs: 30
+  shoulder_slope: 1.0             # hex jars: run/rise of the shoulder (1.0 = 45 degrees)
+  sizes:                          # diameter = outside of a round jar, across the flats of a hex jar
+    small: {diameter: 40, height: 45}
+    medium: {diameter: 50, height: 60}
+    tall: {diameter: 40, height: 80}
+  layer_height: 0.20
+  estimate_flow_mm3_per_s: 8.0
+  estimate_mesh_factor: 1.8       # mesh walls mean lots of short moves
+
+poop_critters:
+  duck:
+    scale: {small: 0.85, medium: 1.0, tall: 1.0}
+  outline_scale: 1.35             # heart, star and cloud jars: width = size diameter x this
+
 # The universal figure stand (one design, no drawing).
 stand:
   base_width: 44
