@@ -56,7 +56,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
-        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore)
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
+                               guide_zone=_guide_zone(cfg, read))
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product)
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
@@ -111,6 +112,40 @@ def _box_edge_band(cfg: dict, read: CardRead) -> np.ndarray:
     outside = np.ones((h, w), np.uint8)
     cv2.fillPoly(outside, [_rounded_rect_pts(x0 - band * ppm, y0 - band * ppm, x1 + band * ppm, y1 + band * ppm, r)], 0)
     return (mask | outside).astype(bool)
+
+
+def _guide_zone(cfg: dict, read: CardRead) -> np.ndarray:
+    """Where guides are printed inside the crop (with a margin): the box label, the
+    cover-the-circle ring and label, the ground line and its label. Guide-colored pixels
+    elsewhere are drawing, not guide."""
+    lay = read.layout
+    ppm = read.px_per_card_mm
+    ox, oy = read.box_origin_mm
+    h, w = read.box_image.shape[:2]
+    m = cfg["reader"]["guide_zone_margin"]
+    zone = np.zeros((h, w), np.uint8)
+
+    def px(x, y):
+        return int(round((x - ox) * ppm)), int(round((oy - y) * ppm))
+
+    def rect(x0, y0, x1, y1):
+        cv2.rectangle(zone, px(x0 - m, y1 + m), px(x1 + m, y0 - m), 1, -1)
+
+    bx, by, bw, bh = lay.box
+    rect(bx + 1, by + bh - 7, bx + 40, by + bh - 1)                 # "draw inside the box"
+    if "cover_circle" in lay.zones:
+        cx, cy, d = lay.zones["cover_circle"]
+        cv2.circle(zone, px(cx, cy), int(round(d / 2 * ppm)), 1, int(round(2 * m * ppm)) + 1)
+        rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the circle"
+    if "ground_line" in lay.zones:
+        x0, y0, x1, y1 = lay.zones["ground_line"]
+        rect(x0, y0, x1, y1)
+        rect(x0 - 1, y0 - 6, x0 + 20, y0 - 1)                        # "stand here"
+    for key in ("ring", "bail"):
+        if key in lay.zones:
+            cx, cy, d = lay.zones[key]
+            rect(cx - d / 2, cy - d / 2, cx + d / 2 + 30, cy + d / 2)
+    return zone.astype(bool)
 
 
 def _rounded_rect_pts(x0, y0, x1, y1, r, n=8):

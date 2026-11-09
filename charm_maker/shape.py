@@ -46,10 +46,15 @@ def _u8(mask: np.ndarray) -> np.ndarray:
     return mask.astype(np.uint8)
 
 
-def remove_specks(mask: np.ndarray, min_area_px: float) -> tuple[np.ndarray, int]:
+def remove_specks(mask: np.ndarray, min_area_px: float, min_extent_px: float = 0.0) -> tuple[np.ndarray, int]:
+    """Remove small dots. A mark is only a speck if it is both small in area and short:
+    a thin smile or eyelash is small in area but long, and stays (it gets thickened)."""
     n, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
     keep = np.zeros(n, bool)
     keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= min_area_px
+    if min_extent_px > 0:
+        extent = np.maximum(stats[1:, cv2.CC_STAT_WIDTH], stats[1:, cv2.CC_STAT_HEIGHT])
+        keep[1:] |= extent >= min_extent_px
     removed = int((~keep[1:]).sum())
     return keep[labels], removed
 
@@ -198,7 +203,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         label_map[(label_map == 0) & layer.mask] = i
     label_map = smooth_labels(label_map, len(layers), max(1, int(round(0.2 * px_per_mm))))
     union = label_map > 0
-    union, specks = remove_specks(union, speck_px)
+    union, specks = remove_specks(union, speck_px, pr["speck_max_extent"] * px_per_mm)
     if specks:
         fixes.append(f"{specks} speck(s) smaller than {pr['min_speck_area_mm2']} mm² removed")
     filled, holes = fill_small_holes(union, speck_px)
@@ -213,6 +218,19 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         dil = cv2.dilate(label_map.astype(np.uint8), np.ones((5, 5), np.uint8))
         still = new_px & (label_map == 0)
         label_map[still] = dil[still]
+
+    # Scribbled coloring (crayon, fast marker) leaves thin slivers of paper between
+    # strokes. Close gaps narrower than about half a millimeter inside each color.
+    r = max(1, int(round(pr["coloring_gap"] / 2 * px_per_mm)))
+    disk = _disk(r)
+    gap_px = 0
+    for i in range(1, len(layers) + 1):
+        closed = cv2.morphologyEx(_u8(label_map == i), cv2.MORPH_CLOSE, disk).astype(bool)
+        fill = closed & (label_map == 0)
+        label_map[fill] = i
+        gap_px += int(fill.sum())
+    if gap_px / px_per_mm ** 2 > 0.5:
+        fixes.append(f"gaps in the coloring narrower than {pr['coloring_gap']} mm filled ({gap_px / px_per_mm ** 2:.0f} mm²)")
 
     masks: list[tuple[InkLayer, np.ndarray]] = []
     for i, layer in enumerate(layers, start=1):

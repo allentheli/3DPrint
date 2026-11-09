@@ -114,3 +114,17 @@ Allen's calls: shaped pieces as an option, puffy and a raised outline, and hair 
 - Shaped pieces print face-up; the back is flat. The clip pocket stays on the back and is bridged; loops keep their flat bottom on the bed.
 - Found and fixed while building this: flat pieces were not mirrored, so their faces would have read backwards once turned over. Flat pieces are now built mirrored; 3D previews turn pieces over like a page.
 - Previews now include a 3D view of the front.
+
+## Lessons from real drawings
+
+Six real kids' drawings (Meta Animated Drawings examples, MIT) were placed on cards and run. What broke and what changed:
+
+- A faint thin pink pen and a faint light-blue pen were not found at all. Ink now also includes faint lines that are clearly colored (chroma over 10 and 18 Lab units from paper); gray marks that are only a little darker than paper (shadows, pencil) still are not ink. The soft edge next to a line counts as ink.
+- The 3x3 noise cleanup erased lines 1 to 2 pixels wide. It is now a removal of isolated blobs under 6 pixels.
+- Guide-colored pixels are removed only within 2 mm of where guides are printed, so a light-blue pen elsewhere in the box survives.
+- Thin short marks (a smile, an eye line) were deleted as specks. A speck must now be both under 1 mm² and under 1.5 mm long.
+- Crayon left white stripes; paper gaps narrower than 0.5 mm inside one color are filled, and the preview says so.
+- Small dark eyes were lost three ways: the seed search stopped at 12 candidate colors (now 40); the 3-color cap merged the smallest color instead of the two most alike; and merged pixels went to the wrong partner. All fixed. The cap now compares colors by their strongest pixels on full color difference.
+- The hue-weighted color distance ignored big lightness differences (dark brown vs pale peach scored 17.7). Lightness now counts at 30% for the first 15 units (streaky fill of one marker) and fully beyond (now 43.6). Separations that matter are unchanged: orange/yellow 42.7, blue/purple 27.0, black/dark blue 22.0.
+- Pale inks started on white and vanished. An ink's color is now taken from its strongest pixels, and inks never start on a white spool. Dark dull inks start on black or gray by lightness; clearly colored inks start on the colored filament with the closest hue.
+- Color words know brown and black, so eyes are named "brown" instead of "orange".

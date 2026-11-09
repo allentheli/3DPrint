@@ -67,19 +67,44 @@ def _quad_terms(x, y):
     return np.stack([np.ones_like(x), x, y, x * y, x * x, y * y], axis=1)
 
 
-def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None):
-    """Ink pixels in a lighting-flattened crop: dark or colorful, minus the printed guides."""
+def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
+             guide_zone: np.ndarray | None = None):
+    """Ink pixels in a lighting-flattened crop.
+
+    Strong ink is dark, or strongly colored, or a faint line that is still clearly
+    colored (a thin pink pen). Gray marks that are only a little darker than the paper
+    (shadows, pencil) are not ink. The soft edge of a line next to strong ink is ink.
+    Guide-colored pixels are removed only near where guides are printed
+    (`guide_zone`), so a light-blue pen elsewhere survives."""
+    from .filaments import _srgb_to_lab
+
     rd = cfg["reader"]
     hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)   # H 0..360, S 0..1, V 0..1 for float input
     H, S, V = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
-    ink = (V < rd["ink_value_max"]) | (S > rd["ink_saturation_min"])
+    lab = _srgb_to_lab(rgb.reshape(-1, 3) * 255.0).reshape(rgb.shape)
+    chroma = np.hypot(lab[..., 1], lab[..., 2])
+    delta = np.sqrt((100.0 - lab[..., 0]) ** 2 + chroma ** 2)
+    strong = (V < rd["ink_value_max"]) | (S > rd["ink_saturation_min"]) | (
+        (chroma > rd["faint_chroma_min"]) & (delta > rd["faint_delta_min"]))
     dh = np.abs(((H - rd["guide_hue"]) + 180.0) % 360.0 - 180.0)
     guide = (dh < rd["guide_hue_tolerance"]) & (S < rd["guide_saturation_max"]) & (V > 0.55)
-    ink &= ~guide
+    if guide_zone is not None:
+        guide &= guide_zone
+    strong &= ~guide
+    if ignore is not None:
+        strong &= ~ignore
+    # Drop isolated noise dots, but keep lines only 1-2 pixels wide.
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(strong.astype(np.uint8), connectivity=8)
+    small = np.flatnonzero(stats[:, cv2.CC_STAT_AREA] < rd["min_blob_px"])
+    small = small[small > 0]
+    if small.size:
+        strong &= ~np.isin(labels, small)
+    # Soft edges: a little different from paper and right next to strong ink.
+    k = 2 * rd["halo_px"] + 1
+    near = cv2.dilate(strong.astype(np.uint8), np.ones((k, k), np.uint8)).astype(bool)
+    ink = strong | (near & (delta > rd["halo_delta_min"]) & ~guide)
     if ignore is not None:
         ink &= ~ignore
-    # Light clean-up of single-pixel noise before classifying.
-    ink = cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)).astype(bool)
     return ink, H, S, V
 
 
@@ -156,7 +181,7 @@ def _hue_name(hue: float) -> str:
 # ---------------------------------------------------------------------------
 
 def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors: int | None = None,
-                    ignore: np.ndarray | None = None) -> InkResult:
+                    ignore: np.ndarray | None = None, guide_zone: np.ndarray | None = None) -> InkResult:
     """Find the distinct ink colors in a drawing, whatever they are. Colors are told
     apart mostly by hue, so streaky or pale fill of one marker stays one color while an
     orange next to a yellow stays two. Patches smaller than a few mm² or thin fringes
@@ -172,7 +197,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
     min_area_px = pr["min_color_area_mm2"] * px_per_mm ** 2
 
     rgb = flatten_lighting(bgr)
-    ink, _, _, _ = ink_mask(cfg, rgb, ignore)
+    ink, _, _, _ = ink_mask(cfg, rgb, ignore, guide_zone)
     paper = rgb[~ink] if (~ink).any() else rgb.reshape(-1, 3)
     paper_rgb = tuple(int(v * 255) for v in np.median(paper.reshape(-1, 3), axis=0))
     notes: list[str] = []
@@ -194,8 +219,8 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         center = lab[inverse == k].mean(axis=0)
         if all(float(lab_distance(center[None, :], sd, lw, cw)[0]) > thr for sd in seeds):
             seeds.append(center)
-        if len(seeds) >= 12:
-            break
+        if len(seeds) >= 40:      # crayon texture makes many in-between shades; small colors
+            break                 # (eyes) must still get a seed, merging sorts them out later
     if not seeds:
         seeds = [lab.mean(axis=0)]
 
@@ -227,16 +252,27 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
                 changed = True
                 break
 
-    # More colors than one AMS can hold: merge the smallest into its nearest, and say so.
+    # More colors than one AMS can hold: merge the two most alike, and say so. (Merging
+    # the smallest instead would wipe out small but important colors, like black eyes.)
     sizes = {i: int((near == i).sum()) for i in alive}
+    flat_rgb = rgb.reshape(-1, 3)
     while len(alive) > max_colors:
-        small = min(alive, key=lambda i: sizes[i])
-        alive.remove(small)
-        word = color_word(tuple(int(v) for v in _lab_to_rgb(seeds[small])))
-        dist[small] = np.inf
-        near = np.argmin(dist, axis=0)
+        # Compare each color as the pen really is (its strongest pixels, not its pale
+        # edges), on full color difference with lightness included: dark brown eyes on an
+        # orange body are not "alike" even though their hues are close.
+        rep = {i: _srgb_to_lab(np.asarray(_representative(flat_rgb[idx[near == i]], lab[near == i]), float))
+               for i in alive}
+        pairs = [(float(np.linalg.norm(rep[i] - rep[j])), i, j)
+                 for a, i in enumerate(alive) for j in alive[a + 1:]]
+        _, i, j = min(pairs)
+        drop, keep = (i, j) if sizes[i] < sizes[j] else (j, i)
+        alive.remove(drop)
+        w_drop = color_word(tuple(int(v) for v in _lab_to_rgb(rep[drop])))
+        w_keep = color_word(tuple(int(v) for v in _lab_to_rgb(rep[keep])))
+        dist[drop] = np.inf
+        near[near == drop] = keep          # the merged color's pixels join its partner
         sizes = {i: int((near == i).sum()) for i in alive}
-        notes.append(f"more than {max_colors} colors: {word} merged into the nearest color")
+        notes.append(f"more than {max_colors} colors: the two most alike ({w_drop} and {w_keep}) print as one")
 
     flat_rgb = rgb.reshape(-1, 3)
     layers: list[InkLayer] = []
@@ -247,12 +283,24 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
             continue
         mask = np.zeros(ink.shape, bool)
         mask.ravel()[sel] = True
-        rep = tuple(int(v) for v in np.median(flat_rgb[sel] * 255, axis=0))
+        rep = _representative(flat_rgb[sel], lab[near == i])
         word = color_word(rep)
         used[word] = used.get(word, 0) + 1
         name = word if used[word] == 1 else f"{word} {used[word]}"
         layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
     return InkResult(layers, paper_rgb, notes)
+
+
+def _representative(rgb01: np.ndarray, lab: np.ndarray) -> tuple[int, int, int]:
+    """The color a pen or marker really is: thin lines are mostly soft, pale edge, so the
+    average looks washed out. Use the strongest pixels instead: the darkest ones for dark
+    or gray inks, the most colorful ones for bright inks."""
+    chroma = np.hypot(lab[:, 1], lab[:, 2])
+    if np.median(chroma) < 15 or np.median(lab[:, 0]) < 55:
+        sel = lab[:, 0] <= np.percentile(lab[:, 0], 30)
+    else:
+        sel = chroma >= np.percentile(chroma, 70)
+    return tuple(int(v) for v in np.median(rgb01[sel] * 255, axis=0))
 
 
 def _lab_to_rgb(lab: np.ndarray) -> np.ndarray:

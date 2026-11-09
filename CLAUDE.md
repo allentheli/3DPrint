@@ -110,6 +110,23 @@ In a cloud session, send `output/.../plates/*.3mf`, the contact sheet and `PRINT
 with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 
+## Checking against real drawings
+
+Synthetic test cards are clean; real ones are not. `tools/try_real_drawings.py` places
+six real kids' drawings (Meta's Animated Drawings examples, MIT license) onto design cards,
+fakes phone photos and leaves them for a normal run. Use it after changing ink, color or
+shape code, and look at the contact sheet:
+
+```bash
+GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/facebookresearch/animateddrawings /tmp/ad
+python tools/try_real_drawings.py /tmp/ad output/real-drawings
+python -m charm_maker run output/real-drawings/cards --out output/real-drawings/out
+```
+
+Expected: purple figure in purple; candy corn with black eyes, orange and yellow; girl
+with eyes and smile in black; pig outline in pink; garlic in blue with a red tongue; bug
+in blue (its body outline is very faint and comes out in pieces). Never commit the outputs.
+
 ## Housekeeping
 
 - Record every choice the spec did not settle as one line in `DECISIONS.md`.

@@ -132,7 +132,10 @@ the first real import.
   `shape.py` applies the print fixes, `products.py` adds pockets and tabs and builds the solids,
   `plates.py` packs plates, `bambu3mf.py` writes the multi-part 3MF, `pipeline.py` ties it
   together, `fittest.py` builds the fit plate, `stand.py` the figure stand.
-- `tests/`: automated geometry checks (watertight, one part, sizes, pocket walls).
+- `tests/`: automated checks (watertight, one part, sizes, pocket walls, colors, real-world
+  drawing problems rebuilt on synthetic cards).
+- `tools/try_real_drawings.py`: runs real kids' drawings (MIT-licensed examples) through
+  the card pipeline for a look at real-world results.
 - `docs/`: the spec and the fit-test guide.
 - `DECISIONS.md`, `CHANGELOG.md`.
 

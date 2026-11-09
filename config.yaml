@@ -67,7 +67,9 @@ process:
   border: 1.5                     # die-cut style border in the base color
   border_default: true            # on for everyone; --no-border turns it off for a run
   min_ink_width: 1.0              # thinner ink gets thickened to this
-  min_speck_area_mm2: 1.0         # smaller specks are removed
+  min_speck_area_mm2: 1.0         # smaller specks are removed...
+  speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
+  coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
   min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
   corner_round: 0.5
   base_color: white               # "white" or "kid_color"
@@ -293,6 +295,12 @@ reader:
   edge_band: 1.5                  # ignore this band along the box edge (card mm)
   ink_value_max: 0.60             # darker than this is ink
   ink_saturation_min: 0.40        # more colorful than this is ink
+  faint_chroma_min: 10            # a faint pen line counts as ink if it is this colorful...
+  faint_delta_min: 18             # ...and this different from the paper (Lab); gray shadows and pencil do not
+  halo_delta_min: 8               # soft edges of a line: this different from paper and next to ink
+  halo_px: 2
+  min_blob_px: 6                  # smaller isolated dots are camera noise
+  guide_zone_margin: 2.0          # guide-colored ink is only removed this close to a printed guide (card mm)
   black_saturation_max: 0.35      # ink this gray is black
   black_value_max: 0.55
   guide_hue: 197                  # hue of the guide color, degrees

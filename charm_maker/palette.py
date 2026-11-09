@@ -105,7 +105,11 @@ def color_distance(rgb1, rgb2, lw: float = 0.3, cw: float = 0.5) -> float:
 def lab_distance(lab: np.ndarray, ref_lab: np.ndarray, lw: float = 0.3, cw: float = 0.5) -> np.ndarray:
     """Distance that cares mostly about hue. Marker fill gets streaky and paler at the
     edges, which changes lightness and chroma; a different marker changes hue."""
-    dL = lab[..., 0] - ref_lab[0]
+    # Lightness: the first 15 units (streaky or pale fill of one marker) count at `lw`;
+    # anything beyond is a different ink (dark brown eyes vs pale peach) and counts fully.
+    adL = np.abs(lab[..., 0] - ref_lab[0])
+    knee = 15.0
+    dL = (np.minimum(adL, knee) * lw + np.maximum(adL - knee, 0.0)) / max(lw, 1e-9)
     c1 = np.hypot(lab[..., 1], lab[..., 2])
     c2 = float(np.hypot(ref_lab[1], ref_lab[2]))
     dC = c1 - c2
@@ -121,6 +125,10 @@ def color_word(rgb) -> str:
     if c < 12:
         return "white" if L > 85 else "black" if L < 35 else "gray"
     h = (np.degrees(np.arctan2(b, a)) + 360.0) % 360.0
+    if L < 25 and c < 30:
+        return "black"
+    if L < 55 and c < 45 and 20 <= h <= 100:
+        return "brown"
     # Lab hue angles: red ~40, orange ~60, yellow ~95, green ~135, blue ~290, purple ~310, pink ~350.
     table = [(25, "red"), (45, "red"), (62, "orange"), (75, "orange"), (100, "yellow"), (120, "lime"),
              (150, "green"), (195, "teal"), (240, "sky blue"), (290, "blue"), (315, "purple"),

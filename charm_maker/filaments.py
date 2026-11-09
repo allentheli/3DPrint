@@ -54,6 +54,38 @@ def nearest_filament(rgb: tuple[int, int, int], filaments: list[Filament]) -> Fi
     return filaments[int(np.argmin(d))]
 
 
+def is_whitish(f: Filament) -> bool:
+    L, a, b = _srgb_to_lab(np.array(f.rgb))
+    return L > 85 and float(np.hypot(a, b)) < 12
+
+
+def nearest_ink_filament(rgb: tuple[int, int, int], filaments: list[Filament]) -> Filament:
+    """Starting filament for an ink color. Never white (white is the paper and the base).
+    Dark or grayish inks go to the closest dark or gray filament by lightness (brown eyes
+    print black). Clearly colored inks go to the colored filament with the closest hue,
+    because a pen on paper is paler than the filament of the same color."""
+    def lab(c):
+        L, a, b = _srgb_to_lab(np.array(c, dtype=np.float64))
+        return float(L), float(np.hypot(a, b)), float(np.degrees(np.arctan2(b, a)) % 360.0)
+
+    inks = [f for f in filaments if not is_whitish(f)] or filaments
+    L, C, h = lab(rgb)
+    if C < 15 or (L < 40 and C < 30):
+        dark = [f for f in inks if lab(f.rgb)[1] < 15]
+        if dark:
+            return min(dark, key=lambda f: abs(lab(f.rgb)[0] - L))
+        return nearest_filament(rgb, inks)
+    colored = [f for f in inks if lab(f.rgb)[1] >= 15]
+    if not colored:
+        return nearest_filament(rgb, inks)
+
+    def score(f):
+        Lf, Cf, hf = lab(f.rgb)
+        dh = abs((hf - h + 180.0) % 360.0 - 180.0)
+        return dh + 0.2 * abs(Lf - L)
+    return min(colored, key=score)
+
+
 def find_filament(name: str, filaments: list[Filament]) -> Filament:
     name_l = name.strip().lower()
     for f in filaments:

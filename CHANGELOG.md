@@ -1,5 +1,13 @@
 # Changelog
 
+## Real drawings (2026-11-09)
+
+- Tested on six real kids' drawings (MIT-licensed examples) placed on cards: bold marker, crayon, thin gray pen, faint pink pen, ballpoint with a hard shadow, faint light-blue pen. Before: two found no ink, faces lost their smiles, crayon striped, eyes vanished, pale inks started on white. After: all six come out faithful.
+- Ink detection finds faint colored pens, keeps 1-2 pixel lines, removes guide colors only near printed guides.
+- Thin short marks are no longer specks; crayon gaps under 0.5 mm are filled.
+- Color separation keeps small dark colors (eyes) under the 3-color cap; colors are judged by their strongest pixels; inks never start on white.
+- `tools/try_real_drawings.py` repeats the check. 6 new regression tests rebuild each failure on synthetic cards.
+
 ## Shape styles (2026-11-09)
 
 - New styles for every product: puffy, outlined (raised dark outline) and puffy-outlined, per run or per card with `--style`. Flat stays the default.

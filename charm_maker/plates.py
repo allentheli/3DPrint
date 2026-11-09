@@ -11,7 +11,7 @@ from pathlib import Path
 
 import manifold3d as m3d
 
-from .filaments import Filament, nearest_filament
+from .filaments import Filament, nearest_filament, nearest_ink_filament
 from .geom import bounds
 from .palette import Palette
 from .products import Piece
@@ -106,10 +106,12 @@ def assign_filaments(piece: Piece, palette: Palette, overrides: dict[tuple[str, 
                                                      tuple(int(v) for v in off["rgb"]))
             else:
                 f = not_loaded(off["color"], off["rgb"])
+        elif part == piece.base_part:
+            f = nearest_filament(rgb, palette.loaded_filaments() if palette.ready else palette.owned)
         elif palette.ready:
-            f = nearest_filament(rgb, palette.loaded_filaments())
+            f = nearest_ink_filament(rgb, palette.loaded_filaments())
         else:
-            f = nearest_filament(rgb, palette.owned)
+            f = nearest_ink_filament(rgb, palette.owned)
         out[part] = f
     return out
 

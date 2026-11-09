@@ -175,3 +175,37 @@ def draw_half_drawn_card(cfg: dict, out_dir: Path, product: str, number: int, fi
     pts = [P(x, y) for x, y in poly.exterior.coords]
     d.line(pts + pts[:1], fill=(10, 10, 10), width=int(cfg["cards"]["half_drawn_line"] * ppm), joint="curve")
     return photograph(img, out_dir / f"half-{product}-{number}.jpg", seed=number)
+
+
+def draw_strokes_card(cfg: dict, out_dir: Path, product: str, number: int, strokes: list, name: str) -> Path:
+    """A card drawn with real-world strokes, in card mm relative to the box center:
+    ("line", [(x, y), ...], rgb, width_mm)   a pen or marker line
+    ("dot", (x, y), rgb, diameter_mm)        a filled dot
+    ("crayon", [(x, y), ...], rgb, gap_mm)   a polygon colored in with strokes that leave
+                                             thin slivers of paper between them"""
+    from shapely.geometry import LineString, Polygon
+
+    img, lay, ppm, P = card_image(cfg, product, number, out_dir)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    for kind, geom, rgb, size in strokes:
+        if kind == "line":
+            pts = [P(cx + x, cy + y) for x, y in geom]
+            d.line(pts, fill=rgb, width=max(1, int(round(size * ppm))), joint="curve")
+        elif kind == "dot":
+            x, y = geom
+            r = size / 2
+            d.ellipse([P(cx + x - r, cy + y + r), P(cx + x + r, cy + y - r)], fill=rgb)
+        elif kind == "crayon":
+            poly = Polygon([(cx + x, cy + y) for x, y in geom])
+            minx, miny, maxx, maxy = poly.bounds
+            stroke_w = 1.6
+            y = miny
+            while y < maxy:
+                seg = LineString([(minx - 1, y), (maxx + 1, y + 2.0)]).intersection(poly)
+                for part in getattr(seg, "geoms", [seg]):
+                    if part.length > 0:
+                        d.line([P(*p) for p in part.coords], fill=rgb, width=int(round(stroke_w * ppm)))
+                y += stroke_w + size
+    return photograph(img, out_dir / name, seed=number)
