@@ -52,14 +52,15 @@ def cmd_cards(args: argparse.Namespace) -> int:
     from .palette import load_palette
 
     cfg = load_config(args.config)
-    products = args.products or ["hair_clip", "keychain"]
+    products = args.products or ["hair_clip", "keychain", "pendant", "earrings", "magnet_figure"]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     blank = write_cards_pdf(cfg, products, out / "design-cards.pdf", count=args.count)
     print(f"Blank cards: {blank} ({len(products)} product(s) x {args.count or cfg['cards']['copies_per_type']})")
-    half = write_cards_pdf(cfg, products, out / "half-drawn-cards.pdf", numbers=half_drawn_numbers(cfg))
+    kid_products = [p for p in products if not cfg["products"][p].get("adults_only")]
+    half = write_cards_pdf(cfg, kid_products, out / "half-drawn-cards.pdf", numbers=half_drawn_numbers(cfg))
     print(f"Half-drawn cards: {half} ({', '.join(cfg['cards']['half_drawn_shapes'])}, "
-          f"{cfg['cards']['half_drawn_copies']} of each per product)")
+          f"{cfg['cards']['half_drawn_copies']} of each for {', '.join(kid_products)})")
     palette = load_palette(cfg)
     if palette.ready:
         cal = write_calibration_pdf(cfg, palette, out / "calibration-card.pdf")
@@ -133,8 +134,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     border = None if args.border is None else args.border
     result = run_batch(cfg, [Path(p) for p in args.inputs], Path(args.out), product_hint=args.product,
                        border=border, tab=args.tab, overrides=args.map or [], batch_name=Path(args.out).name,
-                       off_palette=args.off_palette, config_path=_config_path(args),
-                       allow_uncalibrated=args.uncalibrated_ok)
+                       off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
+                       allow_uncalibrated=not args.ask_colors)
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -172,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_fit_results)
 
     p = sub.add_parser("cards", help="write the design-card PDF")
-    p.add_argument("--products", nargs="*", help="product keys from config (default: hair_clip keychain)")
+    p.add_argument("--products", nargs="*", help="product keys from config (default: every product that builds)")
     p.add_argument("--count", type=int, default=None, help="cards per product (default from config)")
     p.add_argument("--out", default="output/cards", help="output folder")
     p.set_defaults(func=cmd_cards)
@@ -202,10 +203,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
-    p.add_argument("--off-palette", choices=["nearest", "swap"], default=None,
-                   help="answer for colors that aren't loaded: nearest loaded color, or own plate with a spool swap")
-    p.add_argument("--uncalibrated-ok", action="store_true",
-                   help="Allen said go ahead without a calibration scan: match ink to the spool colors")
+    p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",
+                   help="colors that don't match a loaded spool: nearest spool (default), or own plate with a swap")
+    p.add_argument("--ask-colors", action="store_true",
+                   help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("stand", help="build just the figure stand")

@@ -1,9 +1,10 @@
 # Charm Maker
 
 Turns a photo of a hand drawing into a ready-to-print file for a Bambu Lab printer
-with AMS. Kids draw on printed design cards, Allen photographs the cards, and the
-tool makes flat, flush, multi-color charms: hair clip charms, keychains, clicker
-keychains, magnet figures, earrings and pendants.
+with AMS. Kids and adults draw on printed design cards, Allen photographs the cards, and
+the tool makes flat, flush, multi-color pieces: hair clip charms, keychains, necklace
+pendants, magnet figures, and earrings for adults (clicker keychains are next). Every
+color in a drawing becomes its own part; spools are assigned in Bambu Studio.
 
 The full specification is in `docs/charm-maker-spec.md`. The everyday runbook for a
 Claude Code session is in `CLAUDE.md`.
@@ -14,10 +15,10 @@ Claude Code session is in `CLAUDE.md`.
 | --- | --- | --- |
 | 0 | Fit-test plate and config | Built. Waiting for Allen's fit results. |
 | 1 | Cards, hair clips, keychains | Built. Waiting for a real card scan and a test print. |
-| 2 | Party batch and loaded palette | Built. Waiting for Allen's spools, a calibration scan and a test print. |
+| 2 | Party batch, all flat products | Built: hair clip, keychain, pendant, earrings, magnet figure. Waiting for a real scan and a test print. |
 | 3 | Clicker keychain | Not started |
-| 4 | Adults: earrings, pendants, PNG/SVG, text | Not started |
-| 5 | Magnet figures and the stand | Stand built (fit test). Figures not started |
+| 4 | Adults: PNG/SVG input, text mode | Not started (earrings and pendants are built) |
+| 5 | Magnet figures and the stand | Figures built (flat back), stand built |
 
 ## Setup
 
@@ -29,7 +30,8 @@ pip install -r requirements.txt
 
 ## Commands
 
-Tell the tool which spool is in which AMS slot (once, and after every swap):
+Optional: tell the tool which spool is in which AMS slot, so parts start on the right
+spools (you can always change them in Bambu Studio):
 
 ```bash
 python -m charm_maker load 1 "White PLA" --color "#F2F2F2"
@@ -39,21 +41,21 @@ python -m charm_maker load 1 "White PLA" --color "#F2F2F2"
 python -m charm_maker slots
 ```
 
-Print the cards (US Letter, print at "Actual size", not "Fit to page"). This writes the
-blank cards, the half-drawn cards (cloud, heart, cat, star, bow) and the marker
-calibration card for the loaded spools into `output/cards/`:
+Print the cards (US Letter, print at "Actual size", not "Fit to page"). This writes
+blank cards for every product, half-drawn cards (cloud, heart, cat, star, bow) and, if
+slots are loaded, the optional marker calibration card into `output/cards/`:
 
 ```bash
 python -m charm_maker cards
 ```
 
-Read a scanned calibration card (it can also just go in the same folder as the drawings):
+Optional: read a scanned calibration card for sharper color matching:
 
 ```bash
 python -m charm_maker calibrate scans/calibration.pdf
 ```
 
-Build the filament chip plate for the printer tour:
+Optional: build the filament chip plate for a printer tour:
 
 ```bash
 python -m charm_maker chips
@@ -72,9 +74,9 @@ The cards tell the tool which product each drawing is. For a drawing on plain pa
 a filament. Output: `plates/plate-N.3mf`, `designs/<card>-preview.png`, `contact-sheet.png`,
 `PRINT_NOTES.md`.
 
-If a drawing uses a color that isn't loaded, or the calibration card hasn't been scanned,
-the run writes `QUESTION.md` and the previews but no plates. Answer and run again with
-`--off-palette nearest`, `--off-palette swap`, a `--map` per card, or `--uncalibrated-ok`.
+The run never stops to ask about colors. Each color is a separate named part; parts
+start on the nearest loaded spool when slots are set. `--ask-colors` turns on a strict
+mode that stops with `QUESTION.md` for colors that aren't loaded.
 
 Build the milestone 0 fit-test plate (3MF, STLs, previews, printed guide):
 

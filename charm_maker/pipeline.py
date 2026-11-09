@@ -11,8 +11,8 @@ import numpy as np
 
 from .config import load_config
 from .filaments import Filament, parse_overrides
-from .inks import Reference, classify_to_palette, separate_inks
-from .palette import Palette, load_palette, spool_word
+from .inks import separate_colors, separate_inks
+from .palette import Palette, color_distance, load_palette, spool_word
 from .plates import Plate, assign_filaments, pack_plates, unanswered_off_palette, write_plates
 from .products import Piece, build_piece
 from .reader import CardRead, load_image, pdf_page_count, read_card
@@ -45,37 +45,18 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
     return out
 
 
-def _references(palette: Palette) -> list[Reference]:
-    return [Reference(s.slot, spool_word(s.filament), s.reference_rgb) for s in palette.ink_slots()]
-
-
-def _inks_for(cfg: dict, palette: Palette, bgr: np.ndarray, audience: str, px_per_mm: float,
-              ignore: np.ndarray | None = None):
-    pr = cfg["process"]
-    if audience == "kids" and palette.ready:
-        return classify_to_palette(cfg, bgr, _references(palette), calibrated=palette.calibrated,
-                                   px_per_mm=px_per_mm, ignore=ignore)
-    max_colors = pr["kid_card_max_colors"] if audience == "kids" else pr["adult_card_max_colors"]
-    res = separate_inks(cfg, bgr, max_colors, ignore)
-    if audience == "kids":
-        res.notes.append("no loaded slots in config yet: colors grouped by hue and matched to a generic palette")
-    return res
-
-
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None) -> Design:
-    palette = palette or load_palette(cfg)
     pr = cfg["process"]
     scale = pr["card_scale"]
+    if border is None:
+        border = pr["border_default"]
     if read.layout is not None:
         product = read.layout.product
-        audience = cfg["products"][product]["audience"]
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
-        inks = _inks_for(cfg, palette, read.box_image, audience, px_per_mm, ignore)
-        if border is None:
-            border = pr["border_default_kid_cards"] if audience == "kids" else pr["border_default_adult_cards"]
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore)
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product)
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
@@ -85,7 +66,6 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     # Fallback: no markers. Use the whole image, scale the ink to the default size.
     product = product_hint
     assert product is not None
-    audience = cfg["products"][product]["audience"]
     img = read.box_image
     h, w = img.shape[:2]
     f = min(1.0, 1600.0 / max(h, w))
@@ -105,9 +85,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     pad = 10
     crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
-    inks = _inks_for(cfg, palette, crop, audience, target_ppm)
-    if border is None:
-        border = pr["border_default_kid_cards"] if audience == "kids" else pr["border_default_adult_cards"]
+    inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product)
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
@@ -146,10 +124,13 @@ def _rounded_rect_pts(x0, y0, x1, y1, r, n=8):
 
 def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str | None = None,
               border: bool | None = None, tab: str | None = None, overrides: list[str] | None = None,
-              batch_name: str | None = None, off_palette: str | None = None,
-              config_path: Path | None = None, allow_uncalibrated: bool = False) -> BatchResult:
-    """Photos in, plates out. Calibration cards in the batch are applied first.
-    `off_palette` answers the once-per-batch question: "nearest" or "swap"."""
+              batch_name: str | None = None, off_palette: str | None = "nearest",
+              config_path: Path | None = None, allow_uncalibrated: bool = True) -> BatchResult:
+    """Photos in, plates out. Every distinct ink color is its own part; parts are
+    pre-assigned to the nearest loaded spool as a head start, and Allen can change any
+    of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
+    stops and asks about colors that aren't loaded. Calibration cards are optional and
+    applied first when present."""
     from .calibrate import measure_markers
     from .notes import write_print_notes, write_question
     from .palette import save_calibration
@@ -213,17 +194,17 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             design.source = label
             if name != base_name:
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
-            piece = build_piece(cfg, design, tab_position=tab)
-            _check_piece(piece)
-            _set_base_slot(cfg, piece, palette)
-            for part, info in piece.part_off_palette.items():
-                info["suggested"] = palette.suggest_spool(info["rgb"])
-                piece.design.warnings.append(
-                    f"{info['color']} is not loaded ({info['area_mm2']} mm²); nearest loaded is {info['nearest_name']} (slot {info['nearest_slot']})")
+            new = []
+            for copy_design in _copies(cfg, design):
+                piece = build_piece(cfg, copy_design, tab_position=tab)
+                _check_piece(piece)
+                _map_to_palette(cfg, piece, palette)
+                _set_base_slot(cfg, piece, palette)
+                new.append(piece)
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
-        pieces.append(piece)
+        pieces.extend(new)
 
     if not pieces:
         return BatchResult([], [], {}, palette.ready, problems, None, calibration_lines)
@@ -239,9 +220,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     files: dict = {}
     question = None
     unanswered = [(p, part) for p in pieces for part in unanswered_off_palette(p, assignments[p.name])]
-    kids = any(cfg["products"][p.design.product]["audience"] == "kids" for p in pieces)
     uncalibrated = []
-    if palette.ready and kids and not allow_uncalibrated:
+    if palette.ready and not allow_uncalibrated:
         uncalibrated = [f"slot {s.slot} {s.filament.name}" for s in palette.ink_slots() if not s.marker_rgb]
     plates: list[Plate] = []
     slot_labels: dict[str, dict[str, str]] = {p.name: {} for p in pieces}
@@ -287,6 +267,66 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
 
 
+def _copies(cfg: dict, design: Design) -> list[Design]:
+    """Earrings come as a pair: identical, or the second mirrored."""
+    import copy
+
+    from shapely import affinity
+
+    prod = cfg["products"][design.product]
+    n = int(prod.get("copies", 1))
+    if n <= 1:
+        return [design]
+    base = design.name
+    out = []
+    for i in range(n):
+        d = copy.deepcopy(design)
+        d.name = f"{base}-{i + 1}"
+        if i and prod.get("pair_mode") == "mirrored":
+            d.outline = affinity.scale(d.outline, -1, 1, origin=(0, 0))
+            for ink in d.inks:
+                ink.geometry = affinity.scale(ink.geometry, -1, 1, origin=(0, 0))
+            d.fixes.append("mirror image of the first one")
+        out.append(d)
+    out[0].fixes.append(f"made as a pair: {base}-1 and {base}-2")
+    return out
+
+
+def _map_to_palette(cfg: dict, piece: Piece, palette: Palette) -> None:
+    """Head start only: give each color part the nearest loaded spool. Parts stay
+    separate even when two land on the same spool, and the preview says so."""
+    if not palette.ready:
+        return
+    pc = cfg["palette"]
+    thr = pc["off_palette_distance"] if palette.calibrated else pc["off_palette_distance_uncalibrated"]
+    inks = palette.ink_slots()
+    if not inks:
+        return
+    seen: dict[int, str] = {}
+    for part, rgb in piece.part_colors.items():
+        if part == piece.base_part:
+            continue
+        best = min(inks, key=lambda s: color_distance(rgb, s.reference_rgb))
+        dist = color_distance(rgb, best.reference_rgb)
+        short = part[len(piece.name) + 1:]
+        if dist > thr:
+            area = sum(i.geometry.area for i in piece.design.inks if i.name == short)
+            piece.part_off_palette[part] = {"color": short, "rgb": rgb, "nearest_slot": best.slot,
+                                            "nearest_name": spool_word(best.filament),
+                                            "distance": round(dist, 1), "area_mm2": round(area, 1),
+                                            "suggested": palette.suggest_spool(rgb)}
+            piece.part_slots[part] = None
+            piece.design.warnings.append(f"{short} doesn't match a loaded spool; set to the nearest, "
+                                         f"{best.filament.name} (slot {best.slot}). Change it in Bambu Studio if you like.")
+        else:
+            piece.part_slots[part] = best.slot
+        target = piece.part_slots[part] or best.slot
+        if target in seen and seen[target] != short:
+            piece.design.warnings.append(f"{seen[target]} and {short} are separate parts but both start as "
+                                         f"{best.filament.name}; change one in Bambu Studio if you like.")
+        seen.setdefault(target, short)
+
+
 def _set_base_slot(cfg: dict, piece: Piece, palette: Palette) -> None:
     if not palette.ready:
         return
@@ -330,7 +370,8 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
         "size_mm": [round(w, 2), round(h, 2), piece.thickness],
         "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
         "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
-        "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items() if k != "hole"},
+        "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()
+                       if k not in ("hole", "solid", "hole_solid")},
         "fixes": d.fixes,
         "warnings": d.warnings,
     }

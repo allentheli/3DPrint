@@ -13,10 +13,10 @@ def test_apply_fit_results_updates_values_and_keeps_comments(tmp_path):
     cfg = load_config(cfg_path)
     assert cfg["fit"]["clip_pocket_diameter"]["value"] == 11.8
     assert cfg["fit"]["keyring_hole_diameter"]["value"] == 4.5
-    assert cfg["fit"]["jump_ring_hole_diameter"]["value"] == 2.3
-    assert cfg["fit"]["magnet_pocket_diameter"]["value"] == 10.4
+    assert cfg["fit"]["earring_hole_diameter"]["value"] == 2.3
     assert cfg["fit"]["switch_cutout"]["value"] == 14.0
-    assert cfg["fit"]["stem_socket_clearance"]["value"] == 0.15
+    assert cfg["fit"]["stem_socket_clearance"]["value"] == 0.25
+    assert cfg["fit"]["necklace_hole_diameter"]["value"] == 3.0
     for g in cfg["fit"].values():
         assert g["tested"] is True
     after = cfg_path.read_text()

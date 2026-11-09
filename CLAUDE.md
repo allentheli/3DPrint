@@ -33,35 +33,28 @@ python -m charm_maker run <folder or files> --out output/<batch-name>
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
    For a drawing without card markers, pass `--product <key>` (keys are in `config.yaml`).
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
-3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded:
-   map it to the nearest loaded color, or print it on its own plate with a spool swap.
-   Never merge colors silently. Also ask once if the calibration card hasn't been scanned
-   for the loaded markers. The run does this for you: exit code 2, `QUESTION.md`, no plates.
-   Relay the question in plain words, then run again with his answer:
-   "nearest" is `--off-palette nearest`, "swap" is `--off-palette swap`, "go ahead" without
-   a scan is `--uncalibrated-ok`, and a per-card answer is `--map "clip-03 orange=Pink PLA"`.
+3. Ask only if a card is unreadable. Do not ask about colors: every distinct ink color is
+   its own named part in the 3MF, and Allen assigns spools in Bambu Studio. If loaded slots
+   are in config, parts start on the nearest loaded spool as a head start.
 4. Hand over the plate files (as downloads in a cloud session) and say, for each plate,
    which filament goes in which AMS slot, the layer height and the plate type.
-5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets),
-   rings (keychains, earrings, pendants), switch insertion (clickers).
+5. Remind him of finishing steps only when they apply: glue (clip pads, stud posts, magnets
+   on the flat back of figures), split rings (keychains), the hook or chain straight through
+   the loop (earrings, pendants), switch insertion (clickers).
 
-When Allen says he swapped a spool ("pink is in slot 3 now"):
+When Allen says he swapped a spool ("pink is in slot 3 now"): run
+`python -m charm_maker load 3 "Pink PLA"` (add `--color "#RRGGBB"` for a spool not in
+`filaments:`; `load 3 empty` for an empty slot) and commit `config.yaml`, because cloud
+sessions start fresh and the slots only survive in git.
 
-1. `python -m charm_maker load 3 "Pink PLA"` (add `--color "#RRGGBB"` for a spool not in
-   `filaments:`; `load 3 empty` for an empty slot). This clears that slot's calibration.
-2. `python -m charm_maker cards` and `python -m charm_maker chips`, and send him the new
-   `calibration-card.pdf` and `filament-chips.3mf`.
-3. Remind him to fill in and rescan the calibration card. Commit `config.yaml`: cloud
-   sessions start fresh, so the loaded slots and calibration only survive in git.
+Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
+figure (flat back, glued magnet), and earrings for adults (a pair, top loop with a sideways
+hole, or `style: stud` for a flat back). The clicker is not built yet: ask Allen for the
+switch brand or a photo first. A drawing without card markers needs `--product`.
 
-When a calibration card scan arrives (alone or in a batch), the run reads it and saves the
-marker colors into `config.yaml`. Run `python -m charm_maker slots` to show the result and
-commit `config.yaml`.
-
-Hair clips and keychains work today. Clicker, earrings, pendant and magnet figure
-products are in config but their attachments are not built yet (milestones 3 to 5).
-Until `loaded:` is filled in, kid ink is grouped by hue against a generic palette and
-extra colors are merged with a `check:` line; tell Allen that and get his spools first.
+Optional extras, only when Allen asks: the marker calibration card (`calibrate`), strict
+color checking (`run --ask-colors`, which stops with `QUESTION.md` and exit code 2), swap
+plates (`--off-palette swap`), and the filament chip plate (`chips`).
 
 ## Commands that exist today
 
@@ -80,14 +73,15 @@ extra colors are merged with a `check:` line; tell Allen that and get his spools
 
 ## When Allen reports fit-test results
 
-He will say something like "clip 2, keyring 5, jump ring 8, magnet 11, switch 14, stem 17".
+He will say something like "clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17".
 Run `python -m charm_maker fit-results 2 5 8 11 14 17`, show him the changed lines of
 `config.yaml`, commit, and move to the next milestone. If a group had no fit, add new
 candidates to that group's `candidates` in `config.yaml`, rebuild the plate, and send only
 the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
-7-9 jump-ring hole, 10-12 magnet pocket, 13-15 switch cutout, 16-18 stem socket.
+7-9 earring loop (sideways hole), 10-12 switch cutout, 13-15 stem socket,
+16-18 necklace loop (sideways hole).
 
 ## Reading the results
 
@@ -95,10 +89,10 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `QUESTION.md`: written instead of plates when something needs Allen's answer first.
+- `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
-  value, a color that isn't loaded, matching without calibration, fewer than 4 markers
-  found, a renamed duplicate card.
+  value, a color that starts on a spool that doesn't really match, two colors starting on
+  the same spool, more than 3 ink colors, fewer than 4 markers found, a renamed duplicate.
 
 Filament overrides in plain words ("card 3's pink should be Magenta") become
 `--map "clip-03 pink=Magenta"`; run again. Names are matched against the loaded spools

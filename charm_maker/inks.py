@@ -152,105 +152,110 @@ def _hue_name(hue: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Matching ink to the loaded palette
+# Color separation: every distinct ink color becomes its own part
 # ---------------------------------------------------------------------------
 
-@dataclass
-class Reference:
-    slot: int
-    name: str                      # short color word used in part names
-    rgb: tuple[int, int, int]      # photographed marker color, or the spool color
-
-
-def classify_to_palette(cfg: dict, bgr: np.ndarray, refs: list[Reference], *, calibrated: bool,
-                        px_per_mm: float, ignore: np.ndarray | None = None) -> InkResult:
-    """Give every ink pixel the loaded slot of its nearest marker. Patches of ink far
-    from every marker are colors that aren't loaded; they come back as their own
-    layers, flagged, never merged into a loaded color."""
-    from .palette import color_word, lab_distance
+def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors: int | None = None,
+                    ignore: np.ndarray | None = None) -> InkResult:
+    """Find the distinct ink colors in a drawing, whatever they are. Colors are told
+    apart mostly by hue, so streaky or pale fill of one marker stays one color while an
+    orange next to a yellow stays two. Patches smaller than a few mm² or thin fringes
+    between two inks are camera noise and join their neighbor."""
     from .filaments import _srgb_to_lab
+    from .palette import color_word, lab_distance
 
+    pr = cfg["process"]
     pc = cfg["palette"]
-    thr = pc["off_palette_distance"] if calibrated else pc["off_palette_distance_uncalibrated"]
+    thr = pr["color_merge_distance"]
     lw, cw = pc["lightness_weight"], pc["chroma_weight"]
-    min_area_px = pc["off_palette_min_area_mm2"] * px_per_mm ** 2
+    max_colors = max_colors or pr["max_ink_colors"]
+    min_area_px = pr["min_color_area_mm2"] * px_per_mm ** 2
 
     rgb = flatten_lighting(bgr)
     ink, _, _, _ = ink_mask(cfg, rgb, ignore)
-    notes: list[str] = []
-    if not calibrated:
-        notes.append("no calibration card scanned for these spools yet: ink matched to the spool colors")
     paper = rgb[~ink] if (~ink).any() else rgb.reshape(-1, 3)
     paper_rgb = tuple(int(v * 255) for v in np.median(paper.reshape(-1, 3), axis=0))
-    if not ink.any() or not refs:
+    notes: list[str] = []
+    if not ink.any():
         return InkResult([], paper_rgb, notes)
 
     idx = np.flatnonzero(ink.ravel())
     lab = _srgb_to_lab(rgb.reshape(-1, 3)[idx] * 255.0)
-    ref_lab = [_srgb_to_lab(np.asarray(r.rgb, dtype=np.float64)) for r in refs]
-    dist = np.stack([lab_distance(lab, rl, lw, cw) for rl in ref_lab])      # [n_ref, n_ink]
-    nearest = np.argmin(dist, axis=0)
-    dmin = dist[nearest, np.arange(len(idx))]
 
-    # Off-palette patches: far from every marker, and big enough to be drawn on purpose.
-    far = np.zeros(ink.shape, bool)
-    far.ravel()[idx[dmin > thr]] = True
-    r = max(1, int(round(0.3 * px_per_mm)))
-    far = cv2.morphologyEx(far.astype(np.uint8), cv2.MORPH_OPEN,
-                           cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))).astype(bool) & ink
-    n, labels, stats, _ = cv2.connectedComponentsWithStats(far.astype(np.uint8), connectivity=8)
-    off_components = [i for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= min_area_px]
-    off = np.isin(labels, off_components) if off_components else np.zeros(ink.shape, bool)
-
-    # Tiny loaded-color layers are fringe between two inks: hand them to the next nearest.
-    in_off = off.ravel()[idx]
-    for _ in range(len(refs)):
-        counts = np.bincount(nearest[~in_off], minlength=len(refs))
-        tiny = [i for i in range(len(refs)) if 0 < counts[i] < min_area_px]
-        if not tiny:
+    # Seeds: the most common colors, each far enough from the ones already taken.
+    q = np.floor(lab / np.array([6.0, 6.0, 6.0])).astype(np.int32)
+    keys, inverse, counts = np.unique(q, axis=0, return_inverse=True, return_counts=True)
+    inverse = inverse.ravel()
+    order = np.argsort(-counts)
+    seeds: list[np.ndarray] = []
+    for k in order:
+        if counts[k] < 0.3 * min_area_px:
             break
-        for i in tiny:
-            dist[i] = np.inf
-        nearest = np.argmin(dist, axis=0)
+        center = lab[inverse == k].mean(axis=0)
+        if all(float(lab_distance(center[None, :], sd, lw, cw)[0]) > thr for sd in seeds):
+            seeds.append(center)
+        if len(seeds) >= 12:
+            break
+    if not seeds:
+        seeds = [lab.mean(axis=0)]
 
-    layers: list[InkLayer] = []
+    def assign(seed_list):
+        dist = np.stack([lab_distance(lab, sd, lw, cw) for sd in seed_list])
+        return dist, np.argmin(dist, axis=0)
+
+    # Two refinement rounds: move each seed to the middle of its pixels.
+    for _ in range(2):
+        dist, near = assign(seeds)
+        seeds = [np.median(lab[near == i], axis=0) if (near == i).any() else seeds[i] for i in range(len(seeds))]
+    dist, near = assign(seeds)
+
+    # Drop colors that are only fringe: too small, or nothing left after a 0.3 mm opening.
+    r = max(1, int(round(0.3 * px_per_mm)))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+    alive = list(range(len(seeds)))
+    changed = True
+    while changed and len(alive) > 1:
+        changed = False
+        for i in list(alive):
+            mask = np.zeros(ink.shape, np.uint8)
+            mask.ravel()[idx[near == i]] = 1
+            solid = int(cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel).sum())
+            if solid < min_area_px:
+                alive.remove(i)
+                dist[i] = np.inf
+                near = np.argmin(dist, axis=0)
+                changed = True
+                break
+
+    # More colors than one AMS can hold: merge the smallest into its nearest, and say so.
+    sizes = {i: int((near == i).sum()) for i in alive}
+    while len(alive) > max_colors:
+        small = min(alive, key=lambda i: sizes[i])
+        alive.remove(small)
+        word = color_word(tuple(int(v) for v in _lab_to_rgb(seeds[small])))
+        dist[small] = np.inf
+        near = np.argmin(dist, axis=0)
+        sizes = {i: int((near == i).sum()) for i in alive}
+        notes.append(f"more than {max_colors} colors: {word} merged into the nearest color")
+
     flat_rgb = rgb.reshape(-1, 3)
-    words = [r.name for r in refs]
-    for i, ref in enumerate(refs):
-        sel = idx[(nearest == i) & ~in_off]
+    layers: list[InkLayer] = []
+    used: dict[str, int] = {}
+    for i in sorted(alive, key=lambda i: float(np.median(lab[near == i][:, 0])) if (near == i).any() else 0):
+        sel = idx[near == i]
         if sel.size == 0:
             continue
         mask = np.zeros(ink.shape, bool)
         mask.ravel()[sel] = True
         rep = tuple(int(v) for v in np.median(flat_rgb[sel] * 255, axis=0))
-        name = ref.name if words.count(ref.name) == 1 else f"{ref.name} slot {ref.slot}"
-        layers.append(InkLayer(name, rep, mask, None, int(sel.size), slot=ref.slot))
-
-    # Group off-palette patches that are the same color.
-    groups: list[dict] = []
-    for comp in off_components:
-        sel = np.flatnonzero((labels == comp).ravel())
-        med = np.median(flat_rgb[sel] * 255, axis=0)
-        med_lab = _srgb_to_lab(med)
-        for g in groups:
-            if float(lab_distance(med_lab[None, :], g["lab"], lw, cw)[0]) <= thr:
-                g["sel"].append(sel)
-                break
-        else:
-            groups.append({"lab": med_lab, "rgb": med, "sel": [sel]})
-    used = {l.name for l in layers}
-    for g in groups:
-        sel = np.concatenate(g["sel"])
-        rep = tuple(int(v) for v in np.median(flat_rgb[sel] * 255, axis=0))
         word = color_word(rep)
-        name = word if word not in used else f"{word} 2"
-        used.add(name)
-        rep_lab = _srgb_to_lab(np.asarray(rep, dtype=np.float64))
-        d = [float(lab_distance(rep_lab[None, :], rl, lw, cw)[0]) for rl in ref_lab]
-        j = int(np.argmin(d))
-        mask = np.zeros(ink.shape, bool)
-        mask.ravel()[sel] = True
-        info = {"color": word, "rgb": rep, "nearest_slot": refs[j].slot, "nearest_name": refs[j].name,
-                "distance": round(d[j], 1), "area_mm2": round(sel.size / px_per_mm ** 2, 1)}
-        layers.append(InkLayer(name, rep, mask, None, int(sel.size), slot=None, off_palette=info))
+        used[word] = used.get(word, 0) + 1
+        name = word if used[word] == 1 else f"{word} {used[word]}"
+        layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
     return InkResult(layers, paper_rgb, notes)
+
+
+def _lab_to_rgb(lab: np.ndarray) -> np.ndarray:
+    from skimage.color import lab2rgb
+
+    return np.clip(lab2rgb(np.asarray(lab, dtype=np.float64)[None, None, :])[0, 0] * 255, 0, 255)

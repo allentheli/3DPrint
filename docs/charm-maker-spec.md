@@ -1,6 +1,8 @@
 # Charm Maker: build instructions for Claude Code
 
-Last updated: November 9, 2026 (kids' palette is the colors loaded in the printer: sections 6, 7, 8, 9, 10, 11)
+Last updated: November 9, 2026. Simplified: every product for everyone (earrings for adults), sideways loops for pendants and earrings, glued-on magnets, and colors kept as separate parts that Allen assigns in Bambu Studio.
+
+**The one thing that matters most:** turn a drawing, consistently, into a print file that fits a hair clip, keychain, clicker keychain, magnet figure or necklace, and for adults also earrings. Everything else is secondary.
 
 You are building a small tool that turns a photo of a hand drawing into a ready-to-print file for Allen's Bambu Lab X2D with AMS. Read this whole file before writing code.
 
@@ -10,13 +12,13 @@ Kids (and adults) draw on printed design cards. Allen takes a photo of each card
 
 | Product | Made by | What it is |
 | --- | --- | --- |
-| Hair clip charm | Kids | A flat charm glued onto a hair clip's round pad |
-| Keychain | Kids | A flat charm with a ring tab |
-| Clicker keychain | Kids | A small case holding a clicky keyboard switch, with the kid's design as the keycap, and a ring tab |
-| Magnet figure | Kids | A flat character with a magnet glued into the back. It goes on the fridge or stands up on the universal stand |
+| Hair clip charm | Anyone | A flat charm glued onto a hair clip's round pad |
+| Keychain | Anyone | A flat charm with a ring tab |
+| Clicker keychain | Anyone | A small case holding a clicky keyboard switch, with the design as the keycap, and a ring tab |
+| Magnet figure | Anyone | A flat character with a magnet glued onto its flat back. It goes on the fridge or stands up on the universal stand |
 | Figure stand | (no drawing) | One stand design that holds any magnet figure |
-| Earrings | Adults | A matching pair of light flat charms with a jump-ring hole or a flat back for stud posts |
-| Necklace pendant | Adults | A flat charm with a bail hole |
+| Necklace pendant | Anyone | A flat charm with a loop on top; the chain goes through it left to right |
+| Earrings | Adults | A matching pair of light flat charms with a loop on top for the hook (left to right), or a flat back for stud posts |
 
 First use: a design party for four girls aged 5 and 8 (two families), with the parents making earrings and pendants. The tool should keep working for later parties and one-off drawings.
 
@@ -55,9 +57,16 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 | Hair clip charm | 14 to 25 mm | 2.4 mm | Round pocket on the back for the clip pad* | 1 |
 | Keychain | 35 to 55 mm | 3.2 mm | Ring tab with a 5 mm hole* | 1 |
 | Clicker keychain | Keycap top 16 to 22 mm | See below | Switch case with ring tab | 1 |
-| Magnet figure | 30 to 55 mm | About 3.2 mm | Recessed magnet pocket on the back* | 1 |
-| Earrings | 15 to 35 mm | 1.8 mm | 2.0 mm jump-ring hole*, or a flat back for glue-on studs | 2 |
-| Pendant | 25 to 45 mm | 2.6 mm | 3.5 mm bail hole* | 1 |
+| Magnet figure | 30 to 55 mm | About 3.2 mm | Flat back; the magnet is glued on | 1 |
+| Earrings | 15 to 35 mm | 1.8 mm | Top loop with a 2.0 mm hole running left to right*, or a flat back for glue-on studs | 2 |
+| Pendant | 25 to 45 mm | 2.6 mm | Top loop with a 3.5 mm hole running left to right* | 1 |
+
+### Loops for pendants and earrings
+
+- The hole runs left to right, parallel to the face, so the chain or the earring hook goes straight through and the piece hangs facing forward. No jump ring needed.
+- The loop sits on top, above the piece's balance point (not on its highest bump), so it hangs straight. It bridges a dip such as the top of a heart.
+- The loop's front is flush with the face; it stands taller than the charm on the back, because the hole needs plastic all around it. The hole is a flat-topped teardrop so it prints face-down without supports.
+- The loop never covers the colors on the front face. Nothing within 3 mm either side may stand above the hole, so the chain passes freely.
 
 ### Hair clip charm
 
@@ -87,13 +96,8 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 
 The same figure lives on the fridge or stands up on the universal stand.
 
-- Allen glues the magnets in after printing. No sealed magnets and no print pauses; do not add them unless Allen asks.
-- Each figure gets an open, recessed round pocket on the back for one 10 × 2 mm disc magnet, or two for figures over 45 mm. The pocket is snug (diameter set by the fit test) and slightly shallower than the magnet (start at 1.9 mm deep), so the magnet sits a hair proud and touches the fridge directly. A recess holds glue far better than a flat back.
-- At least 1.2 mm of plastic behind the pocket bottom (the 0.6 mm color face plus base), so the figure is about 3.2 mm thick.
-- At least 1.2 mm of wall all around the pocket. Never put a magnet on a flat back.
-- The figure's bottom is its lowest point as drawn on the card. Place the magnet at a standard height above the bottom (start at 12 mm) so it lines up with the stand. If the shape cannot fit the pocket there, use the nearest spot that fits and flag it in the preview.
-- The pockets face up while printing, so magnet figures can share plates with other face-down pieces.
-- Print notes remind Allen to glue the magnets in with gel super glue, and to switch to two-part epoxy if any pop out.
+- A plain flat back. Allen glues a 10 × 2 mm disc magnet onto it after printing. No pockets, no sealed magnets, no print pauses.
+- Print notes say to glue it about 12 mm above the figure's bottom, so it lines up with the washer in the stand, with gel super glue (two-part epoxy if it pops off).
 
 ### Figure stand
 
@@ -103,13 +107,13 @@ The same figure lives on the fridge or stands up on the universal stand.
 
 ### Earrings
 
-- Always a pair on the same plate. Identical by default; a mirrored option; or two different drawings from the earring card's two boxes.
-- Two styles: hook (2.0 mm hole near the top for a jump ring, at least 1.5 mm of wall) or stud (no hole, flat back, with an optional shallow pocket for a glue-on post pad).
+- For adults. Always a pair on the same plate from one drawing: identical by default, or the second one mirrored (setting).
+- Two styles: hook (the top loop above, with a 2.0 mm hole running left to right) or stud (no loop, flat back for a glue-on post).
 - Keep them light: 1.8 mm thick and 35 mm at most.
 
 ### Pendant
 
-- A 3.5 mm bail hole near the top, or a small loop tab like the keychain's (setting).
+- The top loop above, with a 3.5 mm hole running left to right for the chain.
 
 ## 6. Design cards (you generate these)
 
@@ -124,13 +128,12 @@ You generate the printable cards, so the markers on the cards always match what 
   - Keychain: a box with a small ring picture just outside the top edge showing where the ring goes.
   - Clicker: a rounded square box the size of the keycap.
   - Magnet figure: a box with a light "ground line" near the bottom labeled "stand here."
-  - Earrings: two boxes side by side.
-  - Pendant: a box with a small bail picture at the top.
-- Picture rules on every kid card, each with a small picture: "Use the colors in the printer" (a small printer), "Big and bold," "Color it in." Kids draw only with the markers that match the loaded spools (section 8), so kid cards carry no color-count rule.
+  - Earrings: one box; the drawing becomes a matching pair.
+  - Pendant: a box with a small loop picture at the top.
+- Picture rules on every card, each with a small picture: "Use the colors in the printer" (a small printer), "Big and bold," "Color it in." The same cards serve kids and adults.
 - A name line outside the drawing box. Do not read the name with OCR. Just crop that area into the preview so Allen can match pieces to kids.
 - **Half-drawn cards** for the younger kids: the same cards with a simple outline pre-printed in black (a cloud, a heart, a cat head, a star, a bow). The reader treats the printed black outline as ink, so the outline is part of the kid's design.
-- **Marker calibration card:** generated from the loaded slots in config (section 8). Same corner markers as the other cards, and one box per loaded filament, labeled with its slot number and spool name. Allen fills each box solid with the marker that matches that spool and scans the card. The reader stores each marker's photographed color with its slot and from then on reads kid ink by the nearest calibrated marker. Allen rescans it whenever he changes spools or markers. The white base spool gets no box, because white is the paper.
-- Adult cards allow up to 3 colors plus black.
+- **Marker calibration card (optional):** generated from the loaded slots in config (section 8). Same corner markers as the other cards, and one box per loaded filament, labeled with its slot number and spool name. Allen fills each box solid with the marker that matches that spool and scans the card. The reader stores each marker's photographed color with its slot and from then on reads kid ink by the nearest calibrated marker. Allen rescans it whenever he changes spools or markers. The white base spool gets no box, because white is the paper.
 
 ### Other inputs to accept
 
@@ -142,11 +145,11 @@ You generate the printable cards, so the markers on the cards always match what 
 
 1. **Read the card:** find the markers, straighten and crop the photo, get the exact scale, read the card type and number. If the markers are not found, use the fallback above.
 2. **Clean:** even out lighting and shadows, then remove the paper and the printed guides.
-3. **Separate the inks:** on kid cards, match every inked pixel to the nearest calibrated marker color from the calibration card, so each ink lands on a loaded slot. Ink far from every calibrated marker is a color that isn't loaded: handle it with the off-palette rule (section 8), never merge it silently. Adult cards group the colored pixels by hue, up to 3 colors plus black. Paper areas inside the outline become the base color.
+3. **Separate the inks:** every distinct ink color in the drawing becomes its own part, so the file shows the color separation. Colors are told apart mostly by hue: a streaky fill of one marker stays one color, an orange next to a yellow stays two. Up to 3 ink colors plus the white base (one AMS); a fourth merges into its nearest and the preview says so. Paper areas inside the outline become the base color.
 4. **Shape:** the outer edge of all the ink, filled in, is the piece's outline.
 5. **Fix for printing**, and log every fix for the preview:
    - Ink areas narrower than 1.0 mm at real size get thickened. Specks smaller than about 1 square mm are removed. Tiny holes are filled.
-   - The outline gets a border, 1.5 mm by default, in the base color, like the white edge on a die-cut sticker. It joins separate pieces into one and protects thin bits like whiskers and sun rays. On by default for kid cards, off by default for adult cards.
+   - The outline gets a border, 1.5 mm by default, in the base color, like the white edge on a die-cut sticker. It joins separate pieces into one and protects thin bits like whiskers and sun rays. On by default for everyone; a setting turns it off.
    - Any outer feature still narrower than 2 mm gets smoothed into the border.
    - Sharp outer corners are rounded slightly (0.5 mm).
 6. **Build the solid:** the front 0.6 mm holds the colors side by side, flush. Everything behind it is the base color. Then add the product's attachment (clip pocket, magnet pocket, tab or hole), or for the clicker, the keycap and the case.
@@ -160,13 +163,10 @@ You generate the printable cards, so the markers on the cards always match what 
 
 ## 8. Colors and plates
 
-- **Spool list** in config: name and color code for each spool Allen owns. He fills it in once.
-- **Loaded slots** in config: which spool is in which AMS slot right now. Allen says swaps in plain words ("pink is in slot 3 now"). Update config, regenerate the calibration card and the chip plate, and remind him to rescan the calibration card.
-- **The kids' palette is the loaded colors.** The table holds one broad-tip marker per loaded color and nothing else, so every marker matches a loaded spool and a batch normally fits one plate with no spool swaps.
-- Map each ink to its loaded slot through the calibration card and show the mapping in the preview. Allen can override it in plain words ("card 3's pink should be Magenta").
-- **Off-palette colors:** if a drawing uses a color that isn't loaded, ask Allen once per batch, listing every card and color affected: map it to the nearest loaded color, or print those designs on their own plate with a spool swap. Never merge silently. For a swap, the print notes say which slot gets which spool, and what goes back afterwards.
-- **Filament chips:** a plate with one small chip per loaded filament, which Allen prints live as the kids' printer tour before they design. Each chip is a thin flat tag in a single filament with its slot number cut into the face. Keep the plate under about 15 minutes: set Print sequence to By object so the AMS swaps once between chips instead of on every layer. Bambu Studio's time estimate decides; shrink the chips if it runs over. Regenerate the plate whenever the loaded slots change.
-- **Plate planner:** pack many designs onto each plate, at most N filaments per plate (setting, default 4, one AMS). With the loaded palette a batch normally needs one plate until it is full. Separate plates come only from off-palette swaps or different layer heights. Because the colors sit only in the first few layers, a full plate costs little extra purge.
+- **Color is Allen's call in Bambu Studio.** The file's job is to keep each color a separate, clearly named part ("clip-03 black", "clip-03 pink"). He assigns spools in Bambu Studio afterwards. The run never stops to ask about colors.
+- **Loaded slots (optional head start):** config can record which spool is in which AMS slot. When it does, each color part starts on the nearest loaded spool, and the preview says when two parts start on the same spool. Allen can also override in plain words ("card 3's pink should be Magenta").
+- **Optional extras, off the main path:** the marker calibration card (sharper matching), a strict mode that stops and asks about colors that aren't loaded, swap plates for spools that aren't loaded, and the filament chip plate for a printer tour.
+- **Plate planner:** pack many designs onto each plate, at most N filaments per plate (setting, default 4, one AMS). Because the colors sit only in the first few layers, a full plate costs little extra purge.
 - **Orientation:** design pieces face-down (including magnet figures); clicker cases upright; keycaps face-down with the socket up; stands in whatever orientation needs no supports. Give clicker cases and stands their own plates if their best layer heights differ from the charms'.
 - **Print notes** with every output: suggested layer height (0.12 mm for charms, figures and earrings, 0.2 mm for clicker cases and stands), and plate choice (the smooth plate gives a glossy face, the textured plate a matte, sparkly face).
 
@@ -174,7 +174,7 @@ You generate the printable cards, so the markers on the cards always match what 
 
 Finish and show each milestone before starting the next. Each ends with something Allen can print or hold.
 
-**Milestone 0: fit test.** One small single-color plate with numbered test pieces: discs with the three clip pocket sizes, three keyring hole sizes, three jump-ring hole sizes, three magnet pocket sizes, three MX switch cutout coupons with the 1.5 mm plate, three keycap stem sockets, and one figure stand with its washer recess. Give Allen numbered steps: print it, then try the real clip pad, a switch, a keycap stem test, a split ring, a jump ring, and a magnet glued into the best pocket (checked on the fridge and on the stand with a washer). He reports which numbers fit, and you write the results into config. Done when config holds tested values.
+**Milestone 0: fit test.** One small single-color plate with numbered test pieces: coupons with the three clip pocket sizes, three keyring hole sizes, three earring loops (sideways holes), three MX switch cutout coupons with the 1.5 mm plate, three keycap stem sockets, three necklace loops (sideways holes), and one figure stand with its washer recess. Give Allen numbered steps: print it, then try the real clip pad, a switch, a keycap stem test, a split ring, an earring hook, a necklace chain, and a magnet glued onto a coupon (checked on the fridge and on the stand with a washer). He reports which numbers fit, and you write the results into config. Done when config holds tested values.
 
 **Milestone 1: cards, hair clips and keychains.** The card PDF (clip and keychain cards first), the reader, the full pipeline, previews and 3MF export. Done when Allen scans a test card with the iPhone Notes document scanner, uploads it, gets a file that opens in Bambu Studio and prints, and the charm sits on the real clip.
 
@@ -182,9 +182,9 @@ Finish and show each milestone before starting the next. Each ends with somethin
 
 **Milestone 3: clicker.** Case, keycap and the glue-on fallback. Done when a real switch snaps in, clicks freely, and the keycap stays on.
 
-**Milestone 4: adults.** Earring and pendant cards, adult color limits, PNG and SVG input, and the text mode. Done when an iPad drawing becomes a printed earring pair.
+**Milestone 4: adults.** PNG and SVG input and the text mode (earring and pendant cards are already built). Done when an iPad drawing becomes a printed earring pair.
 
-**Milestone 5: magnet figures and the stand.** The figure card, the magnet pocket, the stand, and the print notes. Done when a printed figure with a glued magnet holds on the fridge and stands on the stand. Ask Allen whether magnet figures are needed for the party; if yes, build this right after milestone 2.
+**Milestone 5: magnet figures and the stand.** The figure card (built: flat back, glued magnet), the stand, and the print notes. Done when a printed figure with a glued magnet holds on the fridge and stands on the stand. Ask Allen whether magnet figures are needed for the party; if yes, build this right after milestone 2.
 
 If Allen gives a party date, reorder to fit it. The party needs milestones 0 to 2 at minimum.
 
@@ -194,19 +194,19 @@ When Allen uploads photos or images:
 
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
-3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded: map it to the nearest loaded color, or print it on its own plate with a spool swap. Never merge colors silently. Also ask once if the calibration card hasn't been scanned for the loaded markers: scan it, or go ahead matching to spool colors.
+3. Ask only if a card is unreadable. Do not ask about colors: every color is its own part, and Allen assigns spools in Bambu Studio.
 4. Hand over the plate files and say, for each plate, which filament goes in which AMS slot, the layer height and the plate type.
-5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets), rings (keychains, earrings, pendants), switch insertion (clickers).
+5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets), rings (keychains), hooks and chains straight through the loop (earrings, pendants), switch insertion (clickers).
 
-When Allen says he swapped a spool ("pink is in slot 3 now"): update the loaded slots in config, regenerate the calibration card and the chip plate, and remind him to rescan the calibration card.
+When Allen says he swapped a spool ("pink is in slot 3 now"): update the loaded slots in config.
 
 ## 11. For Allen: things to have on hand
 
 - **Glue:** gel super glue for magnets and clips, E6000 as an alternative for the clip pads, and optionally two-part epoxy for magnets that pop out. Test on the clip pad first; some plastics resist glue, and a light scuff with sandpaper helps. Glue in a ventilated room, adults only, and let it cure fully (E6000 needs about a day) before kids use the pieces.
-- **Rings and findings:** 25 mm split key rings, small jump rings, earring hooks, glue-on stud posts with flat pads (hypoallergenic metal), necklace chains or cord.
-- **Magnets and washers:** 10 × 2 mm neodymium disc magnets; 1-inch zinc-plated steel fender washers for the stands. Many stainless steel washers are not magnetic.
+- **Rings and findings:** 25 mm split key rings, earring hooks, glue-on stud posts with flat pads (hypoallergenic metal), necklace chains or cord thin enough to pass a 3.5 mm hole.
+- **Magnets and washers:** 10 × 2 mm neodymium disc magnets, glued onto the flat back; 1-inch zinc-plated steel fender washers for the stands. Many stainless steel washers are not magnetic.
 - **Switches:** the blue clicky switches (have).
-- **Markers:** one broad-tip marker per loaded color, the closest match you can find to each spool. No other markers on the table. White needs no marker: it is the paper.
+- **Markers:** broad-tip markers, ideally one per loaded color so prints look like the drawings. White needs no marker: it is the paper.
 - **Optional:** a cheap digital caliper makes the fit tests and pad measurement easier.
 - **Safety:** glued charms and magnets are small parts. Check every glue joint before handing a piece over, and keep any magnet that pops loose away from young children.
 

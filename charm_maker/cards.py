@@ -325,9 +325,7 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
 
 
 def _draw_rules(pdf, cfg: dict, lay: CardLayout):
-    if cfg["products"][lay.product]["audience"] == "kids":
-        return _draw_kid_rules(pdf, cfg, lay)
-    return _draw_adult_rules(pdf, cfg, lay)
+    return _draw_kid_rules(pdf, cfg, lay)
 
 
 def _draw_kid_rules(pdf, cfg: dict, lay: CardLayout):
@@ -371,58 +369,6 @@ def _draw_kid_rules(pdf, cfg: dict, lay: CardLayout):
     pdf.setFillColorRGB(0, 0, 0)
     pdf.setLineWidth(0.3 * mm)
     pdf.drawString(x2 * mm, (y - 3) * mm, "Color it in")
-
-
-def _draw_adult_rules(pdf, cfg: dict, lay: CardLayout):
-    """Three small pictures: fat marker, black + colors, no pencil or crayon."""
-    from reportlab.lib.units import mm
-
-    c = cfg["cards"]
-    audience = cfg["products"][lay.product]["audience"]
-    y = c["name_box"][1] - 16
-    x0 = c["margin"] + 8
-    pdf.setFont("Helvetica", 8)
-    pdf.setFillColorRGB(0, 0, 0)
-    pdf.setStrokeColorRGB(0, 0, 0)
-
-    # 1. Fat marker: a marker body with a thick stroke coming out of it.
-    pdf.setLineWidth(0.4 * mm)
-    pdf.roundRect(x0 * mm, (y + 2) * mm, 18 * mm, 5 * mm, 1 * mm, stroke=1, fill=0)
-    pdf.rect((x0 + 18) * mm, (y + 3) * mm, 4 * mm, 3 * mm, stroke=1, fill=1)
-    pdf.setLineWidth(3.5 * mm)
-    pdf.line((x0 + 24) * mm, (y + 4.5) * mm, (x0 + 40) * mm, (y + 4.5) * mm)
-    pdf.setLineWidth(0.3 * mm)
-    pdf.drawString(x0 * mm, (y - 2.5) * mm, "fat marker, press hard")
-
-    # 2. Black + colors.
-    x1 = x0 + 55
-    pdf.rect(x1 * mm, (y + 1) * mm, 8 * mm, 8 * mm, stroke=1, fill=1)
-    pdf.setFont("Helvetica-Bold", 12)
-    pdf.drawString((x1 + 10) * mm, (y + 2.5) * mm, "+")
-    ncolors = cfg["process"]["kid_card_max_colors"] if audience == "kids" else cfg["process"]["adult_card_max_colors"]
-    swatches = [(0.95, 0.3, 0.5), (0.2, 0.5, 0.95), (0.3, 0.75, 0.3)][:ncolors]
-    for i, col in enumerate(swatches):
-        pdf.setFillColorRGB(*col)
-        pdf.rect((x1 + 16 + i * 10) * mm, (y + 1) * mm, 8 * mm, 8 * mm, stroke=1, fill=1)
-    pdf.setFillColorRGB(0, 0, 0)
-    pdf.setFont("Helvetica", 8)
-    label = "black + 1 color" if ncolors == 1 else f"black + up to {ncolors} colors"
-    pdf.drawString(x1 * mm, (y - 2.5) * mm, label)
-
-    # 3. No pencil, no crayon: a pencil and a crayon with a cross through them.
-    x2 = x1 + 55
-    pdf.setLineWidth(0.4 * mm)
-    pdf.rect(x2 * mm, (y + 5.5) * mm, 16 * mm, 2.5 * mm, stroke=1, fill=0)          # pencil body
-    pdf.line((x2 + 16) * mm, (y + 5.5) * mm, (x2 + 20) * mm, (y + 6.75) * mm)       # tip
-    pdf.line((x2 + 16) * mm, (y + 8) * mm, (x2 + 20) * mm, (y + 6.75) * mm)
-    pdf.roundRect(x2 * mm, (y + 1) * mm, 18 * mm, 3 * mm, 1.2 * mm, stroke=1, fill=0)   # crayon
-    pdf.setStrokeColorRGB(0.85, 0.1, 0.1)
-    pdf.setLineWidth(0.9 * mm)
-    pdf.line((x2 - 1) * mm, (y - 0.5) * mm, (x2 + 21) * mm, (y + 9.5) * mm)
-    pdf.line((x2 - 1) * mm, (y + 9.5) * mm, (x2 + 21) * mm, (y - 0.5) * mm)
-    pdf.setStrokeColorRGB(0, 0, 0)
-    pdf.setLineWidth(0.3 * mm)
-    pdf.drawString(x2 * mm, (y - 2.5) * mm, "no pencil, no crayon")
 
 
 def write_calibration_pdf(cfg: dict, palette, out_path: Path, number: int = 1) -> Path:

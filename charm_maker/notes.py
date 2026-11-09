@@ -11,9 +11,9 @@ FINISHING = {
     "hair_clip": "Hair clips: scuff the clip pad lightly, then glue the charm's pocket onto the pad with gel super glue or E6000. Let it cure fully before handing it out.",
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
     "clicker": "Clickers: press the switch into the case from the top until it clicks, then push the keycap onto the stem.",
-    "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet into each pocket with gel super glue (two-part epoxy if any pop out).",
-    "earrings": "Earrings: hook style gets a jump ring and hook; stud style gets a glue-on post pad.",
-    "pendant": "Pendants: thread a jump ring or bail through the hole, then the chain or cord.",
+    "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
+    "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
+    "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
 }
 
 

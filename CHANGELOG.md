@@ -1,5 +1,14 @@
 # Changelog
 
+## Simplified, plus pendant, earrings and magnet figures (2026-11-09)
+
+- Every distinct ink color becomes its own named part; the run never stops to ask about colors. Loaded slots, if set, give each part a starting spool. Calibration card, strict mode (`--ask-colors`), swap plates and chips are optional.
+- Necklace pendants and earrings: a loop on top with the hole running left to right, above the balance point, flush with the face, support-free. Earrings come as a pair (identical or mirrored) or as studs.
+- Magnet figures: flat back for a glued-on magnet.
+- Products are for everyone (earrings for adults); one set of cards for all.
+- Fit test: sideways earring and necklace loops replace the jump-ring holes and magnet pockets.
+- 11 new tests, including that loop holes run left to right, never front to back, sit over the balance point and leave the face colors clear.
+
 ## Milestone 2: party batch and loaded palette (2026-11-09)
 
 - Loaded AMS slots in `config.yaml`, with `load` and `slots` commands; spool swaps in plain words become one command.

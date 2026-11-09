@@ -44,6 +44,8 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
+    if attachment == "side_loop" and prod.get("style") == "stud":
+        attachment = None            # stud earrings: flat back, glue-on post
     info: dict = {}
     holes = []   # 2D shapes removed from every part through the full thickness
 
@@ -52,8 +54,13 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
     elif attachment == "ring_tab":
         info = _add_ring_tab(cfg, design, tab_position or prod.get("tab_position", "top"))
         holes.append(info["hole"])
+    elif attachment == "side_loop":
+        info = _add_side_loop(cfg, design, prod["loop"])
+    elif attachment == "flat_back":
+        info = {"kind": "flat_back"}
     elif attachment is None:
-        pass
+        if prod.get("style") == "stud":
+            design.fixes.append("stud style: flat back for a glue-on post")
     else:
         raise NotImplementedError(f"attachment {attachment} is not built yet")
 
@@ -72,6 +79,8 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
     colors: dict[str, tuple[int, int, int]] = {}
     ink_union = unary_union([ink.geometry for ink in design.inks]) if design.inks else None
     base = extrude(design.outline, t)
+    if attachment == "side_loop":
+        base = (base + info["solid"]) - info["hole_solid"]
     if ink_union is not None and not ink_union.is_empty:
         base = base - extrude(ink_union, face + 1.0, -1.0)
     if attachment == "clip_pocket":
@@ -168,3 +177,77 @@ def _add_ring_tab(cfg: dict, design: Design, position: str) -> dict:
     design.fixes.append(f"ring tab added at the {position} with a {hole_d} mm hole")
     return {"kind": "ring_tab", "hole": hole, "hole_center": (float(hc[0]), float(hc[1])),
             "hole_diameter": hole_d, "position": position}
+
+
+# ---------------------------------------------------------------------------
+# Side loop for pendants and earrings: the hole runs left to right
+# ---------------------------------------------------------------------------
+
+def _xsection_along_x(section, length: float, x0: float) -> m3d.Manifold:
+    """Extrude a shape drawn in (world Y, world Z) along world X, from x0 to x0 + length."""
+    from .geom import to_cross_section
+    import numpy as np
+
+    solid = m3d.Manifold.extrude(to_cross_section(section), length)
+    # (u, v, w) -> (x = w + x0, y = u, z = v)
+    return solid.transform(np.array([[0, 0, 1, x0], [1, 0, 0, 0], [0, 1, 0, 0]], dtype=float))
+
+
+def _add_side_loop(cfg: dict, design: Design, kind: str) -> dict:
+    """A loop on top whose hole runs left to right, parallel to the face, so a chain or
+    earring hook goes straight through and the piece hangs facing forward. The loop's
+    front is flush with the face (on the bed); it stands taller than the charm on the
+    back. The hole is a flat-topped teardrop so it prints without supports."""
+    from .geom import teardrop
+
+    hw = cfg["hardware"]
+    loop = hw[f"{kind}_loop"]
+    fit = cfg["fit"][f"{kind}_hole_diameter"]
+    d = float(fit["value"])
+    if not fit["tested"]:
+        design.warnings.append(f"{kind} hole {d} mm is not from a fit test yet")
+    r = d / 2.0
+    wall = loop["wall"]
+    R = r + wall
+    L = loop["length"]
+    overlap, gap = hw["loop_overlap"], hw["loop_gap"]
+
+    shape = design.outline
+    minx, miny, maxx, maxy = shape.bounds
+    # A hanging piece turns until its weight is right under the hole, so the loop goes
+    # above the balance point (the centroid), not on the highest bump.
+    x_c = float(shape.centroid.x)
+
+    def top_at(x):
+        cut = LineString([(x, miny - 1), (x, maxy + 1)]).intersection(shape)
+        return None if cut.is_empty else cut.bounds[3]
+
+    import numpy as np
+
+    tops = [t for t in (top_at(x) for x in np.linspace(x_c - L / 2, x_c + L / 2, 15)) if t is not None]
+    if not tops:
+        raise ValueError("could not find the top of the drawing above its balance point")
+    y_low = min(tops)                     # e.g. the dip of a heart
+    # Nothing within 3 mm either side of the loop may stand above the hole, so the chain passes.
+    clear = 3.0
+    side = [t for t in (top_at(x) for x in np.linspace(x_c - L / 2 - clear, x_c + L / 2 + clear, 31)) if t is not None]
+    y_c = max(side) + gap + r
+
+    # Cross-section in (y, z): flat bottom on the bed, round top, hole through the middle.
+    # The post reaches down into the drawing so it bridges a dip.
+    section = unary_union([
+        box(y_low - overlap, 0.0, y_c, 2 * R),
+        box(y_c, 0.0, y_c + R, R),
+        Point(y_c, R).buffer(R, quad_segs=24),
+    ])
+    hole = teardrop(d, y_c, R).intersection(box(y_c - R, R - R, y_c + R, R + 1.15 * r))
+    solid = _xsection_along_x(section, L, x_c - L / 2)
+    hole_solid = _xsection_along_x(hole, L + 2.0, x_c - L / 2 - 1.0)
+
+    footprint = box(x_c - L / 2, y_low - overlap, x_c + L / 2, y_c + R)
+    merged = unary_union([shape, footprint]).buffer(0.8, join_style="round").buffer(-0.8, join_style="round")
+    design.outline = Polygon(max(_as_multi(merged).geoms, key=lambda g: g.area).exterior)
+    word = "chain" if kind == "necklace" else "hook"
+    design.fixes.append(f"loop added on top with a {d} mm hole running left to right for the {word}")
+    return {"kind": "side_loop", "loop": kind, "hole_diameter": d, "center": (x_c, y_c),
+            "height": 2 * R, "length": L, "solid": solid, "hole_solid": hole_solid}

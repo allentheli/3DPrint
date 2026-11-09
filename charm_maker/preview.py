@@ -199,6 +199,20 @@ def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0) 
         r = att["diameter"] / 2 * px_per_mm
         x, y = (cx - origin[0]) * px_per_mm, h - (cy - origin[1]) * px_per_mm
         _dashed_circle(draw, x, y, r, (200, 40, 40), max(1, int(0.2 * px_per_mm)))
+    elif att.get("kind") == "side_loop":
+        # The hole runs left to right inside the loop: show it as a dashed channel.
+        cx, cy = att["center"]
+        r = att["hole_diameter"] / 2
+        x0, x1 = cx - att["length"] / 2, cx + att["length"] / 2
+        width = max(1, int(0.15 * px_per_mm))
+        for yy in (cy - r, cy + r):
+            py = h - (yy - origin[1]) * px_per_mm
+            steps = max(2, int((x1 - x0) / 0.6))
+            for i in range(0, steps, 2):
+                xa = x0 + (x1 - x0) * i / steps
+                xb = x0 + (x1 - x0) * min(i + 1, steps) / steps
+                draw.line([((xa - origin[0]) * px_per_mm, py), ((xb - origin[0]) * px_per_mm, py)],
+                          fill=(200, 40, 40), width=width)
     return img
 
 
@@ -244,6 +258,12 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
         lines_att = [f"Clip pad pocket {att['diameter']} mm (dashed), {att['wall']:.1f} mm wall"]
     elif att.get("kind") == "ring_tab":
         lines_att = [f"Ring tab at the {att['position']}, {att['hole_diameter']} mm hole"]
+    elif att.get("kind") == "side_loop":
+        lines_att = [f"Loop on top: {att['hole_diameter']} mm hole running left to right (dashed), "
+                     f"{att['height']:.1f} mm tall on the back"]
+    elif att.get("kind") == "flat_back":
+        lines_att = [f"Flat back: glue the magnet on, about {cfg['hardware']['magnet_height_above_bottom']:.0f} mm "
+                     "above the bottom to line up with the stand"]
     else:
         lines_att = []
     fixes = ["Fixes made:"] + [f"- {x}" for x in d.fixes]

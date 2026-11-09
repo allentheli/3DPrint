@@ -34,6 +34,8 @@ loaded: {}
 
 # Matching kid ink to the loaded colors.
 palette:
+  # Only used with --ask-colors (the strict mode): stop and ask about colors that
+  # aren't loaded and about an unscanned calibration card.
   off_palette_distance: 25        # ink farther than this from every calibrated marker is not loaded
   off_palette_distance_uncalibrated: 35   # same, while matching against spool colors only
   off_palette_min_area_mm2: 3.0   # smaller patches are camera fringe, not a drawn color
@@ -63,15 +65,18 @@ process:
   card_scale: 3                   # drawing box is 3x the product's real size
   color_face_depth: 0.6           # front layers that hold the colors, flush
   border: 1.5                     # die-cut style border in the base color
-  border_default_kid_cards: true
-  border_default_adult_cards: false
+  border_default: true            # on for everyone; --no-border turns it off for a run
   min_ink_width: 1.0              # thinner ink gets thickened to this
   min_speck_area_mm2: 1.0         # smaller specks are removed
   min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
   corner_round: 0.5
   base_color: white               # "white" or "kid_color"
-  kid_card_max_colors: 3          # only used before the loaded slots are set
-  adult_card_max_colors: 3        # plus black
+  # Colors: every distinct ink color becomes its own named part, so Bambu Studio
+  # shows the separation; Allen assigns spools there. Matching to loaded spools is
+  # only a head start.
+  max_ink_colors: 3               # plus the white base = one AMS; extra colors merge into the nearest
+  color_merge_distance: 20        # inks closer than this are one color (hue-weighted Lab)
+  min_color_area_mm2: 3.0         # smaller patches are camera fringe, not a color
 
 # Fit-critical values. Each has a `value` (used by the pipeline), `tested`
 # (true once set from a real print) and the `candidates` printed on the fit-test
@@ -87,16 +92,11 @@ fit:
     tested: false
     candidates: [4.5, 5.0, 5.5]
     note: hole in a keychain's ring tab for a 25 mm split ring
-  jump_ring_hole_diameter:
+  earring_hole_diameter:
     value: 2.0
     tested: false
     candidates: [1.8, 2.0, 2.3]
-    note: hole near the top of a hook earring or pendant for a jump ring
-  magnet_pocket_diameter:
-    value: 10.4
-    tested: false
-    candidates: [10.2, 10.4, 10.6]
-    note: snug pocket for a 10 x 2 mm disc magnet
+    note: sideways hole (left to right) in the earring's top loop; the hook goes straight through
   switch_cutout:
     value: 14.0
     tested: false
@@ -107,6 +107,11 @@ fit:
     tested: false
     candidates: [0.15, 0.25, 0.35]
     note: added to each arm width of the keycap's cross socket for the MX stem
+  necklace_hole_diameter:
+    value: 3.5
+    tested: false
+    candidates: [3.0, 3.5, 4.0]
+    note: sideways hole (left to right) in the pendant's top loop; the chain goes straight through
 
 # Hardware sizes that are not tolerances (measured or from the manufacturer).
 hardware:
@@ -117,15 +122,15 @@ hardware:
   clip_backer_diameter: 14.0
   magnet_diameter: 10.0
   magnet_thickness: 2.0
-  magnet_pocket_depth: 1.9        # slightly shallower than the magnet so it sits proud
-  magnet_pocket_min_wall: 1.2
-  magnet_pocket_min_floor: 1.2
-  magnet_height_above_bottom: 12.0  # standard height so figures line up with the stand
-  magnet_second_pocket_above: 45.0  # figures longer than this get two magnets
+  magnet_height_above_bottom: 12.0  # glue the magnet about here so figures line up with the stand
   keyring_hole_min_wall: 2.5
-  jump_ring_hole_min_wall: 1.5
-  bail_hole_diameter: 3.5
-  bail_hole_min_wall: 1.5
+  # Side loops for pendants and earrings: a loop on top with a hole running left to
+  # right, so the piece hangs facing forward. The loop sits flush with the front face
+  # and stands taller than the charm on the back.
+  earring_loop: {wall: 1.0, length: 4.5}
+  necklace_loop: {wall: 1.2, length: 7.0}
+  loop_overlap: 2.0               # how far the loop reaches into the charm
+  loop_gap: 0.8                   # plastic between the hole and the charm's top edge
   washer_diameter: 25.4           # 1 inch zinc-plated steel fender washer
   washer_thickness: 1.6
   mx_stem_span: 4.1               # length of each arm of the plus-shaped stem
@@ -142,7 +147,6 @@ hardware:
 products:
   hair_clip:
     label: Hair clip charm
-    audience: kids
     size_min: 14
     size_max: 25
     default_size: 22
@@ -152,7 +156,6 @@ products:
     card: hair_clip
   keychain:
     label: Keychain
-    audience: kids
     size_min: 35
     size_max: 55
     default_size: 45
@@ -163,7 +166,6 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
-    audience: kids
     size_min: 16
     size_max: 22
     default_size: 19
@@ -174,34 +176,34 @@ products:
     card: clicker
   magnet_figure:
     label: Magnet figure
-    audience: kids
     size_min: 30
     size_max: 55
     default_size: 45
     thickness: 3.2
-    attachment: magnet_pocket
+    attachment: flat_back         # the magnet is glued onto the flat back
     copies: 1
     card: magnet_figure
   earrings:
-    label: Earrings
-    audience: adults
+    label: Earrings (a pair)
+    adults_only: true
     size_min: 15
     size_max: 35
     default_size: 25
     thickness: 1.8
-    attachment: jump_ring_hole    # or stud_back
-    style: hook                   # hook or stud
-    pair_mode: identical          # identical, mirrored, different
+    attachment: side_loop
+    loop: earring                 # hardware.earring_loop, fit.earring_hole_diameter
+    style: hook                   # hook (side loop) or stud (flat back, no loop)
+    pair_mode: identical          # identical or mirrored
     copies: 2
     card: earrings
   pendant:
     label: Necklace pendant
-    audience: adults
     size_min: 25
     size_max: 45
     default_size: 35
     thickness: 2.6
-    attachment: bail_hole         # or ring_tab
+    attachment: side_loop
+    loop: necklace                # hardware.necklace_loop, fit.necklace_hole_diameter
     copies: 1
     card: pendant
 
@@ -232,10 +234,10 @@ fit_test:
   coupon_corner_radius: 2.0
   clip_coupon: [17, 26, 2.4]      # width, length, thickness
   keyring_coupon: [12, 22, 3.2]
-  jump_ring_coupon: [10, 18, 1.8]
-  magnet_coupon: [16, 26, 3.2]
   switch_coupon: [22, 32, 1.5]
   stem_coupon: [16, 26, 2.4]
+  earring_loop_coupon: [10, 16, 1.8]
+  necklace_loop_coupon: [12, 18, 2.6]
   stem_boss_diameter: 8.0
   stem_boss_height: 4.5
   stem_socket_depth: 4.0

@@ -161,9 +161,9 @@ def odd_photos(tmp_path_factory, party):
     return d, cfg_p
 
 
-def test_off_palette_asks_once_and_writes_no_plates(odd_photos, tmp_path):
+def test_strict_mode_asks_once_and_writes_no_plates(odd_photos, tmp_path):
     d, cfg_p = odd_photos
-    result = run_batch(load_config(cfg_p), [d], tmp_path / "out")
+    result = run_batch(load_config(cfg_p), [d], tmp_path / "out", off_palette=None, allow_uncalibrated=False)
     assert result.question is not None and not result.plates
     q = result.files["question"].read_text()
     assert "clip-06" in q and "orange" in q and "clip-07" in q and "blue" in q
@@ -239,18 +239,28 @@ def test_chips_need_loaded_slots():
         build_chips(load_config(), load_palette({"filaments": [], "loaded": {}}))
 
 
-def test_uncalibrated_batch_asks_first(cfg_path, tmp_path):
-    """Spool colors can't tell an orange marker from a golden-yellow one, so without a
-    calibration scan the batch stops and asks instead of guessing."""
+def test_strict_mode_asks_about_calibration(cfg_path, tmp_path):
+    """Strict mode: spool colors can't tell an orange marker from a golden-yellow one,
+    so without a calibration scan the batch stops and asks instead of guessing."""
     cfg = load_config(cfg_path)
     photos = tmp_path / "p"
     photos.mkdir()
     draw_blob_card(cfg, photos, "hair_clip", 4, BLACK, PINK)
     draw_blob_card(cfg, photos, "hair_clip", 6, BLACK, ORANGE)
-    r = run_batch(cfg, [photos], tmp_path / "out")
+    r = run_batch(cfg, [photos], tmp_path / "out", off_palette=None, allow_uncalibrated=False)
     assert r.question is not None and not r.plates
     assert "calibration card hasn't been scanned" in r.question
     assert "slot 3 Yellow PLA" in r.question
     r2 = run_batch(cfg, [photos], tmp_path / "out2", allow_uncalibrated=True)
     assert r2.question is None and r2.plates
-    assert all("spool colors" in " ".join(p.design.warnings) for p in r2.pieces)
+
+
+def test_default_run_never_stops_and_keeps_colors_apart(odd_photos, tmp_path):
+    """The everyday default: no questions, every color its own part, a head start on spools."""
+    d, cfg_p = odd_photos
+    result = run_batch(load_config(cfg_p), [d], tmp_path / "out")
+    assert result.question is None and result.plates and result.problems == []
+    p6 = next(p for p in result.pieces if p.name == "clip-06")
+    names = {n.split(" ", 1)[1] for n in p6.parts}
+    assert names == {"base", "black", "orange"}
+    assert "Bambu Studio" in " ".join(p6.design.warnings)

@@ -61,6 +61,30 @@ def _coupon_body(cfg: dict, key: str, number: int):
     return body, outline, feature_center, t
 
 
+def _loop_coupon(cfg: dict, n: int, kind: str, d: float) -> Coupon:
+    """A small tag with the same side loop a pendant or earring gets."""
+    import copy
+
+    from shapely.geometry import Polygon
+
+    from .products import _add_side_loop
+    from .shape import Design
+
+    ft = cfg["fit_test"]
+    w, length, t = ft[f"{kind}_loop_coupon"]
+    outline = rounded_rect(w, length, ft["coupon_corner_radius"], w / 2, length / 2)
+    c2 = copy.deepcopy(cfg)
+    c2["fit"][f"{kind}_hole_diameter"]["value"] = d
+    design = Design(f"fit-{n:02d}", kind, outline, [])
+    info = _add_side_loop(c2, design, kind)
+    body = (extrude(design.outline, t) + info["solid"]) - info["hole_solid"]
+    label = label_shape(str(n), ft["label_height"], ft["label_stroke"], w / 2, length / 2)
+    body = body + extrude(label, ft["label_raise"], t)
+    word = "earring hook" if kind == "earring" else "necklace chain"
+    return Coupon(n, f"{kind}_hole_diameter", d, f"{word} loop, {d} mm hole running left to right",
+                  body, info["center"], d, Polygon(design.outline.exterior), {"loop_height": info["height"]})
+
+
 def build_coupons(cfg: dict) -> list[Coupon]:
     fit = cfg["fit"]
     hw = cfg["hardware"]
@@ -85,24 +109,12 @@ def build_coupons(cfg: dict) -> list[Coupon]:
         coupons.append(Coupon(n, "keyring_hole_diameter", d, f"split-ring hole {d} mm",
                               body, (cx, cy), d, outline))
 
-    # 3. Jump-ring holes (through).
-    for d in fit["jump_ring_hole_diameter"]["candidates"]:
+    # 3. Earring loops: the real side loop with the hole running left to right.
+    for d in fit["earring_hole_diameter"]["candidates"]:
         n += 1
-        body, outline, (cx, cy), t = _coupon_body(cfg, "jump_ring_coupon", n)
-        body = body - cylinder(d, t + 2.0, cx, cy, -1.0)
-        coupons.append(Coupon(n, "jump_ring_hole_diameter", d, f"jump-ring hole {d} mm",
-                              body, (cx, cy), d, outline))
+        coupons.append(_loop_coupon(cfg, n, "earring", d))
 
-    # 4. Magnet pockets (1.9 mm deep, on the up-facing side).
-    for d in fit["magnet_pocket_diameter"]["candidates"]:
-        n += 1
-        body, outline, (cx, cy), t = _coupon_body(cfg, "magnet_coupon", n)
-        depth = hw["magnet_pocket_depth"]
-        body = body - cylinder(d, depth + 1.0, cx, cy, t - depth)
-        coupons.append(Coupon(n, "magnet_pocket_diameter", d, f"magnet pocket {d} mm, {depth} mm deep",
-                              body, (cx, cy), d, outline, {"depth": depth}))
-
-    # 5. MX switch cutouts in a 1.5 mm plate (through).
+    # 4. MX switch cutouts in a 1.5 mm plate (through).
     for s in fit["switch_cutout"]["candidates"]:
         n += 1
         body, outline, (cx, cy), t = _coupon_body(cfg, "switch_coupon", n)
@@ -110,7 +122,7 @@ def build_coupons(cfg: dict) -> list[Coupon]:
         coupons.append(Coupon(n, "switch_cutout", s, f"switch cutout {s} mm square in a {t} mm plate",
                               body, (cx, cy), s, outline))
 
-    # 6. Keycap stem sockets: a boss with a plus-shaped hole, open at the top.
+    # 5. Keycap stem sockets: a boss with a plus-shaped hole, open at the top.
     for c in fit["stem_socket_clearance"]["candidates"]:
         n += 1
         body, outline, (cx, cy), t = _coupon_body(cfg, "stem_coupon", n)
@@ -127,6 +139,10 @@ def build_coupons(cfg: dict) -> list[Coupon]:
                               body, (cx, cy), ft["stem_boss_diameter"], outline,
                               {"arm_x": arm_x, "arm_y": arm_y, "span": span,
                                "depth": ft["stem_socket_depth"]}))
+    # 6. Necklace loops, same idea, bigger hole.
+    for d in fit["necklace_hole_diameter"]["candidates"]:
+        n += 1
+        coupons.append(_loop_coupon(cfg, n, "necklace", d))
     return coupons
 
 
@@ -173,10 +189,10 @@ def build_fit_plate(cfg: dict) -> FitPlate:
 GROUP_TITLES = {
     "clip_pocket_diameter": ("Hair clip pad pocket", "Press the clip's round pad into each pocket. Best = snug, pad fully seated, no rocking."),
     "keyring_hole_diameter": ("Split-ring hole", "Thread a 25 mm split key ring through each hole. Best = goes on without forcing and turns freely."),
-    "jump_ring_hole_diameter": ("Jump-ring hole", "Open a jump ring and pass it through each hole. Best = passes easily; the smallest that does."),
-    "magnet_pocket_diameter": ("Magnet pocket", "Push a 10 x 2 mm magnet into each pocket. Best = snug, sits a hair proud, does not fall out upside down."),
+    "earring_hole_diameter": ("Earring loop", "Push an earring hook through each loop, left to right. Best = the hook goes through easily and the piece hangs facing forward; the smallest that does."),
     "switch_cutout": ("Switch cutout", "Push a switch into each square from the top until it clicks. Best = snaps in, no wobble, can be pulled out with effort."),
     "stem_socket_clearance": ("Keycap stem socket", "Press each boss onto a switch stem. Best = firm push-on, stays on when you shake it, comes off with a pull."),
+    "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 
 
@@ -223,16 +239,16 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
         "",
         "1. Put a 1 inch zinc-plated steel fender washer into the round recess on the back of the stand's upright.",
         "   It should drop in and sit flush or just below the surface. Glue it with gel super glue.",
-        "2. Glue a magnet into the best magnet pocket (from step 4) with gel super glue. Let it cure.",
-        f"3. Stick that piece on the fridge. It should hold its own weight. Note the magnet sits about {hw['magnet_thickness'] - hw['magnet_pocket_depth']:.1f} mm proud, on purpose.",
-        "4. Stand the same piece on the stand, pocket side toward the upright, bottom edge in the slot behind the lip.",
+        f"2. Glue a magnet flat onto the back of any coupon, about {hw['magnet_height_above_bottom']:.0f} mm above its bottom edge, with gel super glue. Let it cure.",
+        "3. Stick that piece on the fridge. It should hold its own weight.",
+        "4. Stand the same piece on the stand, magnet side toward the upright, bottom edge in the slot behind the lip.",
         "   It should snap gently to the upright and stay standing.",
         "",
         "## 3. Report",
         "",
         "Tell Claude one number per group, for example:",
         "",
-        "> clip 2, keyring 5, jump ring 8, magnet 11, switch 14, stem 17. Washer fits. Fridge and stand hold.",
+        "> clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17. Washer fits. Fridge and stand hold.",
         "",
         "If nothing fits in a group, say whether everything was too tight or too loose, and Claude",
         "will make a second plate with new sizes. Claude then runs `python -m charm_maker fit-results`",

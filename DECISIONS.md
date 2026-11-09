@@ -77,3 +77,27 @@ My choices while writing it in:
 - Parts are named after the color word in the spool's name ("Yellow PLA" gives "yellow"), because a golden-yellow hex code reads as orange.
 - Chips: 26 x 18 x 1.2 mm tags, slot number cut 0.6 mm into the top, 15 mm apart for By object printing, layer 0.2 mm. My rough estimate is 14 minutes for four chips (5 min start-up, 8 mm³/s, 1.5 min per swap); Bambu Studio's estimate decides.
 - The chip 3MF does not set Print sequence itself (a partial Bambu project settings file could break the import); `CHIPS.md` gives the click path instead.
+
+## Simplified (after milestone 2)
+
+Allen's calls:
+
+- The goal is one consistent drawing-to-print-file path for every product; extras come second.
+- Every product is for anyone, except earrings (adults). Cards are the same for kids and adults; the border is on by default for everyone.
+- Pendant and earring holes run left to right, parallel to the face, so the chain or hook goes straight through and the piece faces forward. No jump ring.
+- Color: the file keeps each color as a separate named part; Allen assigns spools in Bambu Studio. The run never stops to ask about colors.
+- Magnet figures have a flat back; the magnet is glued on. No pocket.
+
+My choices while building it:
+
+- Colors are found per drawing (Lab clustering, hue-weighted, merge distance 20): streaky fill stays one color, orange next to yellow stays two. Up to 3 ink colors plus the white base; a 4th merges into its nearest with a note.
+- Loaded slots stay as an optional head start: each part starts on the nearest loaded spool, and the preview notes when two parts start on the same spool or a color matches no spool well.
+- The calibration card, strict mode (`--ask-colors`), swap plates and filament chips stay in the code but off the main path, so they can come back.
+- Side loop: a flat-bottomed post with a round top, hole as a flat-topped teardrop (support-free face-down), front flush with the face, taller than the charm on the back (earring 4.0 mm, pendant 5.9 mm). Walls 1.0 mm (earring) and 1.2 mm (pendant); lengths 4.5 and 7 mm.
+- Loops sit above the drawing's balance point (outline centroid), not its highest bump, because a hanging piece turns until its weight is under the hole. The post reaches down into a dip (heart) and the hole clears anything within 3 mm either side.
+- The color face is cut after the loop is added, so the loop never covers the colors (checked: 15 mm² of overlap the other way round on a test shape, 0 now).
+- Fit test: jump-ring holes and magnet pockets are replaced by sideways earring loops (1.8, 2.0, 2.3 mm) and necklace loops (3.0, 3.5, 4.0 mm), built with the same loop code as the products. Order: clip 1-3, keyring 4-6, earring 7-9, switch 10-12, stem 13-15, necklace 16-18.
+- Earrings: one box on the card, two copies named `ear-NN-1` and `ear-NN-2`; `pair_mode: mirrored` mirrors the second; `style: stud` drops the loop.
+- Magnet figures keep 3.2 mm thickness for stiffness; print notes say to glue the magnet about 12 mm above the bottom to line up with the stand.
+- Half-drawn cards are made for every product except earrings.
+- Keychain ring tabs still go on the highest point (unchanged); only hanging loops use the balance point.
