@@ -105,6 +105,16 @@ Run the geometry tests:
 python -m pytest
 ```
 
+## Test drive
+
+```bash
+python -m charm_maker test-drive
+```
+
+writes a printable pack: one page for the parent (how to print, what to draw, how to scan,
+what to look for) and six cards for one kid. Draw, scan, upload, and see the whole flow
+before the party.
+
 ## Poop containers
 
 Party favors: see-through containers kids fill with printer poop and twist shut.

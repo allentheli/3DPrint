@@ -143,3 +143,8 @@ Allen's calls: kids fill the containers themselves; small see-through holes; a l
 - Screw top for downloaded models: the head is the shell with most of its volume above the cut; the neck axis is the head's centroid 2 mm above the cut; the socket radius leaves 1 mm of head outside it over the whole thread height; the body keeps the lower head as a solid neck, gets a filling hole bored straight down, and loses any material the turning head (beak included) would sweep through, plus 1 mm. Overlapping shells are unioned into one body.
 - Sebo3D's duck: cut at 50 mm (the lattice wraps the neck up to 54 mm; the head is 33 mm across at 50 mm and wider above). Opening 20 mm, 777 mm³ of lattice cleared near the head, unscrews cleanly. The head keeps the original's own overhangs (beak), so it still needs tree supports like the original. The original's mid-print pause is no longer needed.
 - Converted downloaded models are never committed and are only for Allen's own printing.
+
+## Test drive
+
+- Six cards cover every product a kid can make except the clicker, both blank and half-drawn cards, and a name in letters (thin strokes, the hardest kid case). Card numbers reuse the party ranges (01-02 blank, 12-14 half-drawn); batches are separate, so stems do not clash.
+- The pack is one PDF (parent page first) so it prints in one go.

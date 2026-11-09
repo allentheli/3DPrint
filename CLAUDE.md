@@ -75,6 +75,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
+| Test-drive pack | `python -m charm_maker test-drive` |
 | Poop containers | `python -m charm_maker poop-containers [--kinds ...] [--sizes ...]` |
 | Screw top for a downloaded model | `python -m charm_maker screw-top <model> --cut <mm> [--scale 1.15]` |
 | Tests | `python -m pytest -q` |
@@ -112,6 +113,16 @@ plate, and the print notes say what goes in and out of which slot.
 In a cloud session, send `output/.../plates/*.3mf`, the contact sheet and `PRINT_NOTES.md`
 with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
+
+## Test drive
+
+`python -m charm_maker test-drive` writes `output/test-drive/test-drive-pack.pdf`: a parent
+page (print at Actual size, markers, what to draw on each card, how to scan with iPhone
+Notes, what to look for) and six cards: hair clip 01, keychain 01 and 02, half-drawn cat
+magnet 13, half-drawn heart pendant 12, half-drawn star hair clip 14. When Allen uploads
+the scan and says "test drive", run it like any batch, show the contact sheet, and ask
+what his daughter liked and what looked wrong. Note which problems are real-world ones to
+fix (and add a regression test in `tests/test_real_world.py`).
 
 ## Poop containers (party favors)
 

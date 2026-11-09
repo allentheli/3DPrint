@@ -163,6 +163,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if result.pieces else 1
 
 
+def cmd_test_drive(args: argparse.Namespace) -> int:
+    from .testdrive import write_test_drive
+
+    cfg = load_config(args.config)
+    print(f"Test-drive pack: {write_test_drive(cfg, Path(args.out))}")
+    return 0
+
+
 def cmd_poop_containers(args: argparse.Namespace) -> int:
     from .poopjar import KINDS, write_containers
 
@@ -244,6 +252,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("test-drive", help="a parent page and six cards to try the whole flow with one kid")
+    p.add_argument("--out", default="output/test-drive/test-drive-pack.pdf")
+    p.set_defaults(func=cmd_test_drive)
 
     p = sub.add_parser("poop-containers", help="see-through poop containers kids fill and twist shut")
     p.add_argument("--kinds", nargs="*", help="jar-round jar-hex duck bear heart star cloud (default: all)")

@@ -1,5 +1,9 @@
 # Changelog
 
+## Test drive (2026-11-09)
+
+- `test-drive`: a parent page and six cards (hair clip, two keychains, half-drawn cat magnet, heart necklace and star hair clip) for trying the whole flow with one kid. A test renders every card and reads it back.
+
 ## Poop containers (2026-11-09)
 
 - `poop-containers`: see-through party favors kids fill with printer poop and twist shut: round and hex jars, a bear whose head is the lid, a duck, and heart, star and cloud jars. Diamond mesh, right-hand screw lid that closes in one turn, no supports.
