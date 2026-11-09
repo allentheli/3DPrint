@@ -194,7 +194,7 @@ When Allen uploads photos or images:
 
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
-3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded: map it to the nearest loaded color, or print it on its own plate with a spool swap. Never merge colors silently.
+3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded: map it to the nearest loaded color, or print it on its own plate with a spool swap. Never merge colors silently. Also ask once if the calibration card hasn't been scanned for the loaded markers: scan it, or go ahead matching to spool colors.
 4. Hand over the plate files and say, for each plate, which filament goes in which AMS slot, the layer height and the plate type.
 5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets), rings (keychains, earrings, pendants), switch insertion (clickers).
 

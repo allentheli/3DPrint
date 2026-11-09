@@ -1,5 +1,16 @@
 # Changelog
 
+## Milestone 2: party batch and loaded palette (2026-11-09)
+
+- Loaded AMS slots in `config.yaml`, with `load` and `slots` commands; spool swaps in plain words become one command.
+- Kid cards now say "Use the colors in the printer" (printer picture), "Big and bold" and "Color it in".
+- Half-drawn cards: cloud, heart, cat, star and bow outlines printed in black, two of each per product, read as part of the design.
+- Marker calibration card: one box per loaded filament; scans are read by `calibrate` or straight from a batch folder, and the marker colors are saved into config.
+- Kid ink is matched to the calibrated markers. Colors that aren't loaded become flagged parts and one question per batch (nearest loaded color, or own plate with a spool swap); nothing is merged silently. A batch also asks once if the calibration card hasn't been scanned.
+- Swap plates with take-out and put-back steps in the print notes, printed after the plates without swaps.
+- Filament chip plate (`chips`): one tag per loaded spool with its slot number cut in, notes for Print sequence By object.
+- 15 new tests, including a calibration scan plus eight cards in one request becoming one plate with only the loaded spools.
+
 ## Milestone 1: cards, hair clips and keychains (2026-11-09)
 
 - `python -m charm_maker cards` writes the design-card PDF (hair clip and keychain cards, 10 each) with ArUco markers, light guides, kid-facing pictures, a name line and a 50 mm check ruler.

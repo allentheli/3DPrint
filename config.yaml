@@ -8,17 +8,55 @@ printer:
   name: Bambu Lab X2D with AMS
   # Usable plate size. Checked against the Bambu documentation before milestone 2.
   bed_size: [256, 256]
+  ams_slots: 4                    # one AMS
   max_filaments_per_plate: 4      # one AMS
   layer_height_charms: 0.12       # charms, figures, earrings, pendants, keycaps
   layer_height_cases: 0.20        # clicker cases and figure stands
   nozzle: 0.4
 
-# Spools Allen owns. Fill in once. `slot` is the AMS slot (1-4), `color` is a hex
-# code close to the real filament color, used only for matching ink colors.
+# Spools Allen owns. Fill in once. `color` is a hex code close to the real
+# filament color. Used to suggest a spool when a drawing needs a color that
+# isn't loaded.
 filaments: []
 # Example:
-#  - {name: "White PLA", slot: 1, color: "#F2F2F2"}
-#  - {name: "Black PLA", slot: 2, color: "#1A1A1A"}
+#  - {name: "White PLA", color: "#F2F2F2"}
+#  - {name: "Orange PLA", color: "#F77F00"}
+
+# Which spool is in which AMS slot right now. The kids' palette is exactly these
+# colors. Allen says swaps in plain words ("pink is in slot 3 now"); Claude runs
+# `python -m charm_maker load 3 "Pink PLA" --color "#EC4899"`. `marker` is the
+# photographed color of the matching marker, written by the calibration card scan
+# and cleared when the spool in that slot changes.
+loaded: {}
+# Example:
+#  1: {spool: "White PLA", color: "#F2F2F2"}
+#  3: {spool: "Pink PLA", color: "#EC4899", marker: "#E0508C", calibrated: "2026-11-09"}
+
+# Matching kid ink to the loaded colors.
+palette:
+  off_palette_distance: 25        # ink farther than this from every calibrated marker is not loaded
+  off_palette_distance_uncalibrated: 35   # same, while matching against spool colors only
+  off_palette_min_area_mm2: 3.0   # smaller patches are camera fringe, not a drawn color
+  lightness_weight: 0.3           # streaky or pale fill changes lightness and chroma, not hue
+  chroma_weight: 0.5
+  calibration_min_coverage: 0.3   # a calibration box needs this much ink to count
+
+# Filament chips: one per loaded filament, printed live as the kids' printer tour.
+chips:
+  width: 26
+  length: 18
+  thickness: 1.2
+  corner_radius: 3
+  number_height: 9
+  number_stroke: 1.6
+  number_depth: 0.6               # slot number cut into the top face
+  gap: 15                         # roomy, for Print sequence: By object
+  layer_height: 0.20
+  budget_minutes: 15
+  # Rough time model (not the slicer): start-up, effective flow, one AMS swap.
+  estimate_startup_minutes: 5.0
+  estimate_flow_mm3_per_s: 8.0
+  estimate_swap_minutes: 1.5
 
 # Image to print pipeline settings.
 process:
@@ -32,7 +70,7 @@ process:
   min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
   corner_round: 0.5
   base_color: white               # "white" or "kid_color"
-  kid_card_max_colors: 1          # plus black
+  kid_card_max_colors: 3          # only used before the loaded slots are set
   adult_card_max_colors: 3        # plus black
 
 # Fit-critical values. Each has a `value` (used by the pipeline), `tested`
@@ -211,7 +249,11 @@ cards:
   guide_color: "#B9E4F5"          # very light cyan: far from yellow, removed by the reader
   guide_line_width: 0.5
   name_box: [52, 60, 110, 12]     # x, y, width, height (y from the page bottom)
-  copies_per_type: 10             # cards numbered 01..N per product in one PDF
+  copies_per_type: 10             # blank cards numbered 01..N per product
+  half_drawn_shapes: [cloud, heart, cat, star, bow]
+  half_drawn_first_number: 11     # half-drawn cards are 11, 12... so they never clash with blanks
+  half_drawn_copies: 2            # of each shape
+  half_drawn_line: 4.5            # card mm, like a fat marker (1.5 mm on the print)
   # Marker type ids. Never renumber: printed cards must keep reading correctly.
   type_ids:
     hair_clip: 0
@@ -220,6 +262,7 @@ cards:
     magnet_figure: 3
     earrings: 4
     pendant: 5
+    calibration: 7
 
 # Photo reader and ink separation.
 reader:

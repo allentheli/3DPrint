@@ -9,9 +9,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .filaments import Filament, load_filaments, parse_overrides
-from .inks import separate_inks
-from .plates import Plate, pack_plates, write_plates
+from .config import load_config
+from .filaments import Filament, parse_overrides
+from .inks import Reference, classify_to_palette, separate_inks
+from .palette import Palette, load_palette, spool_word
+from .plates import Plate, assign_filaments, pack_plates, unanswered_off_palette, write_plates
 from .products import Piece, build_piece
 from .reader import CardRead, load_image, pdf_page_count, read_card
 from .shape import Design, fix_design
@@ -24,8 +26,10 @@ class BatchResult:
     pieces: list[Piece]
     plates: list[Plate]
     files: dict
-    filaments_from_config: bool
+    palette_ready: bool
     problems: list[str] = field(default_factory=list)
+    question: str | None = None
+    calibration: list[str] = field(default_factory=list)
 
 
 def collect_inputs(paths: list[Path]) -> list[Path]:
@@ -41,19 +45,35 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
     return out
 
 
+def _references(palette: Palette) -> list[Reference]:
+    return [Reference(s.slot, spool_word(s.filament), s.reference_rgb) for s in palette.ink_slots()]
+
+
+def _inks_for(cfg: dict, palette: Palette, bgr: np.ndarray, audience: str, px_per_mm: float,
+              ignore: np.ndarray | None = None):
+    pr = cfg["process"]
+    if audience == "kids" and palette.ready:
+        return classify_to_palette(cfg, bgr, _references(palette), calibrated=palette.calibrated,
+                                   px_per_mm=px_per_mm, ignore=ignore)
+    max_colors = pr["kid_card_max_colors"] if audience == "kids" else pr["adult_card_max_colors"]
+    res = separate_inks(cfg, bgr, max_colors, ignore)
+    if audience == "kids":
+        res.notes.append("no loaded slots in config yet: colors grouped by hue and matched to a generic palette")
+    return res
+
+
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
-                     name: str) -> Design:
-    rd = cfg["reader"]
+                     name: str, palette: Palette | None = None) -> Design:
+    palette = palette or load_palette(cfg)
     pr = cfg["process"]
     scale = pr["card_scale"]
     if read.layout is not None:
         product = read.layout.product
         audience = cfg["products"][product]["audience"]
-        max_colors = pr["kid_card_max_colors"] if audience == "kids" else pr["adult_card_max_colors"]
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
-        inks = separate_inks(cfg, read.box_image, max_colors, ignore)
+        inks = _inks_for(cfg, palette, read.box_image, audience, px_per_mm, ignore)
         if border is None:
             border = pr["border_default_kid_cards"] if audience == "kids" else pr["border_default_adult_cards"]
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product)
@@ -66,12 +86,11 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     product = product_hint
     assert product is not None
     audience = cfg["products"][product]["audience"]
-    max_colors = pr["kid_card_max_colors"] if audience == "kids" else pr["adult_card_max_colors"]
     img = read.box_image
     h, w = img.shape[:2]
     f = min(1.0, 1600.0 / max(h, w))
     small = cv2.resize(img, (int(w * f), int(h * f)), interpolation=cv2.INTER_AREA) if f < 1 else img
-    coarse = separate_inks(cfg, small, max_colors)
+    coarse = separate_inks(cfg, small, 3)
     union = np.zeros(small.shape[:2], bool)
     for layer in coarse.layers:
         union |= layer.mask
@@ -86,7 +105,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     pad = 10
     crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
-    inks = separate_inks(cfg, crop, max_colors)
+    inks = _inks_for(cfg, palette, crop, audience, target_ppm)
     if border is None:
         border = pr["border_default_kid_cards"] if audience == "kids" else pr["border_default_adult_cards"]
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product)
@@ -127,72 +146,159 @@ def _rounded_rect_pts(x0, y0, x1, y1, r, n=8):
 
 def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str | None = None,
               border: bool | None = None, tab: str | None = None, overrides: list[str] | None = None,
-              batch_name: str | None = None) -> BatchResult:
+              batch_name: str | None = None, off_palette: str | None = None,
+              config_path: Path | None = None, allow_uncalibrated: bool = False) -> BatchResult:
+    """Photos in, plates out. Calibration cards in the batch are applied first.
+    `off_palette` answers the once-per-batch question: "nearest" or "swap"."""
+    from .calibrate import measure_markers
+    from .notes import write_print_notes, write_question
+    from .palette import save_calibration
     from .preview import render_contact_sheet, render_design_preview, render_shaded
-    from .notes import write_print_notes
 
+    if off_palette not in (None, "nearest", "swap"):
+        raise ValueError("off_palette must be 'nearest' or 'swap'")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
     designs_dir.mkdir(exist_ok=True)
-    filaments, from_config = load_filaments(cfg)
     ov = parse_overrides(overrides or [])
-    pieces: list[Piece] = []
     problems: list[str] = []
-    used_names: dict[str, int] = {}
+    calibration_lines: list[str] = []
 
+    # Pass 1: read every image.
+    reads: list[tuple[str, Path, CardRead]] = []
     for path in collect_inputs(inputs):
         pages = pdf_page_count(path) if path.suffix.lower() == ".pdf" else 1
         for page in range(pages):
             label = f"{path.name}" + (f" page {page + 1}" if pages > 1 else "")
             try:
                 image = load_image(path, page)
-                reads = read_card(cfg, image, product_hint)
+                for read in read_card(cfg, image, product_hint):
+                    reads.append((label, path, read))
             except Exception as e:  # noqa: BLE001
                 problems.append(f"{label}: {e}")
-                continue
-            for read in reads:
-                base_name = read.layout.stem if read.layout else _safe_stem(path.stem)
-                name = base_name
-                if name in used_names:
-                    used_names[name] += 1
-                    name = f"{base_name}-{chr(ord('a') + used_names[base_name] - 1)}"
-                else:
-                    used_names[name] = 1
-                try:
-                    design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name)
-                    design.source = label
-                    if name != base_name:
-                        design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
-                    piece = build_piece(cfg, design, tab_position=tab)
-                    _check_piece(piece)
-                except Exception as e:  # noqa: BLE001
-                    problems.append(f"{label}: {e}")
-                    continue
-                pieces.append(piece)
+
+    # Calibration cards first, so the drawings in the same batch use them.
+    drawings = []
+    for label, path, read in reads:
+        if read.layout is not None and read.layout.product == "calibration":
+            markers, notes = measure_markers(cfg, read)
+            calibration_lines += [f"{label}: {n}" for n in notes]
+            if config_path is not None:
+                calibration_lines += save_calibration(config_path, markers)
+                cfg = load_config(config_path)
+            else:
+                for slot, rgb in markers.items():
+                    entry = (cfg.get("loaded") or {}).get(slot)
+                    if entry:
+                        entry["marker"] = "#%02X%02X%02X" % rgb
+                        calibration_lines.append(f"slot {slot}: marker {entry['marker']} (not saved)")
+        else:
+            drawings.append((label, path, read))
+    palette = load_palette(cfg)
+
+    # Pass 2: drawings to pieces.
+    pieces: list[Piece] = []
+    used_names: dict[str, int] = {}
+    for label, path, read in drawings:
+        base_name = read.layout.stem if read.layout else _safe_stem(path.stem)
+        name = base_name
+        if name in used_names:
+            used_names[name] += 1
+            name = f"{base_name}-{chr(ord('a') + used_names[base_name] - 1)}"
+        else:
+            used_names[name] = 1
+        try:
+            design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette)
+            design.source = label
+            if name != base_name:
+                design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
+            piece = build_piece(cfg, design, tab_position=tab)
+            _check_piece(piece)
+            _set_base_slot(cfg, piece, palette)
+            for part, info in piece.part_off_palette.items():
+                info["suggested"] = palette.suggest_spool(info["rgb"])
+                piece.design.warnings.append(
+                    f"{info['color']} is not loaded ({info['area_mm2']} mm²); nearest loaded is {info['nearest_name']} (slot {info['nearest_slot']})")
+        except Exception as e:  # noqa: BLE001
+            problems.append(f"{label}: {e}")
+            continue
+        pieces.append(piece)
 
     if not pieces:
-        return BatchResult([], [], {}, from_config, problems)
+        return BatchResult([], [], {}, palette.ready, problems, None, calibration_lines)
 
-    plates = pack_plates(cfg, pieces, filaments, ov)
-    files = {"plates": write_plates(cfg, plates, out_dir / "plates")}
-    assignments = {pp.piece.name: pp.assignments for plate in plates for pp in plate.pieces}
+    assignments = {}
+    for piece in pieces:
+        try:
+            assignments[piece.name] = assign_filaments(piece, palette, ov, off_palette)
+        except ValueError as e:
+            problems.append(f"{piece.name}: {e}")
+    pieces = [p for p in pieces if p.name in assignments]
+
+    files: dict = {}
+    question = None
+    unanswered = [(p, part) for p in pieces for part in unanswered_off_palette(p, assignments[p.name])]
+    kids = any(cfg["products"][p.design.product]["audience"] == "kids" for p in pieces)
+    uncalibrated = []
+    if palette.ready and kids and not allow_uncalibrated:
+        uncalibrated = [f"slot {s.slot} {s.filament.name}" for s in palette.ink_slots() if not s.marker_rgb]
+    plates: list[Plate] = []
+    slot_labels: dict[str, dict[str, str]] = {p.name: {} for p in pieces}
+    if unanswered or uncalibrated:
+        off = []
+        for p, part in unanswered:
+            info = dict(p.part_off_palette[part])
+            info["card"] = p.name
+            off.append(info)
+            slot_labels[p.name][part] = "answer the question first"
+        files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
+    else:
+        try:
+            plates = pack_plates(cfg, pieces, palette, assignments)
+        except ValueError as e:
+            problems.append(str(e))
+        if plates:
+            files["plates"] = write_plates(cfg, plates, out_dir / "plates")
+            for plate in plates:
+                slots = plate.slots()
+                for pp in plate.pieces:
+                    for part, f in pp.assignments.items():
+                        swap = any(sw.put_in == f for sw in plate.swaps)
+                        slot_labels[pp.piece.name][part] = f"slot {slots[f]}, plate {plate.number}" + (" after a spool swap" if swap else "")
+
     previews = []
     for piece in pieces:
         d = designs_dir
-        p = render_design_preview(cfg, piece, assignments[piece.name], d / f"{piece.name}-preview.png",
-                                  from_config=from_config)
+        a = assignments[piece.name]
+        p = render_design_preview(cfg, piece, a, d / f"{piece.name}-preview.png", palette_ready=palette.ready,
+                                  slot_labels=slot_labels[piece.name])
         previews.append(p)
-        colors = {n: assignments[piece.name][n].rgb for n in piece.parts}
+        colors = {n: a[n].rgb for n in piece.parts}
         render_shaded(piece.parts, d / f"{piece.name}-back.png", view=(40.0, 20.0), px_per_mm=12,
                       labels=False, colors=colors)
         face_up = {n: s.rotate([180.0, 0.0, 0.0]) for n, s in piece.parts.items()}
         render_shaded(face_up, d / f"{piece.name}-front.png", view=(40.0, 20.0), px_per_mm=12,
                       labels=False, colors=colors)
-        (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, assignments[piece.name]), indent=2))
+        (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, a, slot_labels[piece.name]), indent=2))
     files["contact_sheet"] = render_contact_sheet(previews, out_dir / "contact-sheet.png", title=batch_name or out_dir.name)
-    files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", from_config=from_config, problems=problems)
-    return BatchResult(pieces, plates, files, from_config, problems)
+    if plates:
+        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems)
+    return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
+
+
+def _set_base_slot(cfg: dict, piece: Piece, palette: Palette) -> None:
+    if not palette.ready:
+        return
+    if cfg["process"]["base_color"] == "kid_color":
+        slots = [s for n, s in piece.part_slots.items() if s is not None and n != piece.base_part]
+        if slots:
+            piece.part_slots[piece.base_part] = slots[-1]
+            return
+    base = palette.base_slot(piece.design.paper_rgb)
+    piece.part_slots[piece.base_part] = base.slot
+    if not base.is_white:
+        piece.design.warnings.append(f"no white spool loaded: the base prints in {base.filament.name} (slot {base.slot})")
 
 
 def _safe_stem(s: str) -> str:
@@ -214,7 +320,7 @@ def _check_piece(piece: Piece) -> None:
         raise ValueError("the piece is not one connected part")
 
 
-def _piece_summary(piece: Piece, assignments: dict[str, Filament]) -> dict:
+def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: dict[str, str]) -> dict:
     d = piece.design
     w, h = piece.size()
     return {
@@ -222,7 +328,8 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament]) -> dict:
         "product": d.product,
         "source": d.source,
         "size_mm": [round(w, 2), round(h, 2), piece.thickness],
-        "parts": {n: {"filament": f.name, "slot": f.slot} for n, f in assignments.items()},
+        "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
+        "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
         "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items() if k != "hole"},
         "fixes": d.fixes,
         "warnings": d.warnings,

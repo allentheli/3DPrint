@@ -9,7 +9,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .cards import CORNER_NAMES, CardLayout, aruco_dictionary, card_layout, decode_marker_id
+from .cards import CORNER_NAMES, CardLayout, aruco_dictionary, decode_marker_id, layout_for
 
 
 @dataclass
@@ -89,7 +89,7 @@ def read_card(cfg: dict, image: np.ndarray, product_hint: str | None = None) -> 
         product = _product_for_type(cfg, type_id)
         if product is None:
             continue
-        lay = card_layout(cfg, product, number)
+        lay = layout_for(cfg, product, number)
         src, dst = [], []
         for ci, quad in markers:
             src.extend(quad.tolist())
@@ -114,9 +114,11 @@ def read_card(cfg: dict, image: np.ndarray, product_hint: str | None = None) -> 
         x0, x1 = int((bx - m) * ppm), int((bx + bw + m) * ppm)
         y0, y1 = int((lay.page[1] - (by + bh + m)) * ppm), int((lay.page[1] - (by - m)) * ppm)
         box_img = page[max(y0, 0):y1, max(x0, 0):x1].copy()
-        nx, ny, nw, nh = lay.name_box
-        nyt = int((lay.page[1] - (ny + nh)) * ppm)
-        name_img = page[nyt:int((lay.page[1] - ny + 2) * ppm), int((nx - 18) * ppm):int((nx + nw + 2) * ppm)].copy()
+        name_img = None
+        if product != "calibration":
+            nx, ny, nw, nh = lay.name_box
+            nyt = int((lay.page[1] - (ny + nh)) * ppm)
+            name_img = page[nyt:int((lay.page[1] - ny + 2) * ppm), int((nx - 18) * ppm):int((nx + nw + 2) * ppm)].copy()
         reads.append(CardRead(lay, page, box_img, (bx - m, by + bh + m), ppm, name_img, len(markers), notes))
     if reads:
         return reads

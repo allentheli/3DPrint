@@ -59,3 +59,21 @@ My choices while writing it in:
 - Chips are single-filament tags with the slot number cut into the face, not raised, so kids can match a color to its slot.
 - Config keeps the owned-spool list and the loaded slots separate, so a swap is a one-line change.
 - The code still follows the old rules (card text, black + 1 color, merging); the change is scheduled into milestone 2.
+
+## Milestone 2
+
+- Loaded slots live in `config.yaml` under `loaded:` and are written by `python -m charm_maker load`; each entry carries its own spool color, so the owned list is only needed for swap suggestions.
+- Changing the spool in a slot clears that slot's marker calibration; putting the same spool back keeps it.
+- Ink is matched with a hue-weighted Lab distance (lightness x0.3, chroma x0.5): streaky or pale marker fill changes lightness and chroma, a different marker changes hue. Measured on synthetic photos: yellow fill 1.6 from its calibrated marker, orange 41.
+- Off-palette threshold 25 with calibration. Patches under 3 mm² and thin fringes (0.3 mm opening) are camera noise and go to the nearest loaded slot; anything bigger is its own flagged part.
+- Spool colors alone cannot separate close markers (orange is 22.8 from a golden-yellow spool, the yellow marker 18.6), so a kid batch with uncalibrated loaded markers stops and asks once: scan the card, or go ahead (`--uncalibrated-ok`).
+- The question is answered on the command line (`--off-palette nearest|swap`, `--map`, `--uncalibrated-ok`); a run with an open question writes previews and `QUESTION.md` but no plates.
+- Swap plates are grouped by the spools they need and printed after the plates without swaps. Swap slots: empty slots first, then loaded slots the plate does not use, highest first, never the white base.
+- Swap suggestions come only from Allen's real spool list, never the placeholder palette.
+- Calibration card boxes sit at fixed spots per slot (box k is slot k), so a card printed before a swap still reads correctly.
+- A calibration card in the same folder as drawings is read first and applied to that batch.
+- Half-drawn cards are numbers 11 to 20 (five shapes, two each), so they never share a file name with blank cards 01 to 10; outlines are 4.5 mm on the card (1.5 mm printed), drawn as black ink.
+- Kid card rule pictures: a small printer with four spools, one fat stroke, a filled circle. Adult cards keep the old marker rules until milestone 4.
+- Parts are named after the color word in the spool's name ("Yellow PLA" gives "yellow"), because a golden-yellow hex code reads as orange.
+- Chips: 26 x 18 x 1.2 mm tags, slot number cut 0.6 mm into the top, 15 mm apart for By object printing, layer 0.2 mm. My rough estimate is 14 minutes for four chips (5 min start-up, 8 mm³/s, 1.5 min per swap); Bambu Studio's estimate decides.
+- The chip 3MF does not set Print sequence itself (a partial Bambu project settings file could break the import); `CHIPS.md` gives the click path instead.

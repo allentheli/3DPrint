@@ -30,18 +30,6 @@ class Filament:
         return "#%02X%02X%02X" % self.rgb
 
 
-def load_filaments(cfg: dict) -> tuple[list[Filament], bool]:
-    """Returns (filaments, from_config). Falls back to a generic palette."""
-    entries = cfg.get("filaments") or []
-    from_config = bool(entries)
-    if not entries:
-        entries = DEFAULT_FILAMENTS
-    out = []
-    for e in entries:
-        out.append(Filament(str(e["name"]), e.get("slot"), _hex_to_rgb(e["color"])))
-    return out, from_config
-
-
 def _hex_to_rgb(h: str) -> tuple[int, int, int]:
     h = h.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))

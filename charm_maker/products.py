@@ -25,6 +25,8 @@ class Piece:
     base_part: str
     attachment: dict = field(default_factory=dict)   # for the preview
     notes: list[str] = field(default_factory=list)
+    part_slots: dict[str, int | None] = field(default_factory=dict)
+    part_off_palette: dict[str, dict] = field(default_factory=dict)
 
     @property
     def name(self) -> str:
@@ -78,11 +80,16 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None) -
     base_name = f"{design.name} base"
     parts[base_name] = base
     colors[base_name] = design.paper_rgb if cfg["process"]["base_color"] == "white" else design.inks[-1].rgb
+    slots: dict[str, int | None] = {base_name: None}
+    off: dict[str, dict] = {}
     for ink in design.inks:
         name = f"{design.name} {ink.name}"
         parts[name] = extrude(ink.geometry, face)
         colors[name] = ink.rgb
-    return Piece(design, t, parts, colors, base_name, info)
+        slots[name] = ink.slot
+        if ink.off_palette:
+            off[name] = ink.off_palette
+    return Piece(design, t, parts, colors, base_name, info, part_slots=slots, part_off_palette=off)
 
 
 # ---------------------------------------------------------------------------

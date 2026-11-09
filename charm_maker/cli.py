@@ -41,13 +41,88 @@ def cmd_stand(args: argparse.Namespace) -> int:
     return 0
 
 
+def _config_path(args) -> Path:
+    from .config import DEFAULT_CONFIG
+
+    return Path(args.config) if args.config else DEFAULT_CONFIG
+
+
 def cmd_cards(args: argparse.Namespace) -> int:
-    from .cards import write_cards_pdf
+    from .cards import half_drawn_numbers, write_calibration_pdf, write_cards_pdf
+    from .palette import load_palette
 
     cfg = load_config(args.config)
     products = args.products or ["hair_clip", "keychain"]
-    out = write_cards_pdf(cfg, products, Path(args.out), count=args.count)
-    print(f"Cards written: {out} ({len(products)} product(s) x {args.count or cfg['cards']['copies_per_type']} cards)")
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    blank = write_cards_pdf(cfg, products, out / "design-cards.pdf", count=args.count)
+    print(f"Blank cards: {blank} ({len(products)} product(s) x {args.count or cfg['cards']['copies_per_type']})")
+    half = write_cards_pdf(cfg, products, out / "half-drawn-cards.pdf", numbers=half_drawn_numbers(cfg))
+    print(f"Half-drawn cards: {half} ({', '.join(cfg['cards']['half_drawn_shapes'])}, "
+          f"{cfg['cards']['half_drawn_copies']} of each per product)")
+    palette = load_palette(cfg)
+    if palette.ready:
+        cal = write_calibration_pdf(cfg, palette, out / "calibration-card.pdf")
+        print(f"Calibration card: {cal}")
+    else:
+        print("Calibration card: skipped, no loaded slots in config yet")
+    return 0
+
+
+def cmd_load(args: argparse.Namespace) -> int:
+    from .palette import set_slot
+
+    print(set_slot(_config_path(args), args.slot, args.spool, args.color))
+    return cmd_slots(args)
+
+
+def cmd_slots(args: argparse.Namespace) -> int:
+    from .palette import load_palette
+
+    palette = load_palette(load_config(args.config))
+    if not palette.ready:
+        print("No loaded slots yet.")
+        return 0
+    for slot, ls in sorted(palette.slots.items()):
+        f = ls.filament
+        if ls.is_white:
+            cal = "white: the paper, no marker"
+        elif ls.marker_rgb:
+            cal = f"marker calibrated {ls.calibrated}"
+        else:
+            cal = "marker NOT calibrated yet"
+        print(f"slot {slot}: {f.name} ({f.hex}), {cal}")
+    return 0
+
+
+def cmd_calibrate(args: argparse.Namespace) -> int:
+    from .calibrate import measure_markers
+    from .palette import save_calibration
+    from .reader import load_image, read_card
+
+    cfg = load_config(args.config)
+    reads = [r for r in read_card(cfg, load_image(Path(args.scan))) if r.layout and r.layout.product == "calibration"]
+    if not reads:
+        print("No calibration card found in that image.")
+        return 1
+    markers, notes = measure_markers(cfg, reads[0])
+    for n in notes:
+        print(f"check: {n}")
+    for line in save_calibration(_config_path(args), markers):
+        print(line)
+    return cmd_slots(args)
+
+
+def cmd_chips(args: argparse.Namespace) -> int:
+    from .chips import write_chips
+    from .palette import load_palette
+
+    cfg = load_config(args.config)
+    paths = write_chips(cfg, load_palette(cfg), Path(args.out))
+    for k, p in paths.items():
+        if not k.startswith("plain-stl:"):
+            print(f"  {k:12s} {p}")
+    print(paths["notes"].read_text().split("My rough estimate")[1].split(".")[0].join(["My rough estimate", "."]))
     return 0
 
 
@@ -57,7 +132,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     border = None if args.border is None else args.border
     result = run_batch(cfg, [Path(p) for p in args.inputs], Path(args.out), product_hint=args.product,
-                       border=border, tab=args.tab, overrides=args.map or [], batch_name=Path(args.out).name)
+                       border=border, tab=args.tab, overrides=args.map or [], batch_name=Path(args.out).name,
+                       off_palette=args.off_palette, config_path=_config_path(args),
+                       allow_uncalibrated=args.uncalibrated_ok)
+    for line in result.calibration:
+        print(f"calibration: {line}")
     for piece in result.pieces:
         print(f"{piece.name}: {piece.design.product}, {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm")
         for fx in piece.design.fixes:
@@ -68,9 +147,14 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"plate {n}: {paths['3mf']}")
     if result.files.get("contact_sheet"):
         print(f"contact sheet: {result.files['contact_sheet']}")
+    if result.files.get("notes"):
         print(f"print notes: {result.files['notes']}")
     for p in result.problems:
         print(f"PROBLEM: {p}")
+    if result.question:
+        print(f"QUESTION (no plates written yet): {result.files['question']}")
+        print(result.question)
+        return 2
     return 0 if result.pieces else 1
 
 
@@ -90,8 +174,25 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("cards", help="write the design-card PDF")
     p.add_argument("--products", nargs="*", help="product keys from config (default: hair_clip keychain)")
     p.add_argument("--count", type=int, default=None, help="cards per product (default from config)")
-    p.add_argument("--out", default="output/cards/cards.pdf")
+    p.add_argument("--out", default="output/cards", help="output folder")
     p.set_defaults(func=cmd_cards)
+
+    p = sub.add_parser("load", help='record a spool in an AMS slot, e.g. load 3 "Pink PLA" --color "#EC4899"')
+    p.add_argument("slot", type=int)
+    p.add_argument("spool", help='spool name, or "empty"')
+    p.add_argument("--color", default=None, help="hex color of the filament (needed for a new spool)")
+    p.set_defaults(func=cmd_load)
+
+    p = sub.add_parser("slots", help="show what is loaded and whether each marker is calibrated")
+    p.set_defaults(func=cmd_slots)
+
+    p = sub.add_parser("calibrate", help="read a scanned marker calibration card")
+    p.add_argument("scan")
+    p.set_defaults(func=cmd_calibrate)
+
+    p = sub.add_parser("chips", help="build the filament chip plate (the printer tour)")
+    p.add_argument("--out", default="output/chips")
+    p.set_defaults(func=cmd_chips)
 
     p = sub.add_parser("run", help="turn photos of design cards into plates")
     p.add_argument("inputs", nargs="+", help="photo files, PDFs or a folder")
@@ -101,6 +202,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
+    p.add_argument("--off-palette", choices=["nearest", "swap"], default=None,
+                   help="answer for colors that aren't loaded: nearest loaded color, or own plate with a spool swap")
+    p.add_argument("--uncalibrated-ok", action="store_true",
+                   help="Allen said go ahead without a calibration scan: match ink to the spool colors")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("stand", help="build just the figure stand")

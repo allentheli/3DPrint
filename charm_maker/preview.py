@@ -209,7 +209,8 @@ def _dashed_circle(draw, x, y, r, color, width, dashes=24):
         draw.arc([x - r, y - r, x + r, y + r], a0, a1, fill=color, width=width)
 
 
-def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, from_config: bool) -> Path:
+def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, palette_ready: bool,
+                          slot_labels: dict | None = None) -> Path:
     """Actual size (at preview dpi) and zoomed views, swatches, the name crop and the fix list."""
     pv = cfg["preview"]
     dpi, zoom = pv["dpi"], pv["zoom"]
@@ -233,7 +234,10 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, fr
     swatches = []
     for part, f in assignments.items():
         short = part[len(d.name) + 1:]
-        slot = f"slot {f.slot}" if f.slot else "slot: assign in Bambu Studio"
+        if slot_labels and part in slot_labels:
+            slot = slot_labels[part]
+        else:
+            slot = f"slot {f.slot}" if f.slot else "slot: assign in Bambu Studio"
         swatches.append((f.rgb, f"{short} -> {f.name} ({slot})"))
     att = piece.attachment
     if att.get("kind") == "clip_pocket":
@@ -250,7 +254,8 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, fr
         f = min(1.0, (text_w - 10) / name_img.size[0])
         name_img = name_img.resize((int(name_img.size[0] * f), int(name_img.size[1] * f)), Image.LANCZOS)
     n_text = sum(len(_wrap(l, small, text_w - 10)) for l in lines_att + fixes + warns) + 2
-    text_h = 40 * len(lines) + 34 * len(swatches) + 30 * n_text + (name_img.size[1] + 40 if name_img else 0) + 40
+    n_text += sum(len(_wrap(l, small, text_w - 46)) for _, l in swatches)
+    text_h = 40 * len(lines) + 4 * len(swatches) + 30 * n_text + (name_img.size[1] + 40 if name_img else 0) + 40
     height = max(height, text_h + 2 * pad)
     sheet = Image.new("RGB", (int(width), int(height)), (255, 255, 255))
     sheet.paste(actual, (pad, pad + 40))
@@ -265,10 +270,12 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, fr
         y += 40 if i == 0 else 30
     for rgb, label in swatches:
         draw.rectangle([x, y, x + 26, y + 26], fill=rgb, outline=(0, 0, 0))
-        draw.text((x + 36, y), label, fill=(0, 0, 0), font=small)
-        y += 34
-    if not from_config:
-        draw.text((x, y), "(generic palette: fill filaments in config.yaml)", fill=(160, 60, 60), font=small)
+        for i, part_line in enumerate(_wrap(label, small, text_w - 46)):
+            draw.text((x + 36, y), part_line, fill=(0, 0, 0), font=small)
+            y += 30
+        y += 4
+    if not palette_ready:
+        draw.text((x, y), "(no loaded slots in config: generic palette)", fill=(160, 60, 60), font=small)
         y += 30
     y += 10
     for line in lines_att + [""] + fixes + [""] + warns:

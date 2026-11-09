@@ -19,6 +19,8 @@ class InkRegion:
     name: str
     rgb: tuple[int, int, int]
     geometry: MultiPolygon        # real mm, Y up
+    slot: int | None = None
+    off_palette: dict | None = None
 
 
 @dataclass
@@ -273,7 +275,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         if geom.is_empty:
             warnings.append(f"{layer.name} ink vanished after clean-up")
             continue
-        inks.append(InkRegion(layer.name, layer.rgb, geom))
+        inks.append(InkRegion(layer.name, layer.rgb, geom, layer.slot, layer.off_palette))
     return Design(name, product, outline, inks, fixes, warnings)
 
 
