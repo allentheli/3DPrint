@@ -33,14 +33,26 @@ python -m charm_maker run <folder or files> --out output/<batch-name>
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
    For a drawing without card markers, pass `--product <key>` (keys are in `config.yaml`).
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
-3. Ask only if a card is unreadable or a color mapping is genuinely unclear.
+3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded:
+   map it to the nearest loaded color, or print it on its own plate with a spool swap.
+   Never merge colors silently.
 4. Hand over the plate files (as downloads in a cloud session) and say, for each plate,
    which filament goes in which AMS slot, the layer height and the plate type.
 5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets),
    rings (keychains, earrings, pendants), switch insertion (clickers).
 
+When Allen says he swapped a spool ("pink is in slot 3 now"): update which spool is in
+which slot in `config.yaml`, regenerate the calibration card and the chip plate, and
+remind him to rescan the calibration card.
+
 Hair clips and keychains work today. Clicker, earrings, pendant and magnet figure
 products are in config but their attachments are not built yet (milestones 3 to 5).
+
+The kids' palette is the colors loaded in the printer (brief sections 6 and 8). That
+change is in the brief but not in the code yet; it lands with milestone 2. Until then the
+kid cards still print the old rule pictures, and the pipeline still merges an extra color
+into the nearest one with a `check:` line. Treat every such line as an off-palette color
+and ask Allen once per batch, as in step 3.
 
 ## Commands that exist today
 

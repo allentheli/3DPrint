@@ -40,3 +40,22 @@ One line each, for choices the spec left open.
 - Face-down build: the front face is at z=0 so the colors are flush with the bed; pockets open upward.
 - Plates: shelf packing with 6 mm gaps and an 8 mm bed margin; pieces sorted by filament count then size, each plate limited to 4 filaments; generic-palette slots are numbered white, black, then the rest.
 - Previews use a small software depth-buffer renderer on Pillow (no GPU in the cloud).
+
+## Brief change: kids' palette is the loaded colors
+
+Allen's calls, written into the brief:
+
+- Kids draw only with markers matching the loaded spools; kid cards say "Use the colors in the printer" (printer picture), "Big and bold," "Color it in." The "black + 1 color" limit is gone.
+- Config tracks which spool is in which AMS slot right now; Allen reports swaps in plain words and the session updates config.
+- A marker calibration card has one box per loaded filament and is rescanned when spools or markers change; kid ink is matched to the calibrated marker colors instead of grouped by hue.
+- A color that isn't loaded is asked about once per batch (nearest loaded color, or own plate with a spool swap), never merged silently. This replaces milestone 1's merge-with-a-check-line.
+- Filament chips: one per loaded filament, a plate under about 15 minutes, printed live as the kids' printer tour.
+- Shopping list: one broad-tip marker per loaded color, nothing else on the table.
+
+My choices while writing it in:
+
+- The white base spool gets no calibration box and no marker, because white is the paper.
+- The chip plate uses Print sequence By object, so the AMS swaps once per chip instead of every layer; that is what keeps it near 15 minutes. Untested until it is sliced.
+- Chips are single-filament tags with the slot number cut into the face, not raised, so kids can match a color to its slot.
+- Config keeps the owned-spool list and the loaded slots separate, so a swap is a one-line change.
+- The code still follows the old rules (card text, black + 1 color, merging); the change is scheduled into milestone 2.

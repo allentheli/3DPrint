@@ -1,6 +1,6 @@
 # Charm Maker: build instructions for Claude Code
 
-Last updated: November 9, 2026
+Last updated: November 9, 2026 (kids' palette is the colors loaded in the printer: sections 6, 7, 8, 9, 10, 11)
 
 You are building a small tool that turns a photo of a hand drawing into a ready-to-print file for Allen's Bambu Lab X2D with AMS. Read this whole file before writing code.
 
@@ -126,9 +126,10 @@ You generate the printable cards, so the markers on the cards always match what 
   - Magnet figure: a box with a light "ground line" near the bottom labeled "stand here."
   - Earrings: two boxes side by side.
   - Pendant: a box with a small bail picture at the top.
-- Picture rules on every kid card: "fat marker," "black + 1 color," "no pencil or crayon."
+- Picture rules on every kid card, each with a small picture: "Use the colors in the printer" (a small printer), "Big and bold," "Color it in." Kids draw only with the markers that match the loaded spools (section 8), so kid cards carry no color-count rule.
 - A name line outside the drawing box. Do not read the name with OCR. Just crop that area into the preview so Allen can match pieces to kids.
 - **Half-drawn cards** for the younger kids: the same cards with a simple outline pre-printed in black (a cloud, a heart, a cat head, a star, a bow). The reader treats the printed black outline as ink, so the outline is part of the kid's design.
+- **Marker calibration card:** generated from the loaded slots in config (section 8). Same corner markers as the other cards, and one box per loaded filament, labeled with its slot number and spool name. Allen fills each box solid with the marker that matches that spool and scans the card. The reader stores each marker's photographed color with its slot and from then on reads kid ink by the nearest calibrated marker. Allen rescans it whenever he changes spools or markers. The white base spool gets no box, because white is the paper.
 - Adult cards allow up to 3 colors plus black.
 
 ### Other inputs to accept
@@ -141,7 +142,7 @@ You generate the printable cards, so the markers on the cards always match what 
 
 1. **Read the card:** find the markers, straighten and crop the photo, get the exact scale, read the card type and number. If the markers are not found, use the fallback above.
 2. **Clean:** even out lighting and shadows, then remove the paper and the printed guides.
-3. **Separate the inks:** black (dark, low color) and up to 1 color for kid cards or 3 for adult cards (group the colored pixels by hue). Paper areas inside the outline become the base color.
+3. **Separate the inks:** on kid cards, match every inked pixel to the nearest calibrated marker color from the calibration card, so each ink lands on a loaded slot. Ink far from every calibrated marker is a color that isn't loaded: handle it with the off-palette rule (section 8), never merge it silently. Adult cards group the colored pixels by hue, up to 3 colors plus black. Paper areas inside the outline become the base color.
 4. **Shape:** the outer edge of all the ink, filled in, is the piece's outline.
 5. **Fix for printing**, and log every fix for the preview:
    - Ink areas narrower than 1.0 mm at real size get thickened. Specks smaller than about 1 square mm are removed. Tiny holes are filled.
@@ -159,9 +160,13 @@ You generate the printable cards, so the markers on the cards always match what 
 
 ## 8. Colors and plates
 
-- **Filament list** in config: name, AMS slot and color code for each spool Allen owns. He fills it in once from his spools.
-- Map each ink color to the nearest filament and show the mapping in the preview. Allen can override it in plain words ("card 3's pink should be Magenta").
-- **Plate planner:** pack many designs onto each plate. Group designs so each plate needs at most N filaments (setting, default 4, one AMS). Designs with the same colors share a plate. Because the colors sit only in the first few layers, a full plate costs little extra purge.
+- **Spool list** in config: name and color code for each spool Allen owns. He fills it in once.
+- **Loaded slots** in config: which spool is in which AMS slot right now. Allen says swaps in plain words ("pink is in slot 3 now"). Update config, regenerate the calibration card and the chip plate, and remind him to rescan the calibration card.
+- **The kids' palette is the loaded colors.** The table holds one broad-tip marker per loaded color and nothing else, so every marker matches a loaded spool and a batch normally fits one plate with no spool swaps.
+- Map each ink to its loaded slot through the calibration card and show the mapping in the preview. Allen can override it in plain words ("card 3's pink should be Magenta").
+- **Off-palette colors:** if a drawing uses a color that isn't loaded, ask Allen once per batch, listing every card and color affected: map it to the nearest loaded color, or print those designs on their own plate with a spool swap. Never merge silently. For a swap, the print notes say which slot gets which spool, and what goes back afterwards.
+- **Filament chips:** a plate with one small chip per loaded filament, which Allen prints live as the kids' printer tour before they design. Each chip is a thin flat tag in a single filament with its slot number cut into the face. Keep the plate under about 15 minutes: set Print sequence to By object so the AMS swaps once between chips instead of on every layer. Bambu Studio's time estimate decides; shrink the chips if it runs over. Regenerate the plate whenever the loaded slots change.
+- **Plate planner:** pack many designs onto each plate, at most N filaments per plate (setting, default 4, one AMS). With the loaded palette a batch normally needs one plate until it is full. Separate plates come only from off-palette swaps or different layer heights. Because the colors sit only in the first few layers, a full plate costs little extra purge.
 - **Orientation:** design pieces face-down (including magnet figures); clicker cases upright; keycaps face-down with the socket up; stands in whatever orientation needs no supports. Give clicker cases and stands their own plates if their best layer heights differ from the charms'.
 - **Print notes** with every output: suggested layer height (0.12 mm for charms, figures and earrings, 0.2 mm for clicker cases and stands), and plate choice (the smooth plate gives a glossy face, the textured plate a matte, sparkly face).
 
@@ -173,7 +178,7 @@ Finish and show each milestone before starting the next. Each ends with somethin
 
 **Milestone 1: cards, hair clips and keychains.** The card PDF (clip and keychain cards first), the reader, the full pipeline, previews and 3MF export. Done when Allen scans a test card with the iPhone Notes document scanner, uploads it, gets a file that opens in Bambu Studio and prints, and the charm sits on the real clip.
 
-**Milestone 2: party batch.** A folder of photos becomes packed plates in one go, with the contact sheet, filament mapping and overrides, and the half-drawn card set. Done when eight cards become plates in one request.
+**Milestone 2: party batch.** A folder of photos becomes packed plates in one go, with the contact sheet, filament mapping and overrides, and the half-drawn card set. Also the loaded-palette pieces: loaded slots in config, the marker calibration card, the off-palette question, the filament chip plate, and the new kid card rule text. Done when eight cards become plates in one request and the chip plate slices under about 15 minutes.
 
 **Milestone 3: clicker.** Case, keycap and the glue-on fallback. Done when a real switch snaps in, clicks freely, and the keycap stays on.
 
@@ -189,9 +194,11 @@ When Allen uploads photos or images:
 
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
-3. Ask only if a card is unreadable or a color mapping is genuinely unclear.
+3. Ask only if a card is unreadable, or once per batch if a drawing uses a color that isn't loaded: map it to the nearest loaded color, or print it on its own plate with a spool swap. Never merge colors silently.
 4. Hand over the plate files and say, for each plate, which filament goes in which AMS slot, the layer height and the plate type.
 5. Remind him of finishing steps only when they apply: glue (clips, studs, magnets), rings (keychains, earrings, pendants), switch insertion (clickers).
+
+When Allen says he swapped a spool ("pink is in slot 3 now"): update the loaded slots in config, regenerate the calibration card and the chip plate, and remind him to rescan the calibration card.
 
 ## 11. For Allen: things to have on hand
 
@@ -199,7 +206,7 @@ When Allen uploads photos or images:
 - **Rings and findings:** 25 mm split key rings, small jump rings, earring hooks, glue-on stud posts with flat pads (hypoallergenic metal), necklace chains or cord.
 - **Magnets and washers:** 10 × 2 mm neodymium disc magnets; 1-inch zinc-plated steel fender washers for the stands. Many stainless steel washers are not magnetic.
 - **Switches:** the blue clicky switches (have).
-- **Markers:** broad-tip black plus bright colors. Avoid pencil, crayon, glitter and very pale colors until tested.
+- **Markers:** one broad-tip marker per loaded color, the closest match you can find to each spool. No other markers on the table. White needs no marker: it is the paper.
 - **Optional:** a cheap digital caliper makes the fit tests and pad measurement easier.
 - **Safety:** glued charms and magnets are small parts. Check every glue joint before handing a piece over, and keep any magnet that pops loose away from young children.
 
