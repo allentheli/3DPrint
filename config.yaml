@@ -1,0 +1,203 @@
+# Charm Maker configuration. Every size, tolerance and filament lives here.
+# All lengths are millimetres unless the key says otherwise.
+#
+# Values under `fit:` are fit-critical. They start as guesses and are replaced by
+# the milestone 0 fit-test results. Do not trust a value whose `tested` is false.
+
+printer:
+  name: Bambu Lab X2D with AMS
+  # Usable plate size. Checked against the Bambu documentation before milestone 2.
+  bed_size: [256, 256]
+  max_filaments_per_plate: 4      # one AMS
+  layer_height_charms: 0.12       # charms, figures, earrings, pendants, keycaps
+  layer_height_cases: 0.20        # clicker cases and figure stands
+  nozzle: 0.4
+
+# Spools Allen owns. Fill in once. `slot` is the AMS slot (1-4), `color` is a hex
+# code close to the real filament color, used only for matching ink colors.
+filaments: []
+# Example:
+#  - {name: "White PLA", slot: 1, color: "#F2F2F2"}
+#  - {name: "Black PLA", slot: 2, color: "#1A1A1A"}
+
+# Image to print pipeline settings.
+process:
+  card_scale: 3                   # drawing box is 3x the product's real size
+  color_face_depth: 0.6           # front layers that hold the colors, flush
+  border: 1.5                     # die-cut style border in the base color
+  border_default_kid_cards: true
+  border_default_adult_cards: false
+  min_ink_width: 1.0              # thinner ink gets thickened to this
+  min_speck_area_mm2: 1.0         # smaller specks are removed
+  min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
+  corner_round: 0.5
+  base_color: white               # "white" or "kid_color"
+  kid_card_max_colors: 1          # plus black
+  adult_card_max_colors: 3        # plus black
+
+# Fit-critical values. Each has a `value` (used by the pipeline), `tested`
+# (true once set from a real print) and the `candidates` printed on the fit-test
+# plate, in piece-number order. `python -m charm_maker fit-results` writes them.
+fit:
+  clip_pocket_diameter:
+    value: 11.5
+    tested: false
+    candidates: [11.2, 11.5, 11.8]
+    note: round pocket on the back of a hair clip charm for the clip's 11 mm pad
+  keyring_hole_diameter:
+    value: 5.0
+    tested: false
+    candidates: [4.5, 5.0, 5.5]
+    note: hole in a keychain's ring tab for a 25 mm split ring
+  jump_ring_hole_diameter:
+    value: 2.0
+    tested: false
+    candidates: [1.8, 2.0, 2.3]
+    note: hole near the top of a hook earring or pendant for a jump ring
+  magnet_pocket_diameter:
+    value: 10.4
+    tested: false
+    candidates: [10.2, 10.4, 10.6]
+    note: snug pocket for a 10 x 2 mm disc magnet
+  switch_cutout:
+    value: 14.0
+    tested: false
+    candidates: [13.9, 14.0, 14.1]
+    note: square cutout in the 1.5 mm clicker top plate for an MX-style switch
+  stem_socket_clearance:
+    value: 0.25
+    tested: false
+    candidates: [0.15, 0.25, 0.35]
+    note: added to each arm width of the keycap's cross socket for the MX stem
+
+# Hardware sizes that are not tolerances (measured or from the manufacturer).
+hardware:
+  clip_pad_diameter: 11.0
+  clip_pocket_depth: 0.6
+  clip_pocket_min_wall: 1.5
+  clip_min_circle: 13.0           # if no circle this big fits, grow the border or add a backer
+  clip_backer_diameter: 14.0
+  magnet_diameter: 10.0
+  magnet_thickness: 2.0
+  magnet_pocket_depth: 1.9        # slightly shallower than the magnet so it sits proud
+  magnet_pocket_min_wall: 1.2
+  magnet_pocket_min_floor: 1.2
+  magnet_height_above_bottom: 12.0  # standard height so figures line up with the stand
+  magnet_second_pocket_above: 45.0  # figures longer than this get two magnets
+  keyring_hole_min_wall: 2.5
+  jump_ring_hole_min_wall: 1.5
+  bail_hole_diameter: 3.5
+  bail_hole_min_wall: 1.5
+  washer_diameter: 25.4           # 1 inch zinc-plated steel fender washer
+  washer_thickness: 1.6
+  mx_stem_span: 4.1               # length of each arm of the plus-shaped stem
+  mx_stem_arm_x: 1.17             # width of the arm that runs left-right
+  mx_stem_arm_y: 1.31             # width of the arm that runs front-back
+  mx_stem_height: 3.6
+  mx_plate_thickness: 1.5
+  mx_cavity_size: 15.6            # closed cavity under the plate, square
+  mx_cavity_depth: 9.0
+  mx_full_travel: 4.0
+
+# Products. Flat products share the same pipeline; `attachment` picks the extra
+# feature. New flat products can be added here without new code.
+products:
+  hair_clip:
+    label: Hair clip charm
+    audience: kids
+    size_min: 14
+    size_max: 25
+    default_size: 22
+    thickness: 2.4
+    attachment: clip_pocket
+    copies: 1
+    card: hair_clip
+  keychain:
+    label: Keychain
+    audience: kids
+    size_min: 35
+    size_max: 55
+    default_size: 45
+    thickness: 3.2
+    attachment: ring_tab
+    tab_position: top             # top, top-left, top-right, left, right
+    copies: 1
+    card: keychain
+  clicker:
+    label: Clicker keychain
+    audience: kids
+    size_min: 16
+    size_max: 22
+    default_size: 19
+    thickness: 2.4                # keycap top plate; the socket boss sits behind it
+    attachment: stem_socket
+    glue_on_fallback: false       # true makes a flat charm for a store-bought blank keycap
+    copies: 1
+    card: clicker
+  magnet_figure:
+    label: Magnet figure
+    audience: kids
+    size_min: 30
+    size_max: 55
+    default_size: 45
+    thickness: 3.2
+    attachment: magnet_pocket
+    copies: 1
+    card: magnet_figure
+  earrings:
+    label: Earrings
+    audience: adults
+    size_min: 15
+    size_max: 35
+    default_size: 25
+    thickness: 1.8
+    attachment: jump_ring_hole    # or stud_back
+    style: hook                   # hook or stud
+    pair_mode: identical          # identical, mirrored, different
+    copies: 2
+    card: earrings
+  pendant:
+    label: Necklace pendant
+    audience: adults
+    size_min: 25
+    size_max: 45
+    default_size: 35
+    thickness: 2.6
+    attachment: bail_hole         # or ring_tab
+    copies: 1
+    card: pendant
+
+# The universal figure stand (one design, no drawing).
+stand:
+  base_width: 44
+  base_depth: 34
+  base_thickness: 3.0
+  base_corner_radius: 4.0
+  upright_width: 36
+  upright_height: 34              # above the base, measured along the tilted face
+  upright_thickness: 2.6
+  upright_tilt_deg: 10            # leans backward
+  upright_from_back_edge: 8.0
+  front_wall: 0.6                 # plastic between the magnet and the washer
+  washer_recess_clearance: 0.4    # added to the washer diameter
+  washer_recess_depth: 2.0
+  lip_gap: 4.5                    # room for the figure's bottom in front of the upright
+  lip_thickness: 2.0
+  lip_height: 1.5
+
+# Fit-test plate (milestone 0) coupon sizes. Not fit-critical.
+fit_test:
+  gap: 5.0                        # space between pieces
+  label_height: 4.0
+  label_stroke: 0.8
+  label_raise: 0.4
+  coupon_corner_radius: 2.0
+  clip_coupon: [17, 26, 2.4]      # width, length, thickness
+  keyring_coupon: [12, 22, 3.2]
+  jump_ring_coupon: [10, 18, 1.8]
+  magnet_coupon: [16, 26, 3.2]
+  switch_coupon: [22, 32, 1.5]
+  stem_coupon: [16, 26, 2.4]
+  stem_boss_diameter: 8.0
+  stem_boss_height: 4.5
+  stem_socket_depth: 4.0
