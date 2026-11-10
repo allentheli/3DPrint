@@ -1,5 +1,14 @@
 # Changelog
 
+## Test drive 1 (2026-11-10)
+
+First real scan: a cat on hair clip card 01, scanned with iPhone Notes.
+
+- Scanned PDFs are read at the photo's own resolution. iPhone Notes makes 27 x 36 inch pages, so the old fixed 300 dpi blew the photo up 4x (8196 x 10753 px) and two of the four corner markers were missed. Now 1966 x 2579 px, all four found, ten times faster.
+- When a card is missing a corner marker, the reader looks again on smaller copies of the image (for 48 MP phone photos too).
+- A drawn color too small to print as its own color (the cat's 0.6 mm pink tongue) used to print in its neighbor's color without a word. Now a `check:` line says so and where it went.
+- 4 new regression tests in `tests/test_real_world.py`.
+
 ## Figurines (2026-11-10)
 
 - New style `figurine` for any card: the drawing's front inflated like a balloon, thick where the drawing is wide. One solid split into the kid's color parts.

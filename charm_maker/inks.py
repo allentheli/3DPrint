@@ -256,6 +256,8 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
     # the smallest instead would wipe out small but important colors, like black eyes.)
     sizes = {i: int((near == i).sum()) for i in alive}
     flat_rgb = rgb.reshape(-1, 3)
+    before_cap = near.copy()
+    capped: list[int] = []
     while len(alive) > max_colors:
         # Compare each color as the pen really is (its strongest pixels, not its pale
         # edges), on full color difference with lightness included: dark brown eyes on an
@@ -267,6 +269,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         _, i, j = min(pairs)
         drop, keep = (i, j) if sizes[i] < sizes[j] else (j, i)
         alive.remove(drop)
+        capped.append(drop)
         w_drop = color_word(tuple(int(v) for v in _lab_to_rgb(rep[drop])))
         w_keep = color_word(tuple(int(v) for v in _lab_to_rgb(rep[keep])))
         dist[drop] = np.inf
@@ -275,6 +278,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         notes.append(f"more than {max_colors} colors: the two most alike ({w_drop} and {w_keep}) print as one")
 
     flat_rgb = rgb.reshape(-1, 3)
+    notes += _lost_marks(cfg, ink, idx, lab, flat_rgb, near, seeds, before_cap, capped, px_per_mm)
     layers: list[InkLayer] = []
     used: dict[str, int] = {}
     for i in sorted(alive, key=lambda i: float(np.median(lab[near == i][:, 0])) if (near == i).any() else 0):
@@ -289,6 +293,47 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         name = word if used[word] == 1 else f"{word} {used[word]}"
         layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
     return InkResult(layers, paper_rgb, notes)
+
+
+def _lost_marks(cfg, ink, idx, lab, flat_rgb, near, seeds, before_cap, capped, px_per_mm) -> list[str]:
+    """Never change a drawn color silently. A small but real mark (a tongue on a hair
+    clip) can be too small to be its own color and print in its neighbor's color. It is a
+    solid, strongly colored blob at the card's own scale, unlike camera fringe along a
+    line. Colors merged because of the color limit already have their own note."""
+    from .palette import color_word, lab_distance
+
+    pr, pc = cfg["process"], cfg["palette"]
+    px_card = px_per_mm / pr["card_scale"]
+    far = np.zeros(len(idx), bool)
+    for j in np.unique(near):
+        sel = near == j
+        far[sel] = lab_distance(lab[sel], seeds[j], pc["lightness_weight"], pc["chroma_weight"]) > pr["color_merge_distance"]
+    chroma = np.hypot(lab[:, 1], lab[:, 2])
+    far &= (chroma >= 20.0) & ~np.isin(before_cap, capped)
+    if not far.any():
+        return []
+    mask = np.zeros(ink.shape, np.uint8)
+    mask.ravel()[idx[far]] = 1
+    rc = max(1, int(round(0.25 * px_card)))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * rc + 1, 2 * rc + 1)))
+    n, lbl, stats, _ = cv2.connectedComponentsWithStats(mask)
+    pos = {int(p): k for k, p in enumerate(idx)}
+    notes = []
+    for c in range(1, n):
+        if stats[c, cv2.CC_STAT_AREA] < 1.0 * px_card ** 2:
+            continue
+        ks = np.array([pos[int(p)] for p in np.flatnonzero(lbl.ravel() == c) if int(p) in pos])
+        if ks.size == 0:
+            continue
+        word = color_word(_representative(flat_rgb[idx[ks]], lab[ks]))
+        j = int(np.bincount(near[ks]).argmax())
+        into = color_word(_representative(flat_rgb[idx[near == j]], lab[near == j]))
+        if word == into:
+            continue
+        area = stats[c, cv2.CC_STAT_AREA] / px_per_mm ** 2
+        notes.append(f"a small {word} mark ({area:.1f} mm² at real size) is too small to print as its own color "
+                     f"and prints {into}; it would show on a bigger piece")
+    return notes
 
 
 def _representative(rgb01: np.ndarray, lab: np.ndarray) -> tuple[int, int, int]:

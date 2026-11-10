@@ -167,3 +167,11 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 - Prints lying on its back (front up), tree supports, 0.16 mm layers, figurines on their own plates so charm plates keep supports off.
 - No AI image-to-3D (Meshy, TripoSR): drawings would leave the machine, and the result would not be faithful to the drawing.
 - Ink outlines are made disjoint after tracing, in ink order (black first): the earlier ink keeps a shared border. Pixel masks were already disjoint; the 0.15 mm closing in the tracer made neighbours overlap.
+
+## Test drive 1
+
+- Scanned PDF pages render at the embedded photo's resolution (the photo covering most of the page), capped at 8000 px; drawn (vector) pages still render at 300 dpi.
+- Marker retry: if any card found has fewer than 4 markers, detect again with the longest side at 4000, 2500 and 1600 px; per corner the sharpest copy wins; corners are scaled back to full-size pixels.
+- Lost-mark warning: a blob printing in a color farther than the merge distance (20) from its own, with chroma 20 or more, surviving a 0.25 card-mm opening (fringe does not) and at least 1 card mm². Colors merged by the color limit are skipped (they have their own note). The mark is not grown to a printable size: at 0.6 mm inside a 1 mm outline it would be covered by the thickened lines anyway.
+- Fine pen drawings on hair clips (25 mm) lose detail to the 1.0 mm minimum line width: lines get about 2.5x thicker, whiskers merge, small gaps fill. Asked Allen whether to try thinner minimum lines or bigger pieces; nothing changed until he answers.
+

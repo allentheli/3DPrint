@@ -24,8 +24,25 @@ class CardRead:
     notes: list[str] = field(default_factory=list)
 
 
+def _scan_zoom(page, max_side: int = 8000) -> float | None:
+    """The zoom that renders a scanned PDF page at its photo's own resolution, or None for
+    a page without a photo. iPhone Notes scans have odd page sizes (27 x 36 inches), so a
+    fixed dpi can blow the photo up 4x, which wastes time and hides markers."""
+    best = None
+    for info in page.get_images(full=True):
+        xref, w_px = info[0], info[2]
+        for rect in page.get_image_rects(xref):
+            if rect.width > 0.5 * page.rect.width:            # the scan, not a logo
+                z = w_px / rect.width
+                best = z if best is None else max(best, z)
+    if best is None:
+        return None
+    return min(best, max_side / max(page.rect.width, page.rect.height))
+
+
 def load_image(path: Path, page_index: int = 0, dpi: int = 300) -> np.ndarray:
-    """Load a JPEG, PNG, HEIC or PDF page as a BGR array, honoring EXIF rotation."""
+    """Load a JPEG, PNG, HEIC or PDF page as a BGR array, honoring EXIF rotation. A scanned
+    PDF page is rendered at its photo's own resolution; a drawn (vector) page at `dpi`."""
     from PIL import Image, ImageOps
 
     path = Path(path)
@@ -33,7 +50,9 @@ def load_image(path: Path, page_index: int = 0, dpi: int = 300) -> np.ndarray:
         import pymupdf
 
         doc = pymupdf.open(str(path))
-        pix = doc[page_index].get_pixmap(dpi=dpi)
+        page = doc[page_index]
+        zoom = _scan_zoom(page)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom)) if zoom else page.get_pixmap(dpi=dpi)
         img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
     else:
         if path.suffix.lower() in (".heic", ".heif"):
@@ -51,24 +70,37 @@ def pdf_page_count(path: Path) -> int:
     return pymupdf.open(str(path)).page_count
 
 
+DETECT_SIDES = (4000, 2500, 1600)    # smaller copies to try when a marker is missed
+
+
 def detect_cards(cfg: dict, image: np.ndarray) -> dict[tuple[int, int], list[tuple[int, np.ndarray]]]:
-    """Find our markers. Returns {(type_id, number): [(corner_index, corners_px[4,2]), ...]}."""
+    """Find our markers. Returns {(type_id, number): [(corner_index, corners_px[4,2]), ...]}.
+    The detector misses markers that are hundreds of pixels wide (a 48 MP phone photo, a
+    blown-up scan), so when a card is missing a corner it looks again on smaller copies
+    and keeps what it finds there, in full-size pixels."""
     dictionary = aruco_dictionary(cfg)
     params = cv2.aruco.DetectorParameters()
     params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
     detector = cv2.aruco.ArucoDetector(dictionary, params)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    corners, ids, _ = detector.detectMarkers(gray)
-    found: dict[tuple[int, int], list[tuple[int, np.ndarray]]] = {}
-    if ids is None:
-        return found
-    for quad, mid in zip(corners, ids.flatten()):
-        decoded = decode_marker_id(int(mid))
-        if decoded is None:
-            continue
-        ci, type_id, number = decoded
-        found.setdefault((type_id, number), []).append((ci, quad.reshape(4, 2).astype(np.float64)))
-    return found
+    side = max(gray.shape)
+    scales = [1.0] + [s / side for s in DETECT_SIDES if s < side]
+    seen: dict[tuple[int, int], dict[int, np.ndarray]] = {}
+    for k in scales:
+        small = gray if k == 1.0 else cv2.resize(gray, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
+        corners, ids, _ = detector.detectMarkers(small)
+        if ids is not None:
+            for quad, mid in zip(corners, ids.flatten()):
+                decoded = decode_marker_id(int(mid))
+                if decoded is None:
+                    continue
+                ci, type_id, number = decoded
+                card = seen.setdefault((type_id, number), {})
+                if ci not in card:                   # the sharpest copy wins
+                    card[ci] = quad.reshape(4, 2).astype(np.float64) / k
+        if seen and all(len(c) == 4 for c in seen.values()):
+            break
+    return {key: sorted(c.items()) for key, c in seen.items()}
 
 
 def _product_for_type(cfg: dict, type_id: int) -> str | None:

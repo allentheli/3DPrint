@@ -148,3 +148,87 @@ def test_neighbouring_colors_never_overlap(cfg):
         piece = build_piece(cfg, design, style=style)
         for a, b in itertools.combinations(piece.parts, 2):
             assert (piece.parts[a] ^ piece.parts[b]).volume() < 1e-3, (style, a, b)
+
+
+def _notes_style_scan(img, path):
+    """An iPhone Notes scan: one photo on a page as many points wide as it has pixels
+    (a letter card scanned at 230 dpi becomes a 27 x 36 inch page)."""
+    import io
+
+    import pymupdf
+
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    doc = pymupdf.open()
+    page = doc.new_page(width=img.width, height=img.height)
+    page.insert_image(page.rect, stream=buf.getvalue())
+    doc.save(str(path))
+    return path
+
+
+def test_iphone_notes_scan_finds_all_four_markers(cfg, tmp_path):
+    """Test drive 1: a Notes scan PDF was rendered at 300 dpi, blowing the photo up 4x
+    (8196 x 10753 px). Markers 900 px wide were missed: 2 of 4 found."""
+    from charm_maker.reader import detect_cards, load_image
+    from tests.synthetic import card_image
+
+    img, lay, ppm, to_px = card_image(cfg, "hair_clip", 1, tmp_path, dpi=230)
+    pdf = _notes_style_scan(img, tmp_path / "scan.pdf")
+    page = load_image(pdf)
+    assert abs(page.shape[1] - img.width) <= 2, "rendered at the photo's own resolution, not blown up"
+    found = detect_cards(cfg, page)
+    assert [ci for ci, _ in found[(cfg["cards"]["type_ids"]["hair_clip"], 1)]] == [0, 1, 2, 3]
+
+
+def test_a_marker_missed_at_full_size_is_found_on_a_smaller_copy(cfg, tmp_path, monkeypatch):
+    """The real scan's misses (iPhone sharpening on 900 px markers) don't reproduce on clean
+    synthetic cards, so simulate one: the full-size pass loses a marker, the retry on a
+    smaller copy must find it, at the right place in full-size pixels."""
+    import cv2
+    import numpy as np
+
+    from charm_maker.reader import detect_cards
+    from tests.synthetic import card_image
+
+    img, *_ = card_image(cfg, "hair_clip", 1, tmp_path, dpi=230)
+    page = cv2.resize(cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR), None, fx=2.0, fy=2.0)
+    key = (cfg["cards"]["type_ids"]["hair_clip"], 1)
+    truth = dict(detect_cards(cfg, page)[key])
+    real = cv2.aruco.ArucoDetector
+
+    class Flaky:
+        def __init__(self, *a):
+            self.d = real(*a)
+
+        def detectMarkers(self, gray):
+            corners, ids, rej = self.d.detectMarkers(gray)
+            if max(gray.shape) == max(page.shape[:2]) and ids is not None:   # full size: lose one
+                return corners[1:], ids[1:], rej
+            return corners, ids, rej
+
+    monkeypatch.setattr(cv2.aruco, "ArucoDetector", Flaky)
+    found = dict(detect_cards(cfg, page)[key])
+    assert sorted(found) == [0, 1, 2, 3]
+    for ci, quad in found.items():
+        assert np.abs(quad - truth[ci]).max() < 3.0, "corners are in full-size pixels"
+
+
+def test_a_drawn_color_too_small_to_print_is_reported(cfg, tmp_path):
+    """Test drive 1: a cat's pink tongue, 0.6 mm across on a hair clip, silently printed
+    black. It may be too small to be its own color, but the run must say so."""
+    pink = (236, 120, 160)            # measured from the real scan's tongue
+    card = draw_strokes_card(cfg, tmp_path, "hair_clip", 7, [
+        ("line", circle_pts(30), GRAY_PEN, 1.6),
+        ("line", circle_pts(8, 0, -4, 20, np.pi * 1.15, np.pi * 1.85), GRAY_PEN, 1.4),    # the mouth
+        ("dot", (0, -12), pink, 2.2),                                                   # the tongue
+        ("dot", (-10, 8), GRAY_PEN, 3.0), ("dot", (10, 8), GRAY_PEN, 3.0),
+    ], "tongue.jpg")
+    r = run_batch(cfg, [card], tmp_path / "out")
+    warnings = r.pieces[0].design.warnings
+    assert any("small pink mark" in w and "too small to print" in w for w in warnings), warnings
+
+
+def test_no_small_mark_warning_on_plain_drawings(run):
+    """Camera fringe and pale fill are not reported as lost marks."""
+    for p in run.pieces:
+        assert not any("small" in w and "mark" in w for w in p.design.warnings), (p.name, p.design.warnings)

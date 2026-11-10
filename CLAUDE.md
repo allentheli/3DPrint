@@ -112,7 +112,8 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
   value, a color that starts on a spool that doesn't really match, two colors starting on
-  the same spool, more than 3 ink colors, fewer than 4 markers found, a renamed duplicate.
+  the same spool, more than 3 ink colors, fewer than 4 markers found, a renamed duplicate, a
+  drawn color too small to print as its own color (it prints in its neighbor's color).
 
 Filament overrides in plain words ("card 3's pink should be Magenta") become
 `--map "clip-03 pink=Magenta"`; run again. Names are matched against the loaded spools
