@@ -1,5 +1,14 @@
 # Changelog
 
+## Figurines (2026-11-10)
+
+- New style `figurine` for any card: the drawing inflated into a rounded 60 mm figure, thick where the drawing is wide. One solid split into the kid's color parts.
+- Back blank (default) or mirror (`--figurine-back`); bottom flat (default), disc stand or round (`--figurine-base`); per card or for the whole run.
+- Figurines go on their own plates; print notes turn tree supports on, use 0.16 mm layers and say to peel the supports off.
+- Fixed while building this: a figurine from a keychain card no longer gets the split-ring finishing step.
+- Fixed for every style: where two crayon colors interlock (the candy corn), the traced outline of one color closed over the other's thin teeth, so the two color parts overlapped by a fraction of a cubic millimetre. Earlier colors now keep the shared border; overlap on all six real drawings is now zero. Regression test in `tests/test_real_world.py`.
+- 11 new tests: one sound body with no part overlap for every back and base, size, thickness, colors only on the front with a blank back, flat bottom and plain disc, own plate and notes, interlocking colors.
+
 ## Test drive (2026-11-09)
 
 - `test-drive`: a parent page and six blank cards (two hair clips, two keychains, a magnet figure, a necklace) for trying the whole flow with one kid. A test renders every card and reads it back.

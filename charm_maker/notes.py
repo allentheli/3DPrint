@@ -14,6 +14,7 @@ FINISHING = {
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
+    "figurine": "Figurines: let the plate cool, then peel the tree supports off the back with your fingers or flush cutters; sand any nubs. Figurines have no ring, clip or loop: they are toys to stand up or hold.",
 }
 
 
@@ -55,8 +56,17 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             users = sorted({pp.piece.name for pp in plate.pieces for ff in pp.assignments.values() if ff == f})
             lines.append(f"| {slots[f]} | {f.name} ({f.hex}) | {', '.join(users)} |")
         lines.append("")
-        kinds = {pp.piece.design.product for pp in plate.pieces}
-        products |= kinds
+        products |= {"figurine" if pp.piece.style == "figurine" else pp.piece.design.product for pp in plate.pieces}
+        figs = [pp.piece.name for pp in plate.pieces if pp.piece.style == "figurine"]
+        if figs:
+            lines.append(f"- Figurines ({', '.join(figs)}): they lie on their backs with the front up. Turn supports **on**: "
+                         "in the Process panel open the **Support** tab, tick **Enable support**, set **Type** to **tree(auto)**.")
+            lines.append(f"- Layer height: **{cfg['figurine']['layer_height']} mm**. Plate: either PEI plate; "
+                         "the back and the supports sit on it, and the colored front prints on top.")
+            lines.append("- Pieces: " + ", ".join(f"{pp.piece.name} ({pp.piece.size()[0]:.0f} x {pp.piece.size()[1]:.0f} mm, "
+                                                    f"{pp.piece.thickness:.0f} mm thick)" for pp in plate.pieces))
+            lines.append("")
+            continue
         layer = pr["layer_height_charms"]
         lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
         up = [pp.piece.name for pp in plate.pieces if pp.piece.face_up]

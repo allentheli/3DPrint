@@ -287,9 +287,14 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
     outline = outline.simplify(0.02, preserve_topology=True)
 
     inks: list[InkRegion] = []
+    claimed = Polygon()
     for layer, m in resolved:
         geom = mask_to_polygons(m, px_per_mm)
-        geom = _as_multi(geom.intersection(outline))
+        # The pixel masks never overlap, but their traced outlines can bulge a hair into a
+        # neighbour's; earlier inks keep the shared border, so color parts never overlap.
+        geom = geom.intersection(outline).difference(claimed)
+        geom = _as_multi(MultiPolygon([g for g in _as_multi(geom).geoms if g.area > 0.005]))
+        claimed = claimed.union(geom)
         if geom.is_empty:
             warnings.append(f"{layer.name} ink vanished after clean-up")
             continue

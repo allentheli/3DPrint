@@ -71,6 +71,11 @@ Every product can be flat (the default) or shaped. All shapes come straight from
 - Shaped pieces print face-up with the colors on top, back flat on the bed. The clip pocket stays on the back (the printer bridges over it); loops stay flush with the back; magnets still glue onto the flat back.
 - Per product base and puff heights live in config. The style is chosen per run or per card in plain words ("make card 3 puffy").
 - Trade-off: colors change over more layers, so shaped pieces print slower and purge more, and the front shows fine layer lines instead of the glossy bed finish.
+- **Figurine:** the drawing inflated into a rounded figure, like a balloon or a plush toy, about 60 mm tall. The thickness at each point follows how wide the drawing is there (the largest circle inside the outline that covers it), so a wide body becomes a fat round body and an arm a round tube. Still no redrawing: the outline and colors are the kid's, and the depth is a guess from the outline only.
+  - The colors sit on the front. The back is blank by default (a character should not have eyes on the back), or a mirror of the front on request (patterns, ornaments seen from both sides).
+  - The bottom is cut flat so it stands (default), or gets a round disc stand, or stays round.
+  - Any card can become a figurine; the card's ring, clip or loop is not used. One solid split into color parts, like the other shaped styles.
+  - Prints lying on its back, front up, with tree supports, on its own plate, at 0.16 mm layers. Supports are fine here (Allen's call).
 
 ### Loops for pendants and earrings
 
@@ -226,8 +231,8 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): update the loaded 
 
 Do not build these unless Allen asks:
 
-- AI image-to-3D figurines (such as Meshy in MakerLab). That is a separate project.
-- Raised or sculpted designs, lithophanes, more than 4 colors.
+- AI image-to-3D figurines (such as Meshy in MakerLab). That is a separate project; the figurine style (section 5) is the non-AI version.
+- Lithophanes, more than 4 colors.
 - Sealed-in magnets and print pauses.
 - More flat products: ornaments, gift tags, bookmarks, name plates, jigsaw puzzles, Play-Doh stamps and cutters (keep the config ready for them).
 - Printing a whole hair clip.

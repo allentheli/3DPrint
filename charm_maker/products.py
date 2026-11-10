@@ -7,6 +7,7 @@ import math
 from dataclasses import dataclass, field
 
 import manifold3d as m3d
+import numpy as np
 import shapely
 from shapely import affinity
 from shapely.geometry import LineString, Point, Polygon, box
@@ -47,7 +48,10 @@ class Piece:
 TAB_ANGLES = {"top": 0.0, "top-left": 45.0, "top-right": -45.0, "left": 90.0, "right": -90.0}
 
 
-def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat") -> Piece:
+def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat",
+                figurine_back: str | None = None, figurine_base: str | None = None) -> Piece:
+    if style == "figurine":
+        return _build_figurine(cfg, design, figurine_back, figurine_base)
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
@@ -279,3 +283,18 @@ def _add_side_loop(cfg: dict, design: Design, kind: str) -> dict:
     design.fixes.append(f"loop added on top with a {d} mm hole running left to right for the {word}")
     return {"kind": "side_loop", "loop": kind, "hole_diameter": d, "center": (x_c, y_c),
             "height": 2 * R, "length": L, "solid": solid, "hole_solid": hole_solid}
+
+
+def _build_figurine(cfg: dict, design: Design, back: str | None, base: str | None) -> Piece:
+    """Any card's drawing as a standalone figurine (the card's own attachment is not used)."""
+    from .figurine import build_figurine_parts, scale_to_figurine
+
+    scale_to_figurine(cfg, design)
+    parts, colors, base_name, notes, info = build_figurine_parts(cfg, design, back, base)
+    design.fixes.extend(notes)
+    slots = {n: None for n in parts}
+    for ink in design.inks:
+        slots[f"{design.name} {ink.name}"] = ink.slot
+    height = max(float(np.asarray(s.bounding_box())[5]) for s in parts.values())
+    return Piece(design, round(height, 2), parts, colors, base_name, info, part_slots=slots,
+                 style="figurine", face_up=True)

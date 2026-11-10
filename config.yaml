@@ -261,6 +261,20 @@ poop_critters:
     scale: {small: 0.85, medium: 1.0, tall: 1.0}
   outline_scale: 1.35             # heart, star and cloud jars: width = size diameter x this
 
+# Figurines: a drawing inflated into a rounded 3D figure (style "figurine", any card).
+figurine:
+  size: 60                        # longest side, mm
+  back: blank                     # blank (characters) or mirror (patterns: the front shows through)
+  base: flat                      # flat (bottom cut so it stands), disc (a round base) or none
+  roundness: 0.75                 # 1.0 = round cross-sections, lower = flatter
+  edge_half_thickness: 0.8        # so thin edges still print
+  smoothing_px: 1.2
+  flat_bottom: 0.08               # flat cut, as a share of the height
+  disc_radius: 0.35               # round base radius, as a share of the width
+  disc_thickness: 3.0
+  sample: 0.5                     # mesh resolution
+  layer_height: 0.16
+
 # The universal figure stand (one design, no drawing).
 stand:
   base_width: 44

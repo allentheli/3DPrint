@@ -161,7 +161,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               border: bool | None = None, tab: str | None = None, overrides: list[str] | None = None,
               batch_name: str | None = None, off_palette: str | None = "nearest",
               config_path: Path | None = None, allow_uncalibrated: bool = True,
-              styles: dict[str, str] | None = None) -> BatchResult:
+              styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
+              figurine_base: dict[str, str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -183,6 +184,12 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     def style_for(card: str) -> str:
         return styles.get(card) or styles.get("*") or cfg["relief"]["default_style"]
+
+    figurine_back = dict(figurine_back or {})
+    figurine_base = dict(figurine_base or {})
+
+    def option_for(opts: dict, card: str):
+        return opts.get(card) or opts.get("*")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
@@ -241,7 +248,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(base_name))
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(base_name),
+                                    figurine_back=option_for(figurine_back, base_name),
+                                    figurine_base=option_for(figurine_base, base_name))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)

@@ -118,3 +118,33 @@ def test_light_blue_pen_near_guides_is_kept(run):
     # The printed "cover the circle" guide must not show up as ink.
     total = sum(i.geometry.area for i in p.design.inks)
     assert total < 120
+
+
+def test_neighbouring_colors_never_overlap(cfg):
+    """Candy corn: orange, yellow and brown crayon bands interlock along their borders.
+    The outline tracer closes gaps under 0.3 mm, so one color's outline closed over the
+    neighbour's thin teeth and the color parts overlapped (0.2 mm³ flat, 0.6 mm³ figurine)."""
+    import itertools
+
+    from charm_maker.inks import InkLayer
+    from charm_maker.products import build_piece
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0                                         # real px per mm of a card photo
+    h = w = 600
+    yy, xx = np.mgrid[0:h, 0:w]
+    body = ((xx - 300) ** 2 + (yy - 300) ** 2) < 280 ** 2
+    teeth = (xx % 12) < 4                              # 0.2 mm crayon teeth, 0.45 mm apart
+    top = (yy < 200) | ((yy < 212) & teeth)
+    bottom = (yy >= 400) | ((yy >= 388) & teeth)
+    colors = [("orange", (240, 120, 30)), ("yellow", (250, 220, 40)), ("brown", (110, 60, 30))]
+    layers = [InkLayer(n, c, body & b) for (n, c), b in zip(colors, [top, ~top & ~bottom, bottom])]
+    assert not (layers[0].mask & layers[1].mask).any(), "the pixel masks themselves are disjoint"
+    for style in ("flat", "puffy", "figurine"):
+        design = fix_design(cfg, [InkLayer(l.name, l.rgb, l.mask.copy()) for l in layers], ppm,
+                            border_on=True, name="t", product="magnet_figure")
+        for a, b in itertools.combinations(design.inks, 2):
+            assert a.geometry.intersection(b.geometry).area < 1e-6, (a.name, b.name)
+        piece = build_piece(cfg, design, style=style)
+        for a, b in itertools.combinations(piece.parts, 2):
+            assert (piece.parts[a] ^ piece.parts[b]).volume() < 1e-3, (style, a, b)

@@ -15,7 +15,7 @@ from shapely.ops import unary_union
 from .geom import cylinder, extrude
 from .palette import rgb_to_lab
 
-STYLES = ("flat", "puffy", "outlined", "puffy-outlined")
+STYLES = ("flat", "puffy", "outlined", "puffy-outlined", "figurine")
 
 
 def profile(x: np.ndarray) -> np.ndarray:
