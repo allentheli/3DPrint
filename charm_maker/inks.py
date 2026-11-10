@@ -221,6 +221,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
             seeds.append(center)
         if len(seeds) >= 40:      # crayon texture makes many in-between shades; small colors
             break                 # (eyes) must still get a seed, merging sorts them out later
+    seeds += _clearly_new_seeds(lab, keys, inverse, counts, seeds, 0.3 * min_area_px, 2 * thr, lw, cw)
     if not seeds:
         seeds = [lab.mean(axis=0)]
 
@@ -293,6 +294,39 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         name = word if used[word] == 1 else f"{word} {used[word]}"
         layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
     return InkResult(layers, paper_rgb, notes)
+
+
+def _clearly_new_seeds(lab, keys, inverse, counts, seeds, min_px, far, lw, cw) -> list[np.ndarray]:
+    """A small marker color spreads over many nearby shades (texture, streaks), so no
+    single shade is big enough to start a color: a yellow window in a brown house was
+    lost that way. Shades clearly unlike every color found so far are pooled with their
+    neighbors; a pool big enough starts a color. Shades of a pen already found (dark
+    strokes of a blue pen) are never far enough to count."""
+    from .palette import lab_distance
+
+    if not seeds:
+        return []
+    centers = np.stack([lab[inverse == k].mean(axis=0) for k in range(len(keys))])
+    added: list[np.ndarray] = []
+    for _ in range(3):
+        taken = seeds + added
+        gap = np.min(np.stack([lab_distance(centers, sd, lw, cw) for sd in taken]), axis=0)
+        new = gap > far
+        if not new.any():
+            break
+        lookup = {tuple(k): (int(c), i) for i, (k, c, n) in enumerate(zip(keys.tolist(), counts, new)) if n}
+        best, best_n, best_members = None, 0, None
+        for k, (c, i) in lookup.items():
+            members = [lookup[(k[0] + a, k[1] + b, k[2] + d)][1] for a in (-1, 0, 1) for b in (-1, 0, 1)
+                       for d in (-1, 0, 1) if (k[0] + a, k[1] + b, k[2] + d) in lookup]
+            n = int(counts[members].sum())
+            if n > best_n:
+                best, best_n, best_members = i, n, members
+        if best is None or best_n < min_px:
+            break
+        sel = np.isin(inverse, best_members)
+        added.append(lab[sel].mean(axis=0))
+    return added
 
 
 def _lost_marks(cfg, ink, idx, lab, flat_rgb, near, seeds, before_cap, capped, px_per_mm) -> list[str]:

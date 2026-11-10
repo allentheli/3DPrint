@@ -1,5 +1,12 @@
 # Changelog
 
+## Test drive 3 (2026-11-10)
+
+A brown house-like character with a yellow window on hair clip card 01.
+
+- The yellow window (7.8 mm² at real size) printed brown. A marker's color spreads over many nearby shades; the yellow was spread over 156, none big enough to start a color. Shades clearly unlike every color already found (more than twice the merge distance) are now pooled with their neighbors. Shades of a pen already found are not, so the real garlic drawing's blue pen stays one color; the six real drawings and the first two scans come out unchanged.
+- 1 new regression test.
+
 ## Test drive 2 (2026-11-10)
 
 Second real scan: a loaf-shaped cat on keychain card 01.

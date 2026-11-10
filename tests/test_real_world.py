@@ -254,3 +254,37 @@ def test_a_slanted_whisker_is_not_a_speck():
     kept, removed = remove_specks(mask.astype(bool), 1.0 * ppm ** 2, 1.5 * ppm)
     assert kept[:110, :110].any(), "the whisker stays"
     assert not kept[110:, 110:].any() and removed == 1, "the dot goes"
+
+
+def test_a_small_textured_color_is_kept(cfg, tmp_path):
+    """Test drive 3: a brown house with a yellow window (7.8 mm² at real size) printed
+    brown. The marker's yellow was spread over 156 slightly different shades and no
+    single shade was big enough to start a color. (A first fix that pooled every shade
+    split the real garlic drawing's blue pen into blue and black; only shades clearly
+    unlike every color found are pooled now. Check with tools/try_real_drawings.py.)"""
+    from PIL import ImageDraw
+
+    from tests.synthetic import card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "hair_clip", 8, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    d.rectangle([P(cx - 25, cy + 25), P(cx + 25, cy - 25)], fill=(110, 60, 30), outline=(25, 25, 30),
+                width=int(round(2.0 * ppm)))
+    # The window: 6 x 10 card mm (6.7 mm² real), marker yellow with uneven texture in every
+    # channel, spread over about 190 shades like the real scan's 156; no shade is big.
+    x0, y0 = (int(v) for v in P(cx - 3, cy + 5))
+    x1, y1 = (int(v) for v in P(cx + 3, cy - 5))
+    arr = np.asarray(img).copy()
+    rng = np.random.default_rng(5)
+    h, w, block = y1 - y0, x1 - x0, 3
+    noise = rng.normal(0, 40, ((h + block - 1) // block, (w + block - 1) // block, 3))
+    noise = np.kron(noise, np.ones((block, block, 1)))[:h, :w]
+    arr[y0:y1, x0:x1] = np.clip(np.array([245, 215, 40], float) + noise, 0, 255).astype(np.uint8)
+    from PIL import Image
+
+    card = photograph(Image.fromarray(arr), tmp_path / "window.jpg", seed=4)
+    r = run_batch(cfg, [card], tmp_path / "out")
+    names = [i.name for i in r.pieces[0].design.inks]
+    assert any("yellow" in n for n in names), names

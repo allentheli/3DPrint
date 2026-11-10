@@ -182,3 +182,7 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 - Allen's call: keep the 1.0 mm minimum line width and hair clip size as they are for now (option A), even though fine pen detail merges on 25 mm hair clips.
 - Allen said each upload took too long. The tool runs in seconds (one card 4 s, eight cards 20 s); the time went to fixing bugs before handing over, the 2.5 minute test suite and, in a fresh session, a 4 minute package install. Runbook now: hand over first and fix after, tests only after code changes, one PDF for all cards; and a setup script installs the packages when a session starts.
 
+## Test drive 3
+
+- Extra color seeds: after the normal seeding, shades farther than 2 x the merge distance from every seed are pooled with their 26 neighboring shade bins; the biggest pool starts a seed if it reaches the normal seed size (0.3 x the minimum color area). Up to three such seeds. Pooling every shade (first try) split the garlic's blue pen into blue and black, so it is limited to clearly new colors.
+
