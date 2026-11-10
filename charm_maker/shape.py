@@ -48,13 +48,17 @@ def _u8(mask: np.ndarray) -> np.ndarray:
 
 def remove_specks(mask: np.ndarray, min_area_px: float, min_extent_px: float = 0.0) -> tuple[np.ndarray, int]:
     """Remove small dots. A mark is only a speck if it is both small in area and short:
-    a thin smile or eyelash is small in area but long, and stays (it gets thickened)."""
+    a thin smile, an eyelash or a whisker is small in area but long, and stays (it gets
+    thickened). Length is measured along the mark, so a slanted whisker counts in full."""
     n, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
     keep = np.zeros(n, bool)
     keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= min_area_px
     if min_extent_px > 0:
-        extent = np.maximum(stats[1:, cv2.CC_STAT_WIDTH], stats[1:, cv2.CC_STAT_HEIGHT])
-        keep[1:] |= extent >= min_extent_px
+        for i in np.flatnonzero(~keep[1:]) + 1:
+            x, y, w, h = stats[i, :4]
+            pts = np.column_stack(np.nonzero(labels[y:y + h, x:x + w] == i))[:, ::-1].astype(np.float32)
+            (_, _), (rw, rh), _ = cv2.minAreaRect(pts)
+            keep[i] = max(rw, rh) + 1.0 >= min_extent_px
     removed = int((~keep[1:]).sum())
     return keep[labels], removed
 
@@ -287,9 +291,14 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
     outline = outline.simplify(0.02, preserve_topology=True)
 
     inks: list[InkRegion] = []
+    claimed = Polygon()
     for layer, m in resolved:
         geom = mask_to_polygons(m, px_per_mm)
-        geom = _as_multi(geom.intersection(outline))
+        # The pixel masks never overlap, but their traced outlines can bulge a hair into a
+        # neighbour's; earlier inks keep the shared border, so color parts never overlap.
+        geom = geom.intersection(outline).difference(claimed)
+        geom = _as_multi(MultiPolygon([g for g in _as_multi(geom).geoms if g.area > 0.005]))
+        claimed = claimed.union(geom)
         if geom.is_empty:
             warnings.append(f"{layer.name} ink vanished after clean-up")
             continue

@@ -149,3 +149,46 @@ Allen's calls: kids fill the containers themselves; small see-through holes; a l
 - Six blank cards cover every product a kid can make except the clicker, including a name in letters (thin strokes, the hardest kid case). Allen does not want pre-set shapes, so half-drawn cards are out of the pack and only made with `cards --half-drawn`.
 - The corner markers stay: they straighten the photo, set the exact scale and identify the card. Without them Allen would name each card's product and the size would be a guess.
 - The pack is one PDF (parent page first) so it prints in one go.
+
+## Figurines
+
+Allen's calls: supports are fine; the back is blank or a mirror of the front; then: keep the back flat by default, because magnets and hair clips need a flat back anyway.
+
+- Flat back is the default: the figurine front on the card's product, at the card's size, with its attachment, through the same face-up builder as puffy (base slab per product from `relief.products`, then the dome). No supports, normal charm plates.
+- The flat-back dome is the same rise as the round figurine's front, scaled down as a whole when it passes the product's cap (`figurine.flat_back_max_dome`): hair clip 5, earrings 4, pendant 6, keychain 8, magnet figure 10 mm. Scaling keeps it round; clipping would flatten the top.
+- A figurine base option on a flat back is ignored with a warning.
+- Plates and notes split on "needs supports" (round backs only), not on the figurine style.
+- A fifth style, figurine, for any card. Thickness from the drawing's local width: each point takes the radius R of the largest inscribed circle covering it, and the half-thickness at distance d from the edge is roundness x sqrt(d(2R - d)) + 0.8 mm edge (roundness 0.75), so every part has a round cross-section of its own width.
+- Round backs: the longest side is scaled to 60 mm (`figurine.size`), whatever the card's product size.
+- Round backs drop the card's attachment: no ring, clip or loop, and the finishing step is pulling off supports.
+- Round backs: blank, or mirror, which puts the same colors on the back as a mirror image (seen from behind, they line up with the front).
+- Colors go 0.6 mm deep from the surface into the body (`process.color_face_depth`, as on flat pieces); the rest is the base color.
+- Bottom cut flat at 8% of the height (at least 2 mm) by default; disc base with a radius of 35% of the figure's width, 3 mm thick, plain base color; or none.
+- Prints lying on its back (front up), tree supports, 0.16 mm layers, figurines on their own plates so charm plates keep supports off.
+- No AI image-to-3D (Meshy, TripoSR): drawings would leave the machine, and the result would not be faithful to the drawing.
+- Ink outlines are made disjoint after tracing, in ink order (black first): the earlier ink keeps a shared border. Pixel masks were already disjoint; the 0.15 mm closing in the tracer made neighbours overlap.
+
+## Test drive 1
+
+- Scanned PDF pages render at the embedded photo's resolution (the photo covering most of the page), capped at 8000 px; drawn (vector) pages still render at 300 dpi.
+- Marker retry: if any card found has fewer than 4 markers, detect again with the longest side at 4000, 2500 and 1600 px; per corner the sharpest copy wins; corners are scaled back to full-size pixels.
+- Lost-mark warning: a blob printing in a color farther than the merge distance (20) from its own, with chroma 20 or more, surviving a 0.25 card-mm opening (fringe does not) and at least 1 card mm². Colors merged by the color limit are skipped (they have their own note). The mark is not grown to a printable size: at 0.6 mm inside a 1 mm outline it would be covered by the thickened lines anyway.
+- Fine pen drawings on hair clips (25 mm) lose detail to the 1.0 mm minimum line width: lines get about 2.5x thicker, whiskers merge, small gaps fill. Asked Allen whether to try thinner minimum lines or bigger pieces; nothing changed until he answers.
+
+## Test drive 2
+
+- Speck length is the long side of the mark's rotated bounding rectangle (minAreaRect), not the upright box, so slanted whiskers keep their full length. Area and the 1.5 mm length limit are unchanged.
+- At keychain size (45 mm) her fine-pen face mostly survives; the outlined nose (0.3 mm² inside) fills in and one eye touches the mouth line once lines are 1.0 mm wide. Same open question as test drive 1.
+- Allen's call: keep the 1.0 mm minimum line width and hair clip size as they are for now (option A), even though fine pen detail merges on 25 mm hair clips.
+- Allen said each upload took too long. The tool runs in seconds (one card 4 s, eight cards 20 s); the time went to fixing bugs before handing over, the 2.5 minute test suite and, in a fresh session, a 4 minute package install. Runbook now: hand over first and fix after, tests only after code changes, one PDF for all cards; and a setup script installs the packages when a session starts.
+
+## Test drive 3
+
+- Extra color seeds: after the normal seeding, shades farther than 2 x the merge distance from every seed are pooled with their 26 neighboring shade bins; the biggest pool starts a seed if it reaches the normal seed size (0.3 x the minimum color area). Up to three such seeds. Pooling every shade (first try) split the garlic's blue pen into blue and black, so it is limited to clearly new colors.
+
+## Test drive 4
+
+- Pencil is ink (it was excluded on purpose before, to keep shadows out; the brief never ruled it out, and a kid used it). Detection: black-hat of Lab lightness with a 2.5 card-mm disk; seeds darker than 20, grown through pixels darker than 10, chroma under 12, not guide-colored; pixels within halo + 2 px of strong ink are left out; a stroke must be at least 1.5 card mm long after that.
+- Measured on the real scans: pencil cores 16 to 42 darker than their surroundings; show-through ghost at most 7.3; on the house card almost nothing outside its ink passes 20.
+- Five cards on a page each, and two cards with the same number (two printed copies of the pack) are fine: the second is renamed with -b.
+

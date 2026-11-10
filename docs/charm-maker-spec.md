@@ -71,6 +71,10 @@ Every product can be flat (the default) or shaped. All shapes come straight from
 - Shaped pieces print face-up with the colors on top, back flat on the bed. The clip pocket stays on the back (the printer bridges over it); loops stay flush with the back; magnets still glue onto the flat back.
 - Per product base and puff heights live in config. The style is chosen per run or per card in plain words ("make card 3 puffy").
 - Trade-off: colors change over more layers, so shaped pieces print slower and purge more, and the front shows fine layer lines instead of the glossy bed finish.
+- **Figurine:** the drawing's front inflated like a balloon or a plush toy. The height at each point follows how wide the drawing is there (the largest circle inside the outline that covers it), so a wide body becomes a fat round body and an arm a round tube. Still no redrawing: the outline and colors are the kid's, and the depth is a guess from the outline only.
+  - **Flat back (default):** only the front is rounded. It stays the card's product at the card's size: the clip pocket, the glued-on magnet, the ring tab and the loops all work as on the other shaped styles. It prints face-up, back on the bed, no supports. The dome is capped per product (hair clip 5 mm, earrings 4 mm, pendant 6 mm, keychain 8 mm, magnet figure 10 mm), scaled as a whole so it stays round.
+  - **Round back (on request):** a standalone figure about 60 mm tall, rounded on both sides; the card's ring, clip or loop is not used. The back is blank (a character should not have eyes on the back) or a mirror of the front (patterns, ornaments seen from both sides). The bottom is cut flat so it stands, or gets a round disc stand, or stays round. Prints lying on its back with tree supports, on its own plate, at 0.16 mm layers. Supports are fine here (Allen's call).
+  - One solid split into color parts, like the other shaped styles. Colors change over many layers, so figurines purge the most.
 
 ### Loops for pendants and earrings
 
@@ -226,8 +230,8 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): update the loaded 
 
 Do not build these unless Allen asks:
 
-- AI image-to-3D figurines (such as Meshy in MakerLab). That is a separate project.
-- Raised or sculpted designs, lithophanes, more than 4 colors.
+- AI image-to-3D figurines (such as Meshy in MakerLab). That is a separate project; the figurine style (section 5) is the non-AI version.
+- Lithophanes, more than 4 colors.
 - Sealed-in magnets and print pauses.
 - More flat products: ornaments, gift tags, bookmarks, name plates, jigsaw puzzles, Play-Doh stamps and cutters (keep the config ready for them).
 - Printing a whole hair clip.

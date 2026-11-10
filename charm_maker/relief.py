@@ -15,7 +15,7 @@ from shapely.ops import unary_union
 from .geom import cylinder, extrude
 from .palette import rgb_to_lab
 
-STYLES = ("flat", "puffy", "outlined", "puffy-outlined")
+STYLES = ("flat", "puffy", "outlined", "puffy-outlined", "figurine")
 
 
 def profile(x: np.ndarray) -> np.ndarray:
@@ -95,15 +95,27 @@ def build_relief_parts(cfg: dict, design, attachment: str | None, info: dict, st
     face = cfg["process"]["color_face_depth"]
     puffy = style.startswith("puffy")
     outlined = style.endswith("outlined")
-    base_t = prod_r["base"] if puffy else cfg["products"][design.product]["thickness"]
+    figurine = style == "figurine"
+    base_t = prod_r["base"] if (puffy or figurine) else cfg["products"][design.product]["thickness"]
     puff = prod_r["puff"] if puffy else 0.0
     sample = rc["sample"]
     notes = []
 
-    d_out = DistanceField(design.outline)
+    if figurine:
+        # A flat-back figurine: the front is rounded like the full figurine, the back flat.
+        from .figurine import flat_back_dome
 
-    def surface(xy):
-        return base_t + puff * profile(d_out(xy) / rc["edge_round"])
+        dome, tallest, k = flat_back_dome(cfg, design.outline, design.product)
+        if k < 0.999:
+            notes.append(f"rounded front kept to {tallest:.1f} mm tall for a {design.product.replace('_', ' ')}")
+
+        def surface(xy):
+            return base_t + dome(xy)
+    else:
+        d_out = DistanceField(design.outline)
+
+        def surface(xy):
+            return base_t + puff * profile(d_out(xy) / rc["edge_round"])
 
     def under_face(xy):
         return surface(xy) - face
@@ -142,7 +154,8 @@ def build_relief_parts(cfg: dict, design, attachment: str | None, info: dict, st
         base = base - cylinder(info["diameter"], info["depth"] + 1.0, cx, cy, -1.0)
     parts = {f"{design.name} base": base, **parts}
     height = max(p.bounding_box()[5] for p in parts.values())
-    label = {"puffy": "puffy", "outlined": "raised outline", "puffy-outlined": "puffy with a raised outline"}[style]
+    label = {"puffy": "puffy", "outlined": "raised outline", "puffy-outlined": "puffy with a raised outline",
+             "figurine": "figurine front, flat back"}[style]
     notes.insert(0, f"{label}: prints face-up, colors on top" + (f", {ridge_ink.name} outline raised {rc['outline_raise']} mm"
                                                                   if ridge_ink is not None else ""))
     return parts, f"{design.name} base", height, notes

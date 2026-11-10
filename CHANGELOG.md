@@ -1,5 +1,47 @@
 # Changelog
 
+## Test drive 4 (2026-11-10)
+
+Five cards in one Notes scan: a bird pendant, a butterfly keychain, two dog magnets and a rainbow pendant.
+
+- The butterfly and the rainbow were drawn in pencil and mostly lost: gray marks were not ink. A pencil line is now ink when it is a thin gray stroke clearly darker than the paper right around it (its core at least 20 Lab units darker, growing along its grainy edges down to 10). Broad shadows are not lines, and drawings showing through from the back of the page (7 at most) stay out.
+- The gray rim right next to existing ink is left out, so ink lines don't thicken; a pencil stroke touching ink is judged by the rest of it.
+- The faint body outline of the real bug drawing is now found too, so the bug comes out whole instead of in pieces. The other real drawings gain 1 to 5% line area; the earlier test-drive scans are unchanged.
+- 1 new regression test.
+
+## Test drive 3 (2026-11-10)
+
+A brown house-like character with a yellow window on hair clip card 01.
+
+- The yellow window (7.8 mm² at real size) printed brown. A marker's color spreads over many nearby shades; the yellow was spread over 156, none big enough to start a color. Shades clearly unlike every color already found (more than twice the merge distance) are now pooled with their neighbors. Shades of a pen already found are not, so the real garlic drawing's blue pen stays one color; the six real drawings and the first two scans come out unchanged.
+- 1 new regression test.
+
+## Test drive 2 (2026-11-10)
+
+Second real scan: a loaf-shaped cat on keychain card 01.
+
+- Short slanted strokes (whiskers 1.7 mm long) were removed as specks: the length was measured upright, so a stroke at 45 degrees looked 1.44 mm, under the 1.5 mm that protects thin strokes. Marks are now measured along their length. Round dots are still specks. On the real drawings this also keeps three dashes of the bug's faint outline.
+- 1 new regression test.
+
+## Test drive 1 (2026-11-10)
+
+First real scan: a cat on hair clip card 01, scanned with iPhone Notes.
+
+- Scanned PDFs are read at the photo's own resolution. iPhone Notes makes 27 x 36 inch pages, so the old fixed 300 dpi blew the photo up 4x (8196 x 10753 px) and two of the four corner markers were missed. Now 1966 x 2579 px, all four found, ten times faster.
+- When a card is missing a corner marker, the reader looks again on smaller copies of the image (for 48 MP phone photos too).
+- A drawn color too small to print as its own color (the cat's 0.6 mm pink tongue) used to print in its neighbor's color without a word. Now a `check:` line says so and where it went.
+- 4 new regression tests in `tests/test_real_world.py`.
+
+## Figurines (2026-11-10)
+
+- New style `figurine` for any card: the drawing's front inflated like a balloon, thick where the drawing is wide. One solid split into the kid's color parts.
+- Flat back by default: still the card's hair clip, magnet, keychain, pendant or earring, at the card's size, printed face-up with no supports. The rounded front is capped per product (5 mm on hair clips, up to 10 mm on magnets).
+- Round backs for a standalone 60 mm figure (`--figurine-back blank` or `mirror`); bottom flat, disc stand or round (`--figurine-base`); per card or for the whole run. They go on their own plates; print notes turn tree supports on, use 0.16 mm layers and say to peel the supports off.
+- Fixed while building this: a figurine from a keychain card no longer gets the split-ring finishing step.
+- Fixed for every style: where two crayon colors interlock (the candy corn), the traced outline of one color closed over the other's thin teeth, so the two color parts overlapped by a fraction of a cubic millimetre. Earlier colors now keep the shared border; overlap on all six real drawings is now zero. Regression test in `tests/test_real_world.py`.
+- The test-drive parent page now offers the shapes (flat, puffy, raised outline, figurine) and still fits on one page.
+- 20 new tests: one sound body with no part overlap for every back and base and every product, flat back on the bed, clip pocket and ring hole kept, dome caps, colors only on the front, size, flat bottom and plain disc, plates and notes, interlocking colors.
+
 ## Test drive (2026-11-09)
 
 - `test-drive`: a parent page and six blank cards (two hair clips, two keychains, a magnet figure, a necklace) for trying the whole flow with one kid. A test renders every card and reads it back.

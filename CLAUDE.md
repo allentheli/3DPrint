@@ -9,7 +9,8 @@ you build. Never say something works unless you ran it. Say what you could not t
 
 - Stay faithful to the drawing. No redrawing, no AI image generation.
 - Flat pieces by default (face-down, colors flush, built mirrored); puffy and outlined
-  styles on request (face-up). One solid part per design.
+  styles on request (face-up); figurines on request (rounded 3D front, flat back by default).
+  One solid part per design.
 - Every output ships with a preview and a list of fixes.
 - Drawings stay private: no network calls while processing, never commit photos or outputs
   (`.gitignore` covers `photos/`, `input/`, `output/`, images, 3MF and STL), never print.
@@ -18,10 +19,26 @@ you build. Never say something works unless you ran it. Say what you could not t
 
 ## Setup in a fresh session
 
+The cloud environment's setup script may already have installed the packages; if
+`python -c "import manifold3d, cv2, pymupdf"` works, skip the install (a clean one takes
+about 4 minutes).
+
 ```bash
 pip install -r requirements.txt
-python -m pytest -q
 ```
+
+Run `python -m pytest -q` (about 2.5 minutes) only after changing code, never before
+processing an upload.
+
+## Speed: Allen waits on every upload
+
+The tool itself takes about 4 seconds per run plus 2.5 seconds per card (30 cards: about
+a minute and a half). Allen's wait is everything else, so on an upload:
+
+1. Run it, show the contact sheet, hand over the plates and print notes. That is the reply.
+2. If you spot a bug, say so in one line and fix it after the handover, unless it makes a
+   piece wrong to print (then hold that card only and hand over the rest).
+3. Ask him to scan all cards into one Notes PDF (one page per card) and upload once.
 
 ## When Allen uploads photos or images
 
@@ -57,6 +74,16 @@ Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for ever
 run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
 default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
+
+Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
+balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
+card's product at the card's size (clip pad, glued magnet, ring tab, loop all work) and it prints
+back-down with no supports, on the normal plates. The dome is capped per product
+(`figurine.flat_back_max_dome`, e.g. 5 mm on hair clips). A round back makes a standalone 60 mm
+figure instead (the card's ring, clip or loop is dropped): `--figurine-back fig-02=blank` (plain
+back, for characters) or `=mirror` (front colors on the back too). Round-back figures stand on a
+flat-cut bottom; `--figurine-base fig-02=disc` adds a round stand, `none` keeps it round. They
+go on their own plates with tree supports on and 0.16 mm layers.
 
 Optional extras, only when Allen asks: the marker calibration card (`calibrate`), strict
 color checking (`run --ask-colors`, which stops with `QUESTION.md` and exit code 2), swap
@@ -101,7 +128,8 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
   value, a color that starts on a spool that doesn't really match, two colors starting on
-  the same spool, more than 3 ink colors, fewer than 4 markers found, a renamed duplicate.
+  the same spool, more than 3 ink colors, fewer than 4 markers found, a renamed duplicate, a
+  drawn color too small to print as its own color (it prints in its neighbor's color).
 
 Filament overrides in plain words ("card 3's pink should be Magenta") become
 `--map "clip-03 pink=Magenta"`; run again. Names are matched against the loaded spools
@@ -120,7 +148,8 @@ pick the file, choose **Load geometry only** if asked.
 page (print at Actual size, markers, what to draw on each card, how to scan with iPhone
 Notes, what to look for) and six blank cards: hair clip 01 and 02, keychain 01 and 02,
 magnet figure 01, necklace pendant 01. When Allen uploads
-the scan and says "test drive", run it like any batch, show the contact sheet, and ask
+the scan and says "test drive", run it like any batch (with `--style` for any shapes she picked:
+the parent page offers flat, puffy, raised outline and figurine), show the contact sheet, and ask
 what his daughter liked and what looked wrong. Note which problems are real-world ones to
 fix (and add a regression test in `tests/test_real_world.py`).
 
@@ -167,7 +196,7 @@ python -m charm_maker run output/real-drawings/cards --out output/real-drawings/
 
 Expected: purple figure in purple; candy corn with black eyes, orange and yellow; girl
 with eyes and smile in black; pig outline in pink; garlic in blue with a red tongue; bug
-in blue (its body outline is very faint and comes out in pieces). Never commit the outputs.
+in blue, whole (its faint body outline is found since pencil detection). Never commit the outputs.
 
 ## Housekeeping
 

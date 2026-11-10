@@ -118,3 +118,210 @@ def test_light_blue_pen_near_guides_is_kept(run):
     # The printed "cover the circle" guide must not show up as ink.
     total = sum(i.geometry.area for i in p.design.inks)
     assert total < 120
+
+
+def test_neighbouring_colors_never_overlap(cfg):
+    """Candy corn: orange, yellow and brown crayon bands interlock along their borders.
+    The outline tracer closes gaps under 0.3 mm, so one color's outline closed over the
+    neighbour's thin teeth and the color parts overlapped (0.2 mm³ flat, 0.6 mm³ figurine)."""
+    import itertools
+
+    from charm_maker.inks import InkLayer
+    from charm_maker.products import build_piece
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0                                         # real px per mm of a card photo
+    h = w = 600
+    yy, xx = np.mgrid[0:h, 0:w]
+    body = ((xx - 300) ** 2 + (yy - 300) ** 2) < 280 ** 2
+    teeth = (xx % 12) < 4                              # 0.2 mm crayon teeth, 0.45 mm apart
+    top = (yy < 200) | ((yy < 212) & teeth)
+    bottom = (yy >= 400) | ((yy >= 388) & teeth)
+    colors = [("orange", (240, 120, 30)), ("yellow", (250, 220, 40)), ("brown", (110, 60, 30))]
+    layers = [InkLayer(n, c, body & b) for (n, c), b in zip(colors, [top, ~top & ~bottom, bottom])]
+    assert not (layers[0].mask & layers[1].mask).any(), "the pixel masks themselves are disjoint"
+    for style in ("flat", "puffy", "figurine"):
+        design = fix_design(cfg, [InkLayer(l.name, l.rgb, l.mask.copy()) for l in layers], ppm,
+                            border_on=True, name="t", product="magnet_figure")
+        for a, b in itertools.combinations(design.inks, 2):
+            assert a.geometry.intersection(b.geometry).area < 1e-6, (a.name, b.name)
+        piece = build_piece(cfg, design, style=style)
+        for a, b in itertools.combinations(piece.parts, 2):
+            assert (piece.parts[a] ^ piece.parts[b]).volume() < 1e-3, (style, a, b)
+
+
+def _notes_style_scan(img, path):
+    """An iPhone Notes scan: one photo on a page as many points wide as it has pixels
+    (a letter card scanned at 230 dpi becomes a 27 x 36 inch page)."""
+    import io
+
+    import pymupdf
+
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    doc = pymupdf.open()
+    page = doc.new_page(width=img.width, height=img.height)
+    page.insert_image(page.rect, stream=buf.getvalue())
+    doc.save(str(path))
+    return path
+
+
+def test_iphone_notes_scan_finds_all_four_markers(cfg, tmp_path):
+    """Test drive 1: a Notes scan PDF was rendered at 300 dpi, blowing the photo up 4x
+    (8196 x 10753 px). Markers 900 px wide were missed: 2 of 4 found."""
+    from charm_maker.reader import detect_cards, load_image
+    from tests.synthetic import card_image
+
+    img, lay, ppm, to_px = card_image(cfg, "hair_clip", 1, tmp_path, dpi=230)
+    pdf = _notes_style_scan(img, tmp_path / "scan.pdf")
+    page = load_image(pdf)
+    assert abs(page.shape[1] - img.width) <= 2, "rendered at the photo's own resolution, not blown up"
+    found = detect_cards(cfg, page)
+    assert [ci for ci, _ in found[(cfg["cards"]["type_ids"]["hair_clip"], 1)]] == [0, 1, 2, 3]
+
+
+def test_a_marker_missed_at_full_size_is_found_on_a_smaller_copy(cfg, tmp_path, monkeypatch):
+    """The real scan's misses (iPhone sharpening on 900 px markers) don't reproduce on clean
+    synthetic cards, so simulate one: the full-size pass loses a marker, the retry on a
+    smaller copy must find it, at the right place in full-size pixels."""
+    import cv2
+    import numpy as np
+
+    from charm_maker.reader import detect_cards
+    from tests.synthetic import card_image
+
+    img, *_ = card_image(cfg, "hair_clip", 1, tmp_path, dpi=230)
+    page = cv2.resize(cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR), None, fx=2.0, fy=2.0)
+    key = (cfg["cards"]["type_ids"]["hair_clip"], 1)
+    truth = dict(detect_cards(cfg, page)[key])
+    real = cv2.aruco.ArucoDetector
+
+    class Flaky:
+        def __init__(self, *a):
+            self.d = real(*a)
+
+        def detectMarkers(self, gray):
+            corners, ids, rej = self.d.detectMarkers(gray)
+            if max(gray.shape) == max(page.shape[:2]) and ids is not None:   # full size: lose one
+                return corners[1:], ids[1:], rej
+            return corners, ids, rej
+
+    monkeypatch.setattr(cv2.aruco, "ArucoDetector", Flaky)
+    found = dict(detect_cards(cfg, page)[key])
+    assert sorted(found) == [0, 1, 2, 3]
+    for ci, quad in found.items():
+        assert np.abs(quad - truth[ci]).max() < 3.0, "corners are in full-size pixels"
+
+
+def test_a_drawn_color_too_small_to_print_is_reported(cfg, tmp_path):
+    """Test drive 1: a cat's pink tongue, 0.6 mm across on a hair clip, silently printed
+    black. It may be too small to be its own color, but the run must say so."""
+    pink = (236, 120, 160)            # measured from the real scan's tongue
+    card = draw_strokes_card(cfg, tmp_path, "hair_clip", 7, [
+        ("line", circle_pts(30), GRAY_PEN, 1.6),
+        ("line", circle_pts(8, 0, -4, 20, np.pi * 1.15, np.pi * 1.85), GRAY_PEN, 1.4),    # the mouth
+        ("dot", (0, -12), pink, 2.2),                                                   # the tongue
+        ("dot", (-10, 8), GRAY_PEN, 3.0), ("dot", (10, 8), GRAY_PEN, 3.0),
+    ], "tongue.jpg")
+    r = run_batch(cfg, [card], tmp_path / "out")
+    warnings = r.pieces[0].design.warnings
+    assert any("small pink mark" in w and "too small to print" in w for w in warnings), warnings
+
+
+def test_no_small_mark_warning_on_plain_drawings(run):
+    """Camera fringe and pale fill are not reported as lost marks."""
+    for p in run.pieces:
+        assert not any("small" in w and "mark" in w for w in p.design.warnings), (p.name, p.design.warnings)
+
+
+def test_a_slanted_whisker_is_not_a_speck():
+    """Test drive 2: short slanted whiskers (1.7 mm long, 0.4 mm wide at real size) were
+    removed as specks: measured upright they looked 1.44 mm, under the 1.5 mm that
+    protects thin strokes. A round dot of the same area is still a speck."""
+    import cv2
+
+    from charm_maker.shape import remove_specks
+
+    ppm = 18.0
+    mask = np.zeros((200, 200), np.uint8)
+    a, b = np.array([60.0, 60.0]), np.array([60.0, 60.0]) + 1.3 * ppm / np.sqrt(2)     # 45 degrees
+    cv2.line(mask, tuple(int(v) for v in a), tuple(int(v) for v in b), 1, int(round(0.4 * ppm)))
+    cv2.circle(mask, (150, 150), int(round(0.45 * ppm)), 1, -1)                       # a dot
+    whisker, dot = mask[:110, :110].sum() / ppm ** 2, mask[110:, 110:].sum() / ppm ** 2
+    assert whisker < 1.0 and dot < 1.0, "both are under the 1 mm² speck size"
+    ys, xs = np.nonzero(mask[:110, :110])
+    assert max(np.ptp(xs), np.ptp(ys)) + 1 < 1.5 * ppm, "upright, the whisker looks shorter than 1.5 mm"
+    kept, removed = remove_specks(mask.astype(bool), 1.0 * ppm ** 2, 1.5 * ppm)
+    assert kept[:110, :110].any(), "the whisker stays"
+    assert not kept[110:, 110:].any() and removed == 1, "the dot goes"
+
+
+def test_a_small_textured_color_is_kept(cfg, tmp_path):
+    """Test drive 3: a brown house with a yellow window (7.8 mm² at real size) printed
+    brown. The marker's yellow was spread over 156 slightly different shades and no
+    single shade was big enough to start a color. (A first fix that pooled every shade
+    split the real garlic drawing's blue pen into blue and black; only shades clearly
+    unlike every color found are pooled now. Check with tools/try_real_drawings.py.)"""
+    from PIL import ImageDraw
+
+    from tests.synthetic import card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "hair_clip", 8, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    d.rectangle([P(cx - 25, cy + 25), P(cx + 25, cy - 25)], fill=(110, 60, 30), outline=(25, 25, 30),
+                width=int(round(2.0 * ppm)))
+    # The window: 6 x 10 card mm (6.7 mm² real), marker yellow with uneven texture in every
+    # channel, spread over about 190 shades like the real scan's 156; no shade is big.
+    x0, y0 = (int(v) for v in P(cx - 3, cy + 5))
+    x1, y1 = (int(v) for v in P(cx + 3, cy - 5))
+    arr = np.asarray(img).copy()
+    rng = np.random.default_rng(5)
+    h, w, block = y1 - y0, x1 - x0, 3
+    noise = rng.normal(0, 40, ((h + block - 1) // block, (w + block - 1) // block, 3))
+    noise = np.kron(noise, np.ones((block, block, 1)))[:h, :w]
+    arr[y0:y1, x0:x1] = np.clip(np.array([245, 215, 40], float) + noise, 0, 255).astype(np.uint8)
+    from PIL import Image
+
+    card = photograph(Image.fromarray(arr), tmp_path / "window.jpg", seed=4)
+    r = run_batch(cfg, [card], tmp_path / "out")
+    names = [i.name for i in r.pieces[0].design.inks]
+    assert any("yellow" in n for n in names), names
+
+
+def test_pencil_is_ink_but_show_through_is_not(cfg, tmp_path):
+    """Test drive 4: a butterfly and a rainbow drawn in pencil were mostly lost (gray marks
+    were not ink). A grainy pencil circle must be found; a very faint drawing showing
+    through from the back of the page must not."""
+    import cv2
+    from PIL import Image
+
+    from tests.synthetic import card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 9, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    arr = np.asarray(img).copy()
+    rng = np.random.default_rng(7)
+    # Pencil: a 60 card-mm circle (20 mm real), graphite gray, grainy (a third of it skips).
+    pencil = np.zeros(arr.shape[:2], np.uint8)
+    c = tuple(int(v) for v in P(cx - 15, cy))
+    cv2.circle(pencil, c, int(round(30 * ppm)), 1, max(2, int(round(0.9 * ppm))))
+    grain = rng.random(arr.shape[:2]) > 0.33
+    tone = np.clip(rng.normal(160, 18, arr.shape[:2]), 90, 230)
+    sel = (pencil > 0) & grain
+    arr[sel] = np.repeat(tone[sel][:, None], 3, axis=1).astype(np.uint8)
+    # Show-through: a soft, very light circle to the right.
+    ghost = np.zeros(arr.shape[:2], np.float32)
+    cv2.circle(ghost, tuple(int(v) for v in P(cx + 28, cy)), int(round(10 * ppm)), 1.0, int(round(1.2 * ppm)))
+    ghost = cv2.GaussianBlur(ghost, (0, 0), 2.0)
+    arr = np.clip(arr.astype(np.float32) - ghost[..., None] * 16, 0, 255).astype(np.uint8)
+    card = photograph(Image.fromarray(arr), tmp_path / "pencil.jpg", seed=8)
+    r = run_batch(cfg, [card], tmp_path / "out")
+    assert r.problems == [], r.problems
+    p = r.pieces[0]
+    minx, miny, maxx, maxy = p.design.outline.bounds
+    border = cfg["process"]["border"]
+    assert maxx - minx == pytest.approx(20 + 2 * border, abs=1.5), "the pencil circle is the whole piece"
+    assert p.design.inks and p.design.inks[0].geometry.area > 30, "the pencil line is there, all the way round"

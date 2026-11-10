@@ -72,9 +72,10 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     """Ink pixels in a lighting-flattened crop.
 
     Strong ink is dark, or strongly colored, or a faint line that is still clearly
-    colored (a thin pink pen). Gray marks that are only a little darker than the paper
-    (shadows, pencil) are not ink. The soft edge of a line next to strong ink is ink.
-    Guide-colored pixels are removed only near where guides are printed
+    colored (a thin pink pen), or a pencil line: a thin gray stroke clearly darker than
+    the paper right around it. Shadows (broad) and drawings showing through from the
+    back of the page (very faint) are not ink. The soft edge of a line next to strong
+    ink is ink. Guide-colored pixels are removed only near where guides are printed
     (`guide_zone`), so a light-blue pen elsewhere survives."""
     from .filaments import _srgb_to_lab
 
@@ -93,6 +94,7 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     strong &= ~guide
     if ignore is not None:
         strong &= ~ignore
+    strong |= _pencil(rd, lab, chroma, strong, guide, ignore)
     # Drop isolated noise dots, but keep lines only 1-2 pixels wide.
     n, labels, stats, _ = cv2.connectedComponentsWithStats(strong.astype(np.uint8), connectivity=8)
     small = np.flatnonzero(stats[:, cv2.CC_STAT_AREA] < rd["min_blob_px"])
@@ -106,6 +108,42 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     if ignore is not None:
         ink &= ~ignore
     return ink, H, S, V
+
+
+def _pencil(rd: dict, lab: np.ndarray, chroma: np.ndarray, strong: np.ndarray, guide: np.ndarray,
+            ignore: np.ndarray | None) -> np.ndarray:
+    """Pencil lines (test drive 4: a butterfly and a rainbow in pencil were lost). A thin
+    gray stroke is darker than the paper right around it (a black-hat filter as wide as
+    a thick pencil line), which a broad shadow is not. The stroke's core must be clearly
+    darker; it then grows along its lighter, grainy edges. Strokes that are only the
+    fringe of existing ink, or too short to be a line, are dropped."""
+    ppm = float(rd["px_per_card_mm"])
+    L = lab[..., 0].astype(np.float32)
+    k = int(round(rd["pencil_line_width"] * ppm)) | 1
+    darker = cv2.morphologyEx(L, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))) - L
+    gray = (chroma < rd["pencil_chroma_max"]) & ~strong & ~guide
+    if ignore is not None:
+        gray &= ~ignore
+    seed = gray & (darker > rd["pencil_line_delta"])
+    grow = gray & (darker > rd["pencil_edge_delta"])
+    if not seed.any():
+        return np.zeros_like(strong)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(grow.astype(np.uint8), connectivity=8)
+    seeded = np.unique(labels[seed])
+    seeded = seeded[seeded > 0]
+    # Right next to existing ink, a gray rim is that ink's blurred edge, not pencil: leave
+    # it out (so ink lines don't thicken), and judge each stroke by what is left.
+    near_ink = cv2.dilate(strong.astype(np.uint8), np.ones((2 * rd["halo_px"] + 5,) * 2, np.uint8)).astype(bool)
+    keep = np.zeros(n, bool)
+    min_len = rd["pencil_min_length"] * ppm
+    for i in seeded:
+        x, y, w, h, area = stats[i]
+        rest = (labels[y:y + h, x:x + w] == i) & ~near_ink[y:y + h, x:x + w]
+        if not rest.any():
+            continue
+        ys, xs = np.nonzero(rest)
+        keep[i] = max(np.ptp(xs), np.ptp(ys)) + 1 >= min_len
+    return keep[labels] & ~near_ink
 
 
 def separate_inks(cfg: dict, bgr: np.ndarray, max_colors: int, ignore: np.ndarray | None = None) -> InkResult:
@@ -221,6 +259,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
             seeds.append(center)
         if len(seeds) >= 40:      # crayon texture makes many in-between shades; small colors
             break                 # (eyes) must still get a seed, merging sorts them out later
+    seeds += _clearly_new_seeds(lab, keys, inverse, counts, seeds, 0.3 * min_area_px, 2 * thr, lw, cw)
     if not seeds:
         seeds = [lab.mean(axis=0)]
 
@@ -256,6 +295,8 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
     # the smallest instead would wipe out small but important colors, like black eyes.)
     sizes = {i: int((near == i).sum()) for i in alive}
     flat_rgb = rgb.reshape(-1, 3)
+    before_cap = near.copy()
+    capped: list[int] = []
     while len(alive) > max_colors:
         # Compare each color as the pen really is (its strongest pixels, not its pale
         # edges), on full color difference with lightness included: dark brown eyes on an
@@ -267,6 +308,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         _, i, j = min(pairs)
         drop, keep = (i, j) if sizes[i] < sizes[j] else (j, i)
         alive.remove(drop)
+        capped.append(drop)
         w_drop = color_word(tuple(int(v) for v in _lab_to_rgb(rep[drop])))
         w_keep = color_word(tuple(int(v) for v in _lab_to_rgb(rep[keep])))
         dist[drop] = np.inf
@@ -275,6 +317,7 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         notes.append(f"more than {max_colors} colors: the two most alike ({w_drop} and {w_keep}) print as one")
 
     flat_rgb = rgb.reshape(-1, 3)
+    notes += _lost_marks(cfg, ink, idx, lab, flat_rgb, near, seeds, before_cap, capped, px_per_mm)
     layers: list[InkLayer] = []
     used: dict[str, int] = {}
     for i in sorted(alive, key=lambda i: float(np.median(lab[near == i][:, 0])) if (near == i).any() else 0):
@@ -289,6 +332,80 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         name = word if used[word] == 1 else f"{word} {used[word]}"
         layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
     return InkResult(layers, paper_rgb, notes)
+
+
+def _clearly_new_seeds(lab, keys, inverse, counts, seeds, min_px, far, lw, cw) -> list[np.ndarray]:
+    """A small marker color spreads over many nearby shades (texture, streaks), so no
+    single shade is big enough to start a color: a yellow window in a brown house was
+    lost that way. Shades clearly unlike every color found so far are pooled with their
+    neighbors; a pool big enough starts a color. Shades of a pen already found (dark
+    strokes of a blue pen) are never far enough to count."""
+    from .palette import lab_distance
+
+    if not seeds:
+        return []
+    centers = np.stack([lab[inverse == k].mean(axis=0) for k in range(len(keys))])
+    added: list[np.ndarray] = []
+    for _ in range(3):
+        taken = seeds + added
+        gap = np.min(np.stack([lab_distance(centers, sd, lw, cw) for sd in taken]), axis=0)
+        new = gap > far
+        if not new.any():
+            break
+        lookup = {tuple(k): (int(c), i) for i, (k, c, n) in enumerate(zip(keys.tolist(), counts, new)) if n}
+        best, best_n, best_members = None, 0, None
+        for k, (c, i) in lookup.items():
+            members = [lookup[(k[0] + a, k[1] + b, k[2] + d)][1] for a in (-1, 0, 1) for b in (-1, 0, 1)
+                       for d in (-1, 0, 1) if (k[0] + a, k[1] + b, k[2] + d) in lookup]
+            n = int(counts[members].sum())
+            if n > best_n:
+                best, best_n, best_members = i, n, members
+        if best is None or best_n < min_px:
+            break
+        sel = np.isin(inverse, best_members)
+        added.append(lab[sel].mean(axis=0))
+    return added
+
+
+def _lost_marks(cfg, ink, idx, lab, flat_rgb, near, seeds, before_cap, capped, px_per_mm) -> list[str]:
+    """Never change a drawn color silently. A small but real mark (a tongue on a hair
+    clip) can be too small to be its own color and print in its neighbor's color. It is a
+    solid, strongly colored blob at the card's own scale, unlike camera fringe along a
+    line. Colors merged because of the color limit already have their own note."""
+    from .palette import color_word, lab_distance
+
+    pr, pc = cfg["process"], cfg["palette"]
+    px_card = px_per_mm / pr["card_scale"]
+    far = np.zeros(len(idx), bool)
+    for j in np.unique(near):
+        sel = near == j
+        far[sel] = lab_distance(lab[sel], seeds[j], pc["lightness_weight"], pc["chroma_weight"]) > pr["color_merge_distance"]
+    chroma = np.hypot(lab[:, 1], lab[:, 2])
+    far &= (chroma >= 20.0) & ~np.isin(before_cap, capped)
+    if not far.any():
+        return []
+    mask = np.zeros(ink.shape, np.uint8)
+    mask.ravel()[idx[far]] = 1
+    rc = max(1, int(round(0.25 * px_card)))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * rc + 1, 2 * rc + 1)))
+    n, lbl, stats, _ = cv2.connectedComponentsWithStats(mask)
+    pos = {int(p): k for k, p in enumerate(idx)}
+    notes = []
+    for c in range(1, n):
+        if stats[c, cv2.CC_STAT_AREA] < 1.0 * px_card ** 2:
+            continue
+        ks = np.array([pos[int(p)] for p in np.flatnonzero(lbl.ravel() == c) if int(p) in pos])
+        if ks.size == 0:
+            continue
+        word = color_word(_representative(flat_rgb[idx[ks]], lab[ks]))
+        j = int(np.bincount(near[ks]).argmax())
+        into = color_word(_representative(flat_rgb[idx[near == j]], lab[near == j]))
+        if word == into:
+            continue
+        area = stats[c, cv2.CC_STAT_AREA] / px_per_mm ** 2
+        notes.append(f"a small {word} mark ({area:.1f} mm² at real size) is too small to print as its own color "
+                     f"and prints {into}; it would show on a bigger piece")
+    return notes
 
 
 def _representative(rgb01: np.ndarray, lab: np.ndarray) -> tuple[int, int, int]:

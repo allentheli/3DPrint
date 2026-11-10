@@ -133,14 +133,19 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     cfg = load_config(args.config)
     border = None if args.border is None else args.border
-    styles: dict[str, str] = {}
-    for spec in args.style or []:
-        card, _, st = spec.rpartition("=")
-        styles[card or "*"] = st
+    def per_card(specs):
+        out: dict[str, str] = {}
+        for spec in specs or []:
+            card, _, val = spec.rpartition("=")
+            out[card or "*"] = val
+        return out
+
+    styles = per_card(args.style)
     result = run_batch(cfg, [Path(p) for p in args.inputs], Path(args.out), product_hint=args.product,
                        border=border, tab=args.tab, overrides=args.map or [], batch_name=Path(args.out).name,
                        off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
-                       allow_uncalibrated=not args.ask_colors, styles=styles)
+                       allow_uncalibrated=not args.ask_colors, styles=styles,
+                       figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -250,7 +255,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",
                    help="colors that don't match a loaded spool: nearest spool (default), or own plate with a swap")
     p.add_argument("--style", action="append",
-                   help="flat (default), puffy, outlined or puffy-outlined; for every card, or one card: 'clip-03=puffy'")
+                   help="flat (default), puffy, outlined, puffy-outlined or figurine; for every card, or one card: 'clip-03=puffy'")
+    p.add_argument("--figurine-back", action="append",
+                   help="flat (default: only the front is rounded, the product still works, no supports), "
+                        "or a round back: blank or mirror; for every figurine, or one card: 'key-02=mirror'")
+    p.add_argument("--figurine-base", action="append",
+                   help="round-back figurines only: flat (default), disc or none; for every figurine, or one card: 'key-02=disc'")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)
