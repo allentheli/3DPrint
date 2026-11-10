@@ -102,8 +102,24 @@ def smooth_labels(label_map: np.ndarray, n_labels: int, radius_px: int) -> np.nd
     return out
 
 
-def thicken_thin_ink(mask: np.ndarray, min_width_px: float) -> tuple[np.ndarray, float]:
-    """Make ink at least `min_width_px` wide. Returns (mask, added pixel count)."""
+def _keep_apart(mask: np.ndarray, gap_px: float) -> np.ndarray:
+    """Where separate marks may not grow: a band around the line halfway between them, so
+    two marks thickened toward each other stop `gap_px` apart (or as far apart as they
+    were drawn, if closer). Eyes next to a mouth stay eyes."""
+    n = cv2.connectedComponents(_u8(mask), connectivity=8)[0]
+    if n <= 2 or gap_px <= 0:
+        return np.zeros_like(mask)
+    _, near = cv2.distanceTransformWithLabels(_u8(~mask), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_CCOMP)
+    edge = np.zeros_like(mask)
+    edge[:, 1:] |= near[:, 1:] != near[:, :-1]
+    edge[1:, :] |= near[1:, :] != near[:-1, :]
+    return cv2.dilate(_u8(edge), _disk(gap_px / 2.0)).astype(bool) & ~mask
+
+
+def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0) -> tuple[np.ndarray, float]:
+    """Make ink at least `min_width_px` wide, without merging separate marks: they keep
+    at least `gap_px` between them (or the gap that was drawn, if smaller), even if a mark
+    then stays a little thinner. Returns (mask, added pixel count)."""
     r = min_width_px / 2.0
     opened = cv2.morphologyEx(_u8(mask), cv2.MORPH_OPEN, _disk(r)).astype(bool)
     thin_zone = mask & ~opened
@@ -115,10 +131,162 @@ def thicken_thin_ink(mask: np.ndarray, min_width_px: float) -> tuple[np.ndarray,
     if not thin_zone.any():
         return mask, 0.0
     skel = skeletonize(mask) & cv2.dilate(_u8(thin_zone), np.ones((3, 3), np.uint8)).astype(bool)
-    add = cv2.dilate(_u8(skel), _disk(r)).astype(bool)
+    add = cv2.dilate(_u8(skel), _disk(r)).astype(bool) & ~_keep_apart(mask, gap_px)
     result = mask | add
     return result, float((result & ~mask).sum())
 
+
+
+# --- Tidy (optional, per card) -------------------------------------------------------
+# A clean, sticker-like version of the kid's own lines: the outline color's strokes are
+# redrawn along their own middle at one even thickness, wobbly and grainy edges are
+# smoothed, and dots, blobs and colored-in areas keep their shape. Nothing is added,
+# moved or straightened; no AI.
+
+
+def _neighbors(mask: np.ndarray) -> np.ndarray:
+    m = mask.astype(np.uint8)
+    return cv2.filter2D(m, -1, np.ones((3, 3), np.float32), borderType=cv2.BORDER_CONSTANT).astype(np.int32) - m
+
+
+def prune_spurs(skel: np.ndarray, length_px: int) -> np.ndarray:
+    """Remove side branches shorter than `length_px` (made by grain and wobbly edges),
+    keeping the real ends of lines and anything that would vanish entirely (a dot)."""
+    s = skel.copy()
+    for _ in range(length_px):
+        ends = s & (_neighbors(s) <= 1)
+        if not ends.any():
+            break
+        s &= ~ends
+    grow = (s & (_neighbors(s) == 1)).astype(np.uint8)
+    k = np.ones((3, 3), np.uint8)
+    for _ in range(length_px):
+        grow = cv2.dilate(grow, k) & skel.astype(np.uint8)
+    s |= grow.astype(bool)
+    n, lbl = cv2.connectedComponents(skel.astype(np.uint8), connectivity=8)
+    lost = np.setdiff1d(np.arange(1, n), np.unique(lbl[s]))
+    if lost.size:
+        s |= np.isin(lbl, lost)
+    return s
+
+
+def _compact(comp: np.ndarray, dist: np.ndarray) -> bool:
+    """A blob (an eye, a nose, a filled foot) rather than a stroke: not much longer than wide."""
+    width = 2.0 * float(dist[comp].max())
+    length = int((skeletonize(comp)).sum())
+    return length < 2.5 * width
+
+
+def _split_tidy(cfg: dict, mask: np.ndarray, px_per_mm: float, blob_px: float):
+    """Smooth the grain away, then split one color's ink into keep (colored-in areas,
+    blobs wider than `blob_px`, separate dots: their shape is kept) and strokes
+    (redrawn at one width)."""
+    tc = cfg["tidy"]
+    smooth_px = tc["smooth"] * px_per_mm
+    sm = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), max(0.5, smooth_px)) > 0.5
+    dist = cv2.distanceTransform(_u8(sm), cv2.DIST_L2, 5)
+    keep = cv2.morphologyEx(_u8(sm), cv2.MORPH_OPEN, _disk(tc["fill_min_width"] * px_per_mm / 2.0)).astype(bool)
+    thick = cv2.morphologyEx(_u8(sm), cv2.MORPH_OPEN, _disk(blob_px / 2.0)).astype(bool) & ~keep
+    # A bold outline is thick in stretches with short thinner bits between: judge the
+    # stretches together, so a line that runs thicker in places is evened, and only
+    # compact thick parts (a pupil, a nose, a filled foot) keep their shape.
+    joined = cv2.morphologyEx(_u8(thick), cv2.MORPH_CLOSE, _disk(0.4 * blob_px)).astype(bool) & sm
+    n, lbl, stats, _ = cv2.connectedComponentsWithStats(_u8(joined & ~keep), connectivity=8)
+    for i in range(1, n):
+        x, y, w, h, _ = stats[i]
+        comp = lbl[y:y + h, x:x + w] == i
+        if _compact(comp, dist[y:y + h, x:x + w]):
+            keep[y:y + h, x:x + w] |= comp & thick[y:y + h, x:x + w]
+    n, lbl, stats, _ = cv2.connectedComponentsWithStats(_u8(sm & ~keep), connectivity=8)
+    for i in range(1, n):                      # small separate dots (eyes) keep their shape
+        x, y, w, h, _ = stats[i]
+        comp = lbl[y:y + h, x:x + w] == i
+        if _compact(comp, dist[y:y + h, x:x + w]):
+            keep[y:y + h, x:x + w] |= comp
+    strokes = sm & ~keep
+    return sm, keep, strokes
+
+
+def tidy_line_width(cfg: dict, mask: np.ndarray, px_per_mm: float) -> tuple[float, float]:
+    """(width to redraw at, her typical stroke width), in mm. The redraw width is her
+    typical width, at least the printable minimum and at most `max_line_width`."""
+    tc, pr = cfg["tidy"], cfg["process"]
+    sm = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), max(0.5, tc["smooth"] * px_per_mm)) > 0.5
+    lines = sm & ~cv2.morphologyEx(_u8(sm), cv2.MORPH_OPEN, _disk(tc["fill_min_width"] * px_per_mm / 2.0)).astype(bool)
+    typical = pr["min_ink_width"]
+    if lines.any():
+        dist = cv2.distanceTransform(_u8(lines), cv2.DIST_L2, 5)
+        typical = float(np.median(2.0 * dist[skeletonize(lines)])) / px_per_mm
+    if tc["line_width"] != "auto":
+        return max(float(tc["line_width"]), pr["min_ink_width"]), typical
+    return float(np.clip(typical, pr["min_ink_width"], tc["max_line_width"])), typical
+
+
+def tidy_strokes(cfg: dict, mask: np.ndarray, px_per_mm: float, width_mm: float, typical_mm: float) -> np.ndarray:
+    """The outline color, tidied: strokes redrawn along their middle at `width_mm`;
+    blobs (compact and at least 2.5x her typical line), separate dots and colored-in
+    areas kept with smoothed edges. A line that only runs thicker in places is evened."""
+    w_px = width_mm * px_per_mm
+    # Blobs are far thicker than her usual line (a pupil, a filled foot: about 3x); a
+    # marker line that only ran thicker in places (about 2x) is not a blob.
+    blob_px = max(1.5 * width_mm, 2.5 * typical_mm) * px_per_mm
+    sm, keep, strokes = _split_tidy(cfg, mask, px_per_mm, blob_px)
+    out = smooth_edges(cfg, keep, px_per_mm)
+    if strokes.any():
+        skel = prune_spurs(skeletonize(strokes), max(2, int(round(0.35 * w_px))))
+        redrawn = cv2.dilate(_u8(skel), _disk(w_px / 2.0)).astype(bool)
+        # A stroke redrawn thicker must not grow into a separate mark next to it.
+        apart = _keep_apart(sm, cfg["process"]["min_gap"] * px_per_mm)
+        out |= (redrawn & ~apart) | (strokes & redrawn)
+    return out
+
+
+def smooth_edges(cfg: dict, mask: np.ndarray, px_per_mm: float) -> np.ndarray:
+    """Wobble and grain smoothed off the edge; the shape and its size stay. A mark small
+    enough to vanish in the smoothing (a tiny eye) is kept as drawn."""
+    sigma = max(0.5, 2.0 * cfg["tidy"]["smooth"] * px_per_mm)
+    out = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), sigma) > 0.5
+    n, lbl = cv2.connectedComponents(_u8(mask), connectivity=8)
+    lost = np.setdiff1d(np.arange(1, n), np.unique(lbl[out]))
+    if lost.size:
+        out |= np.isin(lbl, lost)
+    return out
+
+
+def tidy_labels(cfg: dict, label_map: np.ndarray, layers: list[InkLayer], px_per_mm: float):
+    """Tidy a whole drawing. The outline color (the darkest ink, or the only one) gets its
+    strokes redrawn evenly; other colors only get smooth edges, and they fill any gap a
+    thinner outline leaves next to them, as on a sticker. Returns (labels, width mm)."""
+    from .palette import rgb_to_lab
+
+    present = [i for i in range(1, len(layers) + 1) if (label_map == i).any()]
+    if not present:
+        return label_map, cfg["process"]["min_ink_width"]
+    line = min(present, key=lambda i: rgb_to_lab(layers[i - 1].rgb)[0])
+    width, typical = tidy_line_width(cfg, label_map == line, px_per_mm)
+    new = np.zeros_like(label_map)
+    new[tidy_strokes(cfg, label_map == line, px_per_mm, width, typical)] = line
+    colors = [i for i in present if i != line]
+    for i in colors:
+        m = smooth_edges(cfg, label_map == i, px_per_mm) & (new == 0)
+        new[m] = i
+    lost = (label_map > 0) & (new == 0)
+    if colors and lost.any():
+        # Colors may also cross the thin white sliver kids often leave between their
+        # coloring and the outline, but only right next to where the outline used to be.
+        sliver = (label_map == 0) & cv2.dilate(_u8(lost), _disk(0.3 * px_per_mm)).astype(bool)
+        open_to = lost | sliver
+        grow = np.where(np.isin(new, colors), new, 0).astype(np.uint8)
+        k = np.ones((3, 3), np.uint8)
+        for _ in range(int(np.ceil(cfg["tidy"]["max_line_width"] * px_per_mm))):
+            g = cv2.dilate(grow, k)
+            add = open_to & (grow == 0) & (g > 0)
+            if not add.any():
+                break
+            grow[add] = g[add]
+        fill = open_to & (grow > 0) & (new == 0)
+        new[fill] = grow[fill]
+    return new, width
 
 def mask_to_polygons(mask: np.ndarray, px_per_mm: float, simplify_mm: float = 0.02, smooth_mm: float = 0.15) -> MultiPolygon:
     """Vectorize a mask into real-mm polygons with holes, Y up."""
@@ -191,8 +359,9 @@ def bridge_components(shape, width_mm: float) -> tuple[Polygon, int]:
 
 
 def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on: bool,
-               name: str, product: str) -> Design:
-    """Apply every print fix in spec order and vectorize."""
+               name: str, product: str, tidy: bool = False) -> Design:
+    """Apply every print fix in spec order and vectorize. `tidy` redraws every stroke at
+    one even thickness with smooth edges (off unless asked for)."""
     pr = cfg["process"]
     fixes: list[str] = []
     warnings: list[str] = []
@@ -236,12 +405,15 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
     if gap_px / px_per_mm ** 2 > 0.5:
         fixes.append(f"gaps in the coloring narrower than {pr['coloring_gap']} mm filled ({gap_px / px_per_mm ** 2:.0f} mm²)")
 
+    if tidy:
+        label_map, tidy_w = tidy_labels(cfg, label_map, layers, px_per_mm)
+        fixes.append(f"tidy: outlines redrawn at an even {tidy_w:.1f} mm, edges smoothed")
     masks: list[tuple[InkLayer, np.ndarray]] = []
     for i, layer in enumerate(layers, start=1):
         m = label_map == i
         if not m.any():
             continue
-        m, added = thicken_thin_ink(m, width_px)
+        m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm)
         if added > 0.5 * px_per_mm ** 2:
             fixes.append(f"{layer.name}: thin lines thickened to {pr['min_ink_width']} mm "
                          f"({added / px_per_mm ** 2:.1f} mm² added)")

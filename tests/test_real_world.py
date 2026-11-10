@@ -325,3 +325,38 @@ def test_pencil_is_ink_but_show_through_is_not(cfg, tmp_path):
     border = cfg["process"]["border"]
     assert maxx - minx == pytest.approx(20 + 2 * border, abs=1.5), "the pencil circle is the whole piece"
     assert p.design.inks and p.design.inks[0].geometry.area > 30, "the pencil line is there, all the way round"
+
+
+def _face(px_per_mm):
+    """Test drive 3's face, at hair clip size: two 0.5 mm eyes and a thin mouth 0.33 mm
+    below them, black on a brown face."""
+    import cv2
+
+    mm = lambda v: int(round(v * px_per_mm))                                        # noqa: E731
+    h = w = mm(12)
+    black = np.zeros((h, w), np.uint8)
+    for x in (4.5, 7.5):
+        cv2.circle(black, (mm(x), mm(4.5)), mm(0.27), 1, -1)
+    eye_bottom = 4.5 + 0.27
+    mouth_y = eye_bottom + 0.33 + 0.17
+    cv2.line(black, (mm(4.0), mm(mouth_y)), (mm(8.0), mm(mouth_y)), 1, mm(0.33))
+    brown = np.zeros((h, w), np.uint8)
+    cv2.rectangle(brown, (mm(1), mm(1)), (mm(11), mm(9)), 1, -1)
+    brown &= ~black.astype(bool)
+    return black.astype(bool), brown.astype(bool)
+
+
+@pytest.mark.parametrize("tidy", [False, True])
+def test_eyes_next_to_a_mouth_stay_eyes(cfg, tidy):
+    """Test drive 3: on a 22 mm hair clip the brown creature's 0.5 mm eyes sat 0.3 mm above
+    its mouth. Thickening every line to 1 mm merged eyes and mouth into one blob. Separate
+    marks now keep the gap they were drawn with."""
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    black, brown = _face(ppm)
+    layers = [InkLayer("black", (25, 25, 30), black), InkLayer("brown", (110, 60, 30), brown)]
+    d = fix_design(cfg, layers, ppm, border_on=True, name="t", product="hair_clip", tidy=tidy)
+    ink = next(i for i in d.inks if i.name == "black").geometry
+    assert len(ink.geoms) >= 3, f"two eyes and a mouth, not {len(ink.geoms)} blob(s)"

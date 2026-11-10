@@ -77,6 +77,10 @@ a filament. Output: `plates/plate-N.3mf`, `designs/<card>-preview.png`, `contact
 Shapes: add `--style puffy`, `--style outlined` (raised outline) or `--style puffy-outlined`
 for the whole run, or per card like `--style clip-03=puffy`. Flat is the default.
 
+Tidy: add `--tidy` (every card) or `--tidy clip-03` (one card) for a clean, sticker-like
+look: her lines redrawn at one even thickness with smooth edges. Eyes, blobs and colored-in
+areas keep their shape. Off by default.
+
 Figurines: `--style figurine` (or per card, `--style fig-02=figurine`) rounds the drawing's
 front like a balloon. The back stays flat by default, so it is still a hair clip, magnet,
 keychain, pendant or earring, and it prints without supports. For a standalone round 60 mm

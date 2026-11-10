@@ -114,6 +114,18 @@ def test_no_dark_outline_means_nothing_raised(cfg):
     assert any("no dark outline" in f for f in p.design.fixes)
 
 
+
+def test_a_one_color_line_drawing_gets_its_lines_raised(cfg):
+    """Test drive 4: the butterfly and rainbow are light gray pencil, too light to count as
+    a dark outline, so the raised-outline style raised nothing. In a one-color line drawing
+    the only ink is the outline, whatever its shade."""
+    ring = _as_multi(Point(0, 0).buffer(10).difference(Point(0, 0).buffer(9)))
+    outline = Polygon(Point(0, 0).buffer(11.5).exterior)
+    p = build_piece(cfg, Design("t", "magnet_figure", outline, [InkRegion("gray", (150, 150, 155), ring)]), style="outlined")
+    assert any("gray outline raised" in f for f in p.design.fixes), p.design.fixes
+    top = p.parts["t gray"].bounding_box()[5]
+    assert top == pytest.approx(cfg["products"]["magnet_figure"]["thickness"] + cfg["relief"]["outline_raise"], abs=0.15)
+
 def test_puffy_clip_keeps_its_pocket_on_the_back(cfg):
     p = _build(cfg, "hair_clip", "puffy")
     cx, cy = p.solid_xy(*p.attachment["center"])
@@ -144,3 +156,23 @@ def test_styles_per_card_in_a_run(cfg, tmp_path):
     assert "face-up" in notes
     with pytest.raises(ValueError):
         run_batch(cfg, [a], tmp_path / "bad", styles={"*": "wobbly"})
+
+
+@pytest.mark.parametrize("style", ["puffy", "outlined", "figurine"])
+def test_shaped_loops_stay_whole_over_color(cfg, style):
+    """Test drive 4: on the puffy rainbow pendant the sun's rays reached under the loop,
+    and cutting the colors out cut notches into the loop the chain hangs on. The loop
+    stays whole; the bit of color it hides is trimmed instead."""
+    from shapely.geometry import box
+
+    from charm_maker.products import _add_side_loop
+    from charm_maker.relief import build_relief_parts
+
+    outline = Polygon(Point(0, 0).buffer(12).exterior)
+    ray = _as_multi(box(-0.6, -5, 0.6, 12).intersection(outline))        # ink right up to the top
+    design = Design("t", "pendant", outline, [InkRegion("black", (20, 20, 20), ray)])
+    info = _add_side_loop(cfg, design, cfg["products"]["pendant"]["loop"])
+    parts, base_name, _, notes = build_relief_parts(cfg, design, "side_loop", info, style)
+    loop = info["solid"] - info["hole_solid"]
+    assert (loop - parts[base_name]).volume() < 0.01, "no notches in the loop"
+    assert any("under the loop" in n for n in notes)

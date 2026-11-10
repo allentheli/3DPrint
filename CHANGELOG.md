@@ -1,5 +1,36 @@
 # Changelog
 
+## Switch housings in the fit test (2026-11-10)
+
+- Checked established clicker designs (popular MakerWorld clickers, a clicker generator, keyboard builders): no clicker-specific standard; all use the MX keyboard standard (14.0 mm square cutout, 1.5 mm plate, plate top 5 mm above the PCB) and a printed fit test. The switch holes (13.9 / 14.0 / 14.1) already bracket it; the keycap clearances are now 0.10 / 0.15 / 0.20 mm, centered on the common printed-clicker default of 0.15 in 0.05 mm steps (they were 0.15 / 0.25 / 0.35).
+
+- Keycap posts (pieces 13 to 15) are now the real keycap size, 5.5 mm round, as Allen asked, so the fit found is the fit the clicker keycap gets. Only the arm thickness varies (1.32 / 1.42 / 1.52 mm and 1.46 / 1.56 / 1.66 mm); the cross length is a fixed 4.2 mm, which keeps about 0.5 mm of plastic at the cross tips (a 0.37 mm wall on piece 15 otherwise). The guide asks Allen to report a cracked post.
+
+- Allen's switch (photo): MX-style blue clicky. Fit-test pieces 10 to 12 are now small closed housings like the clicker case, as he asked: a 1.5 mm lid with the square hole (13.9 / 14.0 / 14.1 mm), a 15.6 mm square hollow 9 mm deep for the switch body and pins, and a floor with a 6 mm push-out hole to move the switch between the three boxes. The lid overhangs the hollow by only 0.8 mm, so no supports.
+- 1 new test; the size test knows the taller pieces.
+
+
+## Trying the 3D styles (2026-11-10)
+
+- A sampler plate of the eight test-drive charms, two in each style (puffy, raised outline, puffy with raised outline, figurine front), and a picture of every charm in every style.
+- Per-card styles and figurine options take the exact name of a second copy of a card (`clip-01-b`), not only the card number.
+- A one-color line drawing (pencil, a single colored pen) gets its lines raised by the raised-outline styles, whatever their shade; before, only an ink dark enough counted, so the pencil butterfly and rainbow got nothing raised. A one-color colored-in area still gets nothing raised.
+- Shaped pendants and earrings: the loop rises above the charm, and cutting out the colors cut notches into it where ink reached under it (the rainbow's sun rays). The loop now stays whole and the hidden bit of color is trimmed, with a note.
+- 4 new tests.
+
+## Eyes stay eyes (2026-11-10)
+
+- The brown house creature (test drive 3) lost its eyes: on a 22 mm hair clip its 0.5 mm eyes sat 0.3 mm above the mouth, and thickening every line to 1 mm merged eyes and mouth into one blob. Thickening now never merges separate marks: each keeps at least 0.4 mm from its neighbor (or the gap she drew, if smaller), even if it then stays a little thinner than 1 mm. Tidy's redraw follows the same rule, and smoothing never wipes out a tiny mark.
+- Also keeps the hair clip cat's whiskers apart.
+- 2 new regression tests (plain and tidy).
+
+## Tidy (2026-11-10)
+
+- New option `--tidy` (every card) or `--tidy <card>`: a clean, sticker-like version of the kid's own lines. The outline color's strokes are redrawn along their middle at one even thickness (her typical line width, 1.0 to 1.6 mm), with wobbly and grainy edges smoothed. Eyes, noses, filled areas and separate dots keep their shape; other colors only get smooth edges and fill up to the outline, including the thin white sliver kids leave between coloring and outline. No AI, nothing leaves the session. Off by default.
+- Checked on all eight test-drive cards and the six real drawings.
+- 5 new tests: even width, smoother edges, eyes and a short mouth survive, colors meet a thinner outline with no gap, off unless asked and per card from the command line.
+
+
 ## Test drive 4 (2026-11-10)
 
 Five cards in one Notes scan: a bird pendant, a butterfly keychain, two dog magnets and a rainbow pendant.

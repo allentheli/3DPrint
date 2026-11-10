@@ -73,7 +73,15 @@ switch brand or a photo first. A drawing without card markers needs `--product`.
 Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
 run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
 default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
+A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
+(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`) take that exact name too. To let
+Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
+
+Tidy: `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
+or "make them all tidy" means this. It redraws the outline color's strokes at one even
+thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
+only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.
 
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
@@ -116,7 +124,7 @@ candidates to that group's `candidates` in `config.yaml`, rebuild the plate, and
 the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
-7-9 earring loop (sideways hole), 10-12 switch cutout, 13-15 stem socket,
+7-9 earring loop (sideways hole), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
 16-18 necklace loop (sideways hole).
 
 ## Reading the results

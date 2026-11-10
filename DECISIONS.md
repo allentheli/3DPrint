@@ -192,3 +192,35 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 - Measured on the real scans: pencil cores 16 to 42 darker than their surroundings; show-through ghost at most 7.3; on the house card almost nothing outside its ink passes 20.
 - Five cards on a page each, and two cards with the same number (two printed copies of the pack) are fine: the second is renamed with -b.
 
+## Tidy
+
+Allen asked whether to run each drawing through an AI "redraw as a clean sticker" prompt first. Not as a standard step: it breaks two of his rules (faithful to the drawing, drawings stay private) and the problems it would fix were mostly fixed. He chose a non-AI tidy option instead.
+
+- Off by default; per card or for the whole run; works with every shape style.
+- Only the outline color is redrawn: the darkest ink, or the only one. Other colors keep their shape with smoothed edges (Gaussian, sigma 0.3 mm), so small colored areas such as window panes are never thinned.
+- Redraw width: the median stroke width measured along the middle of her lines, clipped to 1.0 to 1.6 mm (`tidy.max_line_width`), or a fixed `tidy.line_width`.
+- Kept as drawn: colored-in areas wider than 3 mm; blobs at least 2.5x her typical line width (and 1.5x the redraw width) that are not much longer than wide (a pupil, a nose, a filled foot: about 3x on her drawings); separate small compact dots (eyes). A marker line that only runs thicker in places (about 2x) is evened, and thick stretches close together along one line are judged together, so a bold outline never becomes a row of lumps. Counting how many strokes a blob touches was tried and dropped: a foot hanging off a line touches it on both sides, like a lump.
+- Spurs shorter than 0.35 x the redraw width are trimmed (grain and wobble); real line ends are regrown, and anything that would vanish (a dot) is kept.
+- Where the outline gets thinner next to a color, that color grows into the freed space, also across a white sliver up to 0.3 mm from the old outline (kids often leave one). Elsewhere white stays white.
+- Known limits: tiny faces on hair clips (a 3 mm face) simplify; a beaded edge can remain where a thin colored mark crosses the outline (the garlic's tongue).
+
+## Eyes stay eyes
+
+- Separate marks of one color never grow into each other when thin lines are thickened (`process.min_gap`, 0.4 mm): growth is blocked in a band around the line halfway between them. If she drew them closer than that, they keep her gap. Where there is no room, a mark stays thinner than the 1.0 mm minimum rather than merging. Faithfulness wins over the minimum width for small details; not printed yet, so a 0.3 to 0.4 mm gap of another color is untested on the 0.4 mm nozzle.
+- Within one mark nothing changes: the two bumps of a "w" mouth can still close into one shape.
+- Tidy: redrawn strokes obey the same gap; smoothing keeps any mark it would otherwise erase entirely.
+
+## Trying the 3D styles
+
+- Sampler for the test drive: two charms per style on one plate, chosen to suit the drawing (figurine fronts on the two big-bodied dogs, puffy on the loaf cat and the bird, puffy with outline on the cat hair clip and the butterfly, raised outline on the house and the rainbow).
+- Outline ink: a one-color drawing's only ink is its outline when its strokes average 2.5 mm or less (2 x area / perimeter, `relief.outline_max_line_width`); otherwise the darkest ink under lightness 50, as before.
+- On face-up pieces the side loop stays whole: color prisms are trimmed by the loop post instead of the post being cut by the prisms.
+
+## Allen's switch
+
+- Photo (2026-11-10): blue clicky switch, clear top housing, white bottom housing, plus-shaped stem, plate-mount clips, two metal pins and a center post. MX-style, so the fit test's switch cutouts (13.9 / 14.0 / 14.1 mm in a 1.5 mm plate) and stem sockets (0.15 / 0.25 / 0.35 mm clearance) stand as designed. Brand unknown; the fit test settles the numbers.
+- Allen's call: the switch test pieces should be a house for the switch, with a bottom. They are now closed boxes built like the planned clicker case (floor 1.2 mm, hollow `mx_cavity_size` x `mx_cavity_depth`, 1.5 mm lid with the cutout), so the fit test also covers the room under the switch and printing the lid over the hollow. A 6 mm push-out hole in the floor lets a pen move the switch between the three boxes, because a closed box hides the clips.
+- Keycap socket, published numbers (searched 2026-11-10): Cherry's keycap spec gives the cross slot as 4.1 mm (+0.05) long with 1.17 mm (+/-0.02) arms; the switch stem itself measures about 4.0 x 4.0 mm with arms of about 1.1 to 1.3 mm (Signature Plastics 4.04 mm and 1.19 mm; Deskthority's table 1.25 to 1.30 mm one way, 1.05 to 1.10 mm the other) and stands about 3.6 to 3.7 mm tall. Printed small holes come out smaller, so FDM prints usually need about 0.05 to 0.2 mm added. The fit test's sockets (4.1 mm cross, 1.17 and 1.31 mm arms, plus 0.15 / 0.25 / 0.35 mm) bracket that, so they stay as they are. The real keycap will use the standard 5.5 mm round post around the socket, so it clears the switch housing when pressed; the fit-test post is wider (8 mm) because it is only pushed on, not clicked.
+- Allen's call: test the keycap post at the real 5.5 mm (`hardware.mx_keycap_post_diameter`), not a wider 8 mm test boss. The clearance is added to the arm widths only; the cross length gets a fixed 0.1 mm (`fit_test.stem_span_clearance`, 4.2 mm in all), because adding the clearance to the length too left only 0.37 mm at the tips of the loosest piece, under one 0.4 mm nozzle line. Injection-molded Cherry keycaps have about 0.6 mm there; ours 0.49 to 0.53 mm. If a post cracks, the keycap post gets an oval 7.2 x 5.5 mm shape (wider only along the switch opening's long side), as some generators do.
+- Allen asked to check established clicker designs instead of inventing dimensions. Found (2026-11-10): MX plate standard 14.0 +/-0.05 mm square, 1.5 +/-0.1 mm plate, plate top 5 mm above the PCB (ai03 wiki, Deskthority); an FDM keyboard builder's best cutout was 13.9 mm; popular printed clickers (MakerWorld: BlackHawk, Eris, Austin's Lab, Monkey Skull Studio and others) print the base upright and the cap face down and tune fit with a test; a clicker generator defaults the keycap fit to 0.15 mm in 0.05 mm steps. Kept the switch-hole sizes; moved keycap clearances to 0.10 / 0.15 / 0.20 mm. MakerWorld pages could not be opened from the session (network), so the designs' own files were not checked; only standard dimensions are used, no one's design is copied.
+
