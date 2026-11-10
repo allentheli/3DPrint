@@ -1,5 +1,10 @@
 # Changelog
 
+## Screw-top notes measure the head (2026-11-10)
+
+- The twist-off head's print notes always said "no supports", but a downloaded model's head can overhang on its own (Sebo3D's duck: the beak, 109 mm² steeper than 45 degrees). The notes now measure the head and, when it overhangs, say to turn tree supports on for the head, as the original does. 1 new test.
+
+
 ## Switch housings in the fit test (2026-11-10)
 
 - Checked established clicker designs (popular MakerWorld clickers, a clicker generator, keyboard builders): no clicker-specific standard; all use the MX keyboard standard (14.0 mm square cutout, 1.5 mm plate, plate top 5 mm above the PCB) and a printed fit test. The switch holes (13.9 / 14.0 / 14.1) already bracket it; the keycap clearances are now 0.10 / 0.15 / 0.20 mm, centered on the common printed-clicker default of 0.15 in 0.05 mm steps (they were 0.15 / 0.25 / 0.35).

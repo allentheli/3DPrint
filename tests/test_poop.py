@@ -103,3 +103,22 @@ def test_cli_writes_files(tmp_path):
         assert (d / f).exists(), f
     assert main(["screw-top", str(_fake_poop_eater(tmp_path)), "--cut", "50", "--name", "fake", "--out", str(tmp_path / "s")]) == 0
     assert (tmp_path / "s" / "fake" / "fake.3mf").exists()
+
+
+def test_screw_top_notes_ask_for_supports_when_the_head_needs_them(cfg, tmp_path):
+    """The real duck's beak hangs out over the bed and needs the original's tree supports,
+    but the notes promised "no supports" for every head. They measure the head now."""
+    from charm_maker.screwtop import write_screw_top
+
+    model = load_model(_fake_poop_eater(tmp_path))
+    plain = write_screw_top(cfg, add_screw_top(cfg, model, 50.0), tmp_path / "plain", "plain")
+    assert "No supports" in (tmp_path / "plain" / "PRINT_NOTES.md").read_text()
+    model = load_model(_fake_poop_eater(tmp_path))
+    b = model.bounding_box()
+    cx, cy = (b[0] + b[3]) / 2, (b[1] + b[4]) / 2
+    beak = m3d.Manifold.cube([16.0, 8.0, 6.0], True).translate([cx + 24.0, cy, 66.0])   # sticks out of the head
+    duck = model + beak
+    write_screw_top(cfg, add_screw_top(cfg, duck, 50.0), tmp_path / "beak", "beak")
+    notes = (tmp_path / "beak" / "PRINT_NOTES.md").read_text()
+    assert "Enable support" in notes and "No supports" not in notes
+
