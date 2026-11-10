@@ -288,3 +288,40 @@ def test_a_small_textured_color_is_kept(cfg, tmp_path):
     r = run_batch(cfg, [card], tmp_path / "out")
     names = [i.name for i in r.pieces[0].design.inks]
     assert any("yellow" in n for n in names), names
+
+
+def test_pencil_is_ink_but_show_through_is_not(cfg, tmp_path):
+    """Test drive 4: a butterfly and a rainbow drawn in pencil were mostly lost (gray marks
+    were not ink). A grainy pencil circle must be found; a very faint drawing showing
+    through from the back of the page must not."""
+    import cv2
+    from PIL import Image
+
+    from tests.synthetic import card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 9, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    arr = np.asarray(img).copy()
+    rng = np.random.default_rng(7)
+    # Pencil: a 60 card-mm circle (20 mm real), graphite gray, grainy (a third of it skips).
+    pencil = np.zeros(arr.shape[:2], np.uint8)
+    c = tuple(int(v) for v in P(cx - 15, cy))
+    cv2.circle(pencil, c, int(round(30 * ppm)), 1, max(2, int(round(0.9 * ppm))))
+    grain = rng.random(arr.shape[:2]) > 0.33
+    tone = np.clip(rng.normal(160, 18, arr.shape[:2]), 90, 230)
+    sel = (pencil > 0) & grain
+    arr[sel] = np.repeat(tone[sel][:, None], 3, axis=1).astype(np.uint8)
+    # Show-through: a soft, very light circle to the right.
+    ghost = np.zeros(arr.shape[:2], np.float32)
+    cv2.circle(ghost, tuple(int(v) for v in P(cx + 28, cy)), int(round(10 * ppm)), 1.0, int(round(1.2 * ppm)))
+    ghost = cv2.GaussianBlur(ghost, (0, 0), 2.0)
+    arr = np.clip(arr.astype(np.float32) - ghost[..., None] * 16, 0, 255).astype(np.uint8)
+    card = photograph(Image.fromarray(arr), tmp_path / "pencil.jpg", seed=8)
+    r = run_batch(cfg, [card], tmp_path / "out")
+    assert r.problems == [], r.problems
+    p = r.pieces[0]
+    minx, miny, maxx, maxy = p.design.outline.bounds
+    border = cfg["process"]["border"]
+    assert maxx - minx == pytest.approx(20 + 2 * border, abs=1.5), "the pencil circle is the whole piece"
+    assert p.design.inks and p.design.inks[0].geometry.area > 30, "the pencil line is there, all the way round"

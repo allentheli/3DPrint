@@ -72,9 +72,10 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     """Ink pixels in a lighting-flattened crop.
 
     Strong ink is dark, or strongly colored, or a faint line that is still clearly
-    colored (a thin pink pen). Gray marks that are only a little darker than the paper
-    (shadows, pencil) are not ink. The soft edge of a line next to strong ink is ink.
-    Guide-colored pixels are removed only near where guides are printed
+    colored (a thin pink pen), or a pencil line: a thin gray stroke clearly darker than
+    the paper right around it. Shadows (broad) and drawings showing through from the
+    back of the page (very faint) are not ink. The soft edge of a line next to strong
+    ink is ink. Guide-colored pixels are removed only near where guides are printed
     (`guide_zone`), so a light-blue pen elsewhere survives."""
     from .filaments import _srgb_to_lab
 
@@ -93,6 +94,7 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     strong &= ~guide
     if ignore is not None:
         strong &= ~ignore
+    strong |= _pencil(rd, lab, chroma, strong, guide, ignore)
     # Drop isolated noise dots, but keep lines only 1-2 pixels wide.
     n, labels, stats, _ = cv2.connectedComponentsWithStats(strong.astype(np.uint8), connectivity=8)
     small = np.flatnonzero(stats[:, cv2.CC_STAT_AREA] < rd["min_blob_px"])
@@ -106,6 +108,42 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     if ignore is not None:
         ink &= ~ignore
     return ink, H, S, V
+
+
+def _pencil(rd: dict, lab: np.ndarray, chroma: np.ndarray, strong: np.ndarray, guide: np.ndarray,
+            ignore: np.ndarray | None) -> np.ndarray:
+    """Pencil lines (test drive 4: a butterfly and a rainbow in pencil were lost). A thin
+    gray stroke is darker than the paper right around it (a black-hat filter as wide as
+    a thick pencil line), which a broad shadow is not. The stroke's core must be clearly
+    darker; it then grows along its lighter, grainy edges. Strokes that are only the
+    fringe of existing ink, or too short to be a line, are dropped."""
+    ppm = float(rd["px_per_card_mm"])
+    L = lab[..., 0].astype(np.float32)
+    k = int(round(rd["pencil_line_width"] * ppm)) | 1
+    darker = cv2.morphologyEx(L, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))) - L
+    gray = (chroma < rd["pencil_chroma_max"]) & ~strong & ~guide
+    if ignore is not None:
+        gray &= ~ignore
+    seed = gray & (darker > rd["pencil_line_delta"])
+    grow = gray & (darker > rd["pencil_edge_delta"])
+    if not seed.any():
+        return np.zeros_like(strong)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(grow.astype(np.uint8), connectivity=8)
+    seeded = np.unique(labels[seed])
+    seeded = seeded[seeded > 0]
+    # Right next to existing ink, a gray rim is that ink's blurred edge, not pencil: leave
+    # it out (so ink lines don't thicken), and judge each stroke by what is left.
+    near_ink = cv2.dilate(strong.astype(np.uint8), np.ones((2 * rd["halo_px"] + 5,) * 2, np.uint8)).astype(bool)
+    keep = np.zeros(n, bool)
+    min_len = rd["pencil_min_length"] * ppm
+    for i in seeded:
+        x, y, w, h, area = stats[i]
+        rest = (labels[y:y + h, x:x + w] == i) & ~near_ink[y:y + h, x:x + w]
+        if not rest.any():
+            continue
+        ys, xs = np.nonzero(rest)
+        keep[i] = max(np.ptp(xs), np.ptp(ys)) + 1 >= min_len
+    return keep[labels] & ~near_ink
 
 
 def separate_inks(cfg: dict, bgr: np.ndarray, max_colors: int, ignore: np.ndarray | None = None) -> InkResult:

@@ -1,5 +1,14 @@
 # Changelog
 
+## Test drive 4 (2026-11-10)
+
+Five cards in one Notes scan: a bird pendant, a butterfly keychain, two dog magnets and a rainbow pendant.
+
+- The butterfly and the rainbow were drawn in pencil and mostly lost: gray marks were not ink. A pencil line is now ink when it is a thin gray stroke clearly darker than the paper right around it (its core at least 20 Lab units darker, growing along its grainy edges down to 10). Broad shadows are not lines, and drawings showing through from the back of the page (7 at most) stay out.
+- The gray rim right next to existing ink is left out, so ink lines don't thicken; a pencil stroke touching ink is judged by the rest of it.
+- The faint body outline of the real bug drawing is now found too, so the bug comes out whole instead of in pieces. The other real drawings gain 1 to 5% line area; the earlier test-drive scans are unchanged.
+- 1 new regression test.
+
 ## Test drive 3 (2026-11-10)
 
 A brown house-like character with a yellow window on hair clip card 01.

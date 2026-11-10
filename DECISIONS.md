@@ -186,3 +186,9 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 
 - Extra color seeds: after the normal seeding, shades farther than 2 x the merge distance from every seed are pooled with their 26 neighboring shade bins; the biggest pool starts a seed if it reaches the normal seed size (0.3 x the minimum color area). Up to three such seeds. Pooling every shade (first try) split the garlic's blue pen into blue and black, so it is limited to clearly new colors.
 
+## Test drive 4
+
+- Pencil is ink (it was excluded on purpose before, to keep shadows out; the brief never ruled it out, and a kid used it). Detection: black-hat of Lab lightness with a 2.5 card-mm disk; seeds darker than 20, grown through pixels darker than 10, chroma under 12, not guide-colored; pixels within halo + 2 px of strong ink are left out; a stroke must be at least 1.5 card mm long after that.
+- Measured on the real scans: pencil cores 16 to 42 darker than their surroundings; show-through ghost at most 7.3; on the house card almost nothing outside its ink passes 20.
+- Five cards on a page each, and two cards with the same number (two printed copies of the pack) are fine: the second is renamed with -b.
+

@@ -347,7 +347,12 @@ reader:
   ink_value_max: 0.60             # darker than this is ink
   ink_saturation_min: 0.40        # more colorful than this is ink
   faint_chroma_min: 10            # a faint pen line counts as ink if it is this colorful...
-  faint_delta_min: 18             # ...and this different from the paper (Lab); gray shadows and pencil do not
+  faint_delta_min: 18             # ...and this different from the paper (Lab); gray shadows do not
+  pencil_line_delta: 20           # a gray stroke is pencil if its core is this much darker than the paper around it...
+  pencil_edge_delta: 10           # ...and it grows along its grainy edges down to this
+  pencil_chroma_max: 12           # gray, not a colored pen
+  pencil_line_width: 2.5          # card mm: wider dark areas (shadows) are not lines
+  pencil_min_length: 1.5          # card mm: shorter bits are paper grain
   halo_delta_min: 8               # soft edges of a line: this different from paper and next to ink
   halo_px: 2
   min_blob_px: 6                  # smaller isolated dots are camera noise

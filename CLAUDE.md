@@ -196,7 +196,7 @@ python -m charm_maker run output/real-drawings/cards --out output/real-drawings/
 
 Expected: purple figure in purple; candy corn with black eyes, orange and yellow; girl
 with eyes and smile in black; pig outline in pink; garlic in blue with a red tongue; bug
-in blue (its body outline is very faint and comes out in pieces). Never commit the outputs.
+in blue, whole (its faint body outline is found since pencil detection). Never commit the outputs.
 
 ## Housekeeping
 
