@@ -145,7 +145,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        border=border, tab=args.tab, overrides=args.map or [], batch_name=Path(args.out).name,
                        off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
                        allow_uncalibrated=not args.ask_colors, styles=styles,
-                       figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base))
+                       figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
+                       tidy=set(args.tidy or ()))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -261,6 +262,9 @@ def main(argv: list[str] | None = None) -> int:
                         "or a round back: blank or mirror; for every figurine, or one card: 'key-02=mirror'")
     p.add_argument("--figurine-base", action="append",
                    help="round-back figurines only: flat (default), disc or none; for every figurine, or one card: 'key-02=disc'")
+    p.add_argument("--tidy", action="append", nargs="?", const="*", metavar="CARD",
+                   help="redraw every line at one even thickness with smooth edges: '--tidy' for every card, "
+                        "'--tidy clip-03' for one (repeat for more)")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)

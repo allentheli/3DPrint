@@ -46,7 +46,7 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
-                     name: str, palette: Palette | None = None) -> Design:
+                     name: str, palette: Palette | None = None, tidy: bool = False) -> Design:
     pr = cfg["process"]
     scale = pr["card_scale"]
     if border is None:
@@ -58,7 +58,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         ignore = _box_edge_band(cfg, read)
         inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
                                guide_zone=_guide_zone(cfg, read))
-        design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product)
+        design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy)
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
         design.name_image = read.name_image
@@ -87,7 +87,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
-    design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product)
+    design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy)
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
     design.fixes.append(f"scaled so the longest side is {size_mm} mm (no card markers)")
@@ -162,7 +162,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               batch_name: str | None = None, off_palette: str | None = "nearest",
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
-              figurine_base: dict[str, str] | None = None) -> BatchResult:
+              figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -190,6 +190,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     def option_for(opts: dict, card: str):
         return opts.get(card) or opts.get("*")
+
+    tidy = set(tidy or ())
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
@@ -242,7 +244,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         else:
             used_names[name] = 1
         try:
-            design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette)
+            design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
+                                      tidy=bool(tidy & {name, base_name, "*"}))
             design.source = label
             if name != base_name:
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")

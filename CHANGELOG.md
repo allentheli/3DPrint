@@ -1,5 +1,12 @@
 # Changelog
 
+## Tidy (2026-11-10)
+
+- New option `--tidy` (every card) or `--tidy <card>`: a clean, sticker-like version of the kid's own lines. The outline color's strokes are redrawn along their middle at one even thickness (her typical line width, 1.0 to 1.6 mm), with wobbly and grainy edges smoothed. Eyes, noses, filled areas and separate dots keep their shape; other colors only get smooth edges and fill up to the outline, including the thin white sliver kids leave between coloring and outline. No AI, nothing leaves the session. Off by default.
+- Checked on all eight test-drive cards and the six real drawings.
+- 5 new tests: even width, smoother edges, eyes and a short mouth survive, colors meet a thinner outline with no gap, off unless asked and per card from the command line.
+
+
 ## Test drive 4 (2026-11-10)
 
 Five cards in one Notes scan: a bird pendant, a butterfly keychain, two dog magnets and a rainbow pendant.

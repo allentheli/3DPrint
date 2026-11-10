@@ -280,6 +280,15 @@ figurine:
   sample: 0.5                     # mesh resolution
   layer_height: 0.16
 
+# Tidy (off unless asked for, per card): the outline color's strokes redrawn along their
+# middle at one even thickness, wobbly and grainy edges smoothed; dots, blobs and
+# colored-in areas keep their shape, and other colors only get smooth edges.
+tidy:
+  line_width: auto                # auto: the drawing's typical stroke width; or a number in mm
+  max_line_width: 1.6             # auto never goes thicker than this
+  fill_min_width: 3.0             # ink wider than this is a colored-in area, not a stroke
+  smooth: 0.15                    # mm: grain and wobble smaller than this are smoothed away
+
 # The universal figure stand (one design, no drawing).
 stand:
   base_width: 44

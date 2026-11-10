@@ -75,6 +75,11 @@ run, or per card with `--style clip-03=puffy`; repeat the flag for several cards
 default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
+Tidy: `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
+or "make them all tidy" means this. It redraws the outline color's strokes at one even
+thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
+only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.
+
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
 card's product at the card's size (clip pad, glued magnet, ring tab, loop all work) and it prints

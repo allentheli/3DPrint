@@ -168,6 +168,7 @@ You generate the printable cards, so the markers on the cards always match what 
    - The outline gets a border, 1.5 mm by default, in the base color, like the white edge on a die-cut sticker. It joins separate pieces into one and protects thin bits like whiskers and sun rays. On by default for everyone; a setting turns it off.
    - Any outer feature still narrower than 2 mm gets smoothed into the border.
    - Sharp outer corners are rounded slightly (0.5 mm).
+   - **Tidy (optional, per card, off by default):** a clean, sticker-like version of the kid's own lines. The outline color's strokes are redrawn along their own middle at one even thickness (her typical line width, at least 1.0 mm), and wobbly or grainy edges are smoothed. Eyes, noses, filled feet and colored-in areas keep their shape; other colors only get smooth edges and fill up to the (sometimes thinner) outline. Nothing is added, moved or straightened, and no AI is involved. Allen chose this over an AI "redraw as a sticker" step, which would change the drawing and send it out of the session.
 6. **Build the solid:** the front 0.6 mm holds the colors side by side, flush. Everything behind it is the base color. Then add the product's attachment (clip pocket, magnet pocket, tab or hole), or for the clicker, the keycap and the case.
 7. **Export:**
    - One 3MF per plate. Each design is one object, and each color is a separate part of that object with a clear name ("card-03 black", "card-03 pink").

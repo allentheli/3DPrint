@@ -192,3 +192,15 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 - Measured on the real scans: pencil cores 16 to 42 darker than their surroundings; show-through ghost at most 7.3; on the house card almost nothing outside its ink passes 20.
 - Five cards on a page each, and two cards with the same number (two printed copies of the pack) are fine: the second is renamed with -b.
 
+## Tidy
+
+Allen asked whether to run each drawing through an AI "redraw as a clean sticker" prompt first. Not as a standard step: it breaks two of his rules (faithful to the drawing, drawings stay private) and the problems it would fix were mostly fixed. He chose a non-AI tidy option instead.
+
+- Off by default; per card or for the whole run; works with every shape style.
+- Only the outline color is redrawn: the darkest ink, or the only one. Other colors keep their shape with smoothed edges (Gaussian, sigma 0.3 mm), so small colored areas such as window panes are never thinned.
+- Redraw width: the median stroke width measured along the middle of her lines, clipped to 1.0 to 1.6 mm (`tidy.max_line_width`), or a fixed `tidy.line_width`.
+- Kept as drawn: colored-in areas wider than 3 mm; blobs at least 2.5x her typical line width (and 1.5x the redraw width) that are not much longer than wide (a pupil, a nose, a filled foot: about 3x on her drawings); separate small compact dots (eyes). A marker line that only runs thicker in places (about 2x) is evened, and thick stretches close together along one line are judged together, so a bold outline never becomes a row of lumps. Counting how many strokes a blob touches was tried and dropped: a foot hanging off a line touches it on both sides, like a lump.
+- Spurs shorter than 0.35 x the redraw width are trimmed (grain and wobble); real line ends are regrown, and anything that would vanish (a dot) is kept.
+- Where the outline gets thinner next to a color, that color grows into the freed space, also across a white sliver up to 0.3 mm from the old outline (kids often leave one). Elsewhere white stays white.
+- Known limits: tiny faces on hair clips (a 3 mm face) simplify; a beaded edge can remain where a thin colored mark crosses the outline (the garlic's tongue).
+
