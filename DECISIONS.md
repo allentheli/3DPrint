@@ -219,4 +219,5 @@ Allen asked whether to run each drawing through an AI "redraw as a clean sticker
 ## Allen's switch
 
 - Photo (2026-11-10): blue clicky switch, clear top housing, white bottom housing, plus-shaped stem, plate-mount clips, two metal pins and a center post. MX-style, so the fit test's switch cutouts (13.9 / 14.0 / 14.1 mm in a 1.5 mm plate) and stem sockets (0.15 / 0.25 / 0.35 mm clearance) stand as designed. Brand unknown; the fit test settles the numbers.
+- Allen's call: the switch test pieces should be a house for the switch, with a bottom. They are now closed boxes built like the planned clicker case (floor 1.2 mm, hollow `mx_cavity_size` x `mx_cavity_depth`, 1.5 mm lid with the cutout), so the fit test also covers the room under the switch and printing the lid over the hollow. A 6 mm push-out hole in the floor lets a pen move the switch between the three boxes, because a closed box hides the clips.
 

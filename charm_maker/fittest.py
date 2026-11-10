@@ -61,6 +61,29 @@ def _coupon_body(cfg: dict, key: str, number: int):
     return body, outline, feature_center, t
 
 
+
+def _switch_housing(cfg: dict, number: int, cutout: float):
+    """A small closed box like the clicker case: a floor, a hollow big enough for the
+    switch's bottom housing and pins, and a 1.5 mm lid with the square hole the switch
+    snaps into. A push-out hole in the floor lets a pen push the switch back out between
+    tests. The number sits on a flat tab beside the box."""
+    ft, hw = cfg["fit_test"], cfg["hardware"]
+    w, length, t = ft["switch_coupon"]
+    r = ft["coupon_corner_radius"]
+    floor, depth, cav = ft["switch_housing_floor"], hw["mx_cavity_depth"], hw["mx_cavity_size"]
+    height = floor + depth + t
+    cx, cy = w / 2, w / 2
+    outline = rounded_rect(w, length, r, w / 2, length / 2)
+    body = extrude(rounded_rect(w, w, r, cx, cy), height) + extrude(outline, t)
+    body = body - extrude(square(cav, cx, cy), depth, floor)                     # the hollow
+    body = body - extrude(square(cutout, cx, cy), t + 2.0, height - t - 1.0)     # hole in the lid
+    body = body - cylinder(ft["switch_pushout_hole"], floor + 2.0, cx, cy, -1.0)
+    label = label_shape(str(number), ft["label_height"], ft["label_stroke"], w / 2, w + (length - w) / 2)
+    body = body + extrude(label, ft["label_raise"], t)
+    extras = {"height": height, "floor": floor, "cavity": cav, "cavity_depth": depth,
+              "pushout": ft["switch_pushout_hole"]}
+    return body, outline, (cx, cy), t, extras
+
 def _loop_coupon(cfg: dict, n: int, kind: str, d: float) -> Coupon:
     """A small tag with the same side loop a pendant or earring gets."""
     import copy
@@ -114,13 +137,13 @@ def build_coupons(cfg: dict) -> list[Coupon]:
         n += 1
         coupons.append(_loop_coupon(cfg, n, "earring", d))
 
-    # 4. MX switch cutouts in a 1.5 mm plate (through).
+    # 4. MX switch housings: built like the clicker case, so the test covers the snap fit,
+    #    the room under the switch (body and pins) and the lid printed over the hollow.
     for s in fit["switch_cutout"]["candidates"]:
         n += 1
-        body, outline, (cx, cy), t = _coupon_body(cfg, "switch_coupon", n)
-        body = body - extrude(square(s, cx, cy), t + 2.0, -1.0)
-        coupons.append(Coupon(n, "switch_cutout", s, f"switch cutout {s} mm square in a {t} mm plate",
-                              body, (cx, cy), s, outline))
+        body, outline, (cx, cy), t, extras = _switch_housing(cfg, n, s)
+        coupons.append(Coupon(n, "switch_cutout", s, f"switch housing, {s} mm square hole in a {t} mm lid",
+                              body, (cx, cy), s, outline, extras))
 
     # 5. Keycap stem sockets: a boss with a plus-shaped hole, open at the top.
     for c in fit["stem_socket_clearance"]["candidates"]:
@@ -190,7 +213,7 @@ GROUP_TITLES = {
     "clip_pocket_diameter": ("Hair clip pad pocket", "Press the clip's round pad into each pocket. Best = snug, pad fully seated, no rocking."),
     "keyring_hole_diameter": ("Split-ring hole", "Thread a 25 mm split key ring through each hole. Best = goes on without forcing and turns freely."),
     "earring_hole_diameter": ("Earring loop", "Push an earring hook through each loop, left to right. Best = the hook goes through easily and the piece hangs facing forward; the smallest that does."),
-    "switch_cutout": ("Switch cutout", "Push a switch into each square from the top until it clicks. Best = snaps in, no wobble, can be pulled out with effort."),
+    "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Press each boss onto a switch stem. Best = firm push-on, stays on when you shake it, comes off with a pull."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }

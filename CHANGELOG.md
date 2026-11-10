@@ -1,5 +1,11 @@
 # Changelog
 
+## Switch housings in the fit test (2026-11-10)
+
+- Allen's switch (photo): MX-style blue clicky. Fit-test pieces 10 to 12 are now small closed housings like the clicker case, as he asked: a 1.5 mm lid with the square hole (13.9 / 14.0 / 14.1 mm), a 15.6 mm square hollow 9 mm deep for the switch body and pins, and a floor with a 6 mm push-out hole to move the switch between the three boxes. The lid overhangs the hollow by only 0.8 mm, so no supports.
+- 1 new test; the size test knows the taller pieces.
+
+
 ## Trying the 3D styles (2026-11-10)
 
 - A sampler plate of the eight test-drive charms, two in each style (puffy, raised outline, puffy with raised outline, figurine front), and a picture of every charm in every style.

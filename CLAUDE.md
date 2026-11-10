@@ -124,7 +124,7 @@ candidates to that group's `candidates` in `config.yaml`, rebuild the plate, and
 the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
-7-9 earring loop (sideways hole), 10-12 switch cutout, 13-15 stem socket,
+7-9 earring loop (sideways hole), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
 16-18 necklace loop (sideways hole).
 
 ## Reading the results

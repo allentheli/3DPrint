@@ -63,6 +63,8 @@ def test_coupon_sizes_match_config(cfg, coupons):
         extra = ft["label_raise"]
         if c.group == "stem_socket_clearance":
             extra = ft["stem_boss_height"]
+        if c.group == "switch_cutout":          # a closed box: floor, hollow, lid
+            extra = ft["switch_housing_floor"] + cfg["hardware"]["mx_cavity_depth"]
         assert sz == pytest.approx(t + extra, abs=0.01)
 
 
@@ -83,8 +85,31 @@ def test_pockets_have_right_diameter_and_depth(cfg, coupons):
         assert below == []
 
 
+def test_switch_housings_are_closed_boxes_like_the_case(cfg, coupons):
+    """Allen: the switch pieces should be a house for the switch, with a bottom. The lid has
+    the square hole, under it a hollow with room for the switch body and pins, then a
+    floor that is closed except for a push-out hole."""
+    hw, ft = cfg["hardware"], cfg["fit_test"]
+    for c in (c for c in coupons if c.group == "switch_cutout"):
+        e = c.extras
+        lid_z = e["height"] - ft["switch_coupon"][2] / 2
+        _, inner = _inner_contours(c.solid, lid_z)
+        assert len(inner) == 1
+        minx, miny, maxx, maxy = inner[0].bounds
+        assert maxx - minx == pytest.approx(c.candidate, abs=0.03), "the snap-fit hole"
+        assert maxy - miny == pytest.approx(c.candidate, abs=0.03)
+        _, inner = _inner_contours(c.solid, e["floor"] + e["cavity_depth"] / 2)
+        minx, miny, maxx, maxy = inner[0].bounds
+        assert maxx - minx >= hw["mx_cavity_size"] - 0.03, "room for the switch body"
+        assert e["cavity_depth"] >= 8.3 - hw["mx_plate_thickness"], "room for the pins below the lid"
+        _, inner = _inner_contours(c.solid, e["floor"] / 2)
+        assert len(inner) == 1, "a floor, with only the push-out hole in it"
+        minx, miny, maxx, maxy = inner[0].bounds
+        assert maxx - minx == pytest.approx(e["pushout"], abs=0.1)
+
+
 def test_through_holes_have_right_size(cfg, coupons):
-    for c in (c for c in coupons if c.group in ("keyring_hole_diameter", "switch_cutout")):
+    for c in (c for c in coupons if c.group == "keyring_hole_diameter"):
         t = size(c.solid)[2] - cfg["fit_test"]["label_raise"]
         for z in (0.1, t / 2, t - 0.1):
             _, inner = _inner_contours(c.solid, z)

@@ -318,7 +318,9 @@ fit_test:
   coupon_corner_radius: 2.0
   clip_coupon: [17, 26, 2.4]      # width, length, thickness
   keyring_coupon: [12, 22, 3.2]
-  switch_coupon: [22, 32, 1.5]
+  switch_coupon: [22, 32, 1.5]    # width, length, lid thickness; the box part is width x width
+  switch_housing_floor: 1.2       # the switch housings are closed boxes like the clicker case...
+  switch_pushout_hole: 6.0        # ...with a hole in the floor to push the switch back out
   stem_coupon: [16, 26, 2.4]
   earring_loop_coupon: [10, 16, 1.8]
   necklace_loop_coupon: [12, 18, 2.6]
