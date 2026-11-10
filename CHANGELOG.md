@@ -1,5 +1,13 @@
 # Changelog
 
+## Trying the 3D styles (2026-11-10)
+
+- A sampler plate of the eight test-drive charms, two in each style (puffy, raised outline, puffy with raised outline, figurine front), and a picture of every charm in every style.
+- Per-card styles and figurine options take the exact name of a second copy of a card (`clip-01-b`), not only the card number.
+- A one-color line drawing (pencil, a single colored pen) gets its lines raised by the raised-outline styles, whatever their shade; before, only an ink dark enough counted, so the pencil butterfly and rainbow got nothing raised. A one-color colored-in area still gets nothing raised.
+- Shaped pendants and earrings: the loop rises above the charm, and cutting out the colors cut notches into it where ink reached under it (the rainbow's sun rays). The loop now stays whole and the hidden bit of color is trimmed, with a note.
+- 4 new tests.
+
 ## Eyes stay eyes (2026-11-10)
 
 - The brown house creature (test drive 3) lost its eyes: on a 22 mm hair clip its 0.5 mm eyes sat 0.3 mm above the mouth, and thickening every line to 1 mm merged eyes and mouth into one blob. Thickening now never merges separate marks: each keeps at least 0.4 mm from its neighbor (or the gap she drew, if smaller), even if it then stays a little thinner than 1 mm. Tidy's redraw follows the same rule, and smoothing never wipes out a tiny mark.

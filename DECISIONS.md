@@ -210,3 +210,9 @@ Allen asked whether to run each drawing through an AI "redraw as a clean sticker
 - Within one mark nothing changes: the two bumps of a "w" mouth can still close into one shape.
 - Tidy: redrawn strokes obey the same gap; smoothing keeps any mark it would otherwise erase entirely.
 
+## Trying the 3D styles
+
+- Sampler for the test drive: two charms per style on one plate, chosen to suit the drawing (figurine fronts on the two big-bodied dogs, puffy on the loaf cat and the bird, puffy with outline on the cat hair clip and the butterfly, raised outline on the house and the rainbow).
+- Outline ink: a one-color drawing's only ink is its outline when its strokes average 2.5 mm or less (2 x area / perimeter, `relief.outline_max_line_width`); otherwise the darkest ink under lightness 50, as before.
+- On face-up pieces the side loop stays whole: color prisms are trimmed by the loop post instead of the post being cut by the prisms.
+

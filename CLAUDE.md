@@ -73,6 +73,9 @@ switch brand or a photo first. A drawing without card markers needs `--product`.
 Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
 run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
 default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
+A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
+(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`) take that exact name too. To let
+Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
 Tidy: `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"

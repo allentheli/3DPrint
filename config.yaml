@@ -221,6 +221,7 @@ relief:
   outline_raise: 0.6              # height of the raised outline ridge
   outline_round: 0.5              # rounded shoulders on the ridge (less snagging, less snapping)
   outline_max_lightness: 50       # only an ink this dark counts as the outline
+  outline_max_line_width: 2.5     # a one-color drawing's ink is its outline if its strokes are this thin or thinner (mm)
   sample: 0.4                     # mesh resolution for curved surfaces
   products:                       # base slab and puff height per product, for puffy styles
     hair_clip: {base: 1.2, puff: 1.2}

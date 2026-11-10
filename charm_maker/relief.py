@@ -76,10 +76,17 @@ def heightfield(region, bottom, top, sample: float) -> m3d.Manifold:
 
 
 def outline_ink(cfg: dict, design):
-    """The ink that draws the outline: black if there is one, else the darkest ink, as
-    long as it is dark enough to read as an outline."""
+    """The ink that draws the outline: in a one-color line drawing (a pencil butterfly, a
+    pink-pen pig) its only ink, whatever its shade; else black if there is one, else the
+    darkest ink, as long as it is dark enough to read as an outline. A one-color drawing
+    that is a colored-in area, not lines, has no outline."""
     if not design.inks:
         return None
+    if len(design.inks) == 1:
+        g = design.inks[0].geometry
+        line_width = 2.0 * g.area / max(g.length, 1e-6)        # a strip's width; a disc's radius
+        if line_width <= cfg["relief"]["outline_max_line_width"]:
+            return design.inks[0]
     darkest = min(design.inks, key=lambda i: rgb_to_lab(i.rgb)[0])
     if rgb_to_lab(darkest.rgb)[0] > cfg["relief"]["outline_max_lightness"]:
         return None
@@ -140,15 +147,25 @@ def build_relief_parts(cfg: dict, design, attachment: str | None, info: dict, st
     lift = rc["outline_raise"] + 20.0
     parts: dict[str, m3d.Manifold] = {}
     prisms = []
+    post = info["solid"] if attachment == "side_loop" else None
+    trimmed = 0.0
     for ink in design.inks:
         prism = heightfield(ink.geometry, under_face, lambda xy: surface(xy) + lift, sample)
+        if post is not None:
+            # On a face-up piece the loop rises above the charm. Keep it whole (the chain
+            # hangs on it) and trim the bit of color it would hide.
+            before = (whole ^ prism).volume()
+            prism = prism - post
+            trimmed += before - (whole ^ prism).volume()
         prisms.append(prism)
         parts[f"{design.name} {ink.name}"] = whole ^ prism
+    if trimmed > 0.01:
+        notes.append("color under the loop trimmed so the loop stays whole")
     base = whole
-    if attachment == "side_loop":
-        base = (base + info["solid"]) - info["hole_solid"]
+    if post is not None:
+        base = (base + post) - info["hole_solid"]
     for prism in prisms:
-        base = base - prism            # also keeps the loop post off the colors
+        base = base - prism
     if attachment == "clip_pocket":
         cx, cy = info["center"]
         base = base - cylinder(info["diameter"], info["depth"] + 1.0, cx, cy, -1.0)

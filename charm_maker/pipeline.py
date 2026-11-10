@@ -182,14 +182,15 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         if st not in STYLES:
             raise ValueError(f"unknown style {st!r} for {key}; use one of {', '.join(STYLES)}")
 
-    def style_for(card: str) -> str:
-        return styles.get(card) or styles.get("*") or cfg["relief"]["default_style"]
+    def style_for(*cards: str) -> str:
+        """The exact name first (clip-01-b, a second copy of a card), then the card, then all."""
+        return next((styles[c] for c in (*cards, "*") if c in styles), cfg["relief"]["default_style"])
 
     figurine_back = dict(figurine_back or {})
     figurine_base = dict(figurine_base or {})
 
-    def option_for(opts: dict, card: str):
-        return opts.get(card) or opts.get("*")
+    def option_for(opts: dict, *cards: str):
+        return next((opts[c] for c in (*cards, "*") if c in opts), None)
 
     tidy = set(tidy or ())
     out_dir = Path(out_dir)
@@ -251,9 +252,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(base_name),
-                                    figurine_back=option_for(figurine_back, base_name),
-                                    figurine_base=option_for(figurine_base, base_name))
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name),
+                                    figurine_back=option_for(figurine_back, name, base_name),
+                                    figurine_base=option_for(figurine_base, name, base_name))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)
