@@ -106,9 +106,9 @@ fit:
     candidates: [13.9, 14.0, 14.1]
     note: square cutout in the 1.5 mm clicker top plate for an MX-style switch
   stem_socket_clearance:
-    value: 0.25
+    value: 0.15
     tested: false
-    candidates: [0.15, 0.25, 0.35]
+    candidates: [0.10, 0.15, 0.20]     # centered on the common printed-clicker default (0.15, 0.05 steps)
     note: added to each arm width of the keycap's cross socket for the MX stem
   necklace_hole_diameter:
     value: 3.5
