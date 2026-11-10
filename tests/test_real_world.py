@@ -232,3 +232,25 @@ def test_no_small_mark_warning_on_plain_drawings(run):
     """Camera fringe and pale fill are not reported as lost marks."""
     for p in run.pieces:
         assert not any("small" in w and "mark" in w for w in p.design.warnings), (p.name, p.design.warnings)
+
+
+def test_a_slanted_whisker_is_not_a_speck():
+    """Test drive 2: short slanted whiskers (1.7 mm long, 0.4 mm wide at real size) were
+    removed as specks: measured upright they looked 1.44 mm, under the 1.5 mm that
+    protects thin strokes. A round dot of the same area is still a speck."""
+    import cv2
+
+    from charm_maker.shape import remove_specks
+
+    ppm = 18.0
+    mask = np.zeros((200, 200), np.uint8)
+    a, b = np.array([60.0, 60.0]), np.array([60.0, 60.0]) + 1.3 * ppm / np.sqrt(2)     # 45 degrees
+    cv2.line(mask, tuple(int(v) for v in a), tuple(int(v) for v in b), 1, int(round(0.4 * ppm)))
+    cv2.circle(mask, (150, 150), int(round(0.45 * ppm)), 1, -1)                       # a dot
+    whisker, dot = mask[:110, :110].sum() / ppm ** 2, mask[110:, 110:].sum() / ppm ** 2
+    assert whisker < 1.0 and dot < 1.0, "both are under the 1 mm² speck size"
+    ys, xs = np.nonzero(mask[:110, :110])
+    assert max(np.ptp(xs), np.ptp(ys)) + 1 < 1.5 * ppm, "upright, the whisker looks shorter than 1.5 mm"
+    kept, removed = remove_specks(mask.astype(bool), 1.0 * ppm ** 2, 1.5 * ppm)
+    assert kept[:110, :110].any(), "the whisker stays"
+    assert not kept[110:, 110:].any() and removed == 1, "the dot goes"

@@ -1,5 +1,12 @@
 # Changelog
 
+## Test drive 2 (2026-11-10)
+
+Second real scan: a loaf-shaped cat on keychain card 01.
+
+- Short slanted strokes (whiskers 1.7 mm long) were removed as specks: the length was measured upright, so a stroke at 45 degrees looked 1.44 mm, under the 1.5 mm that protects thin strokes. Marks are now measured along their length. Round dots are still specks. On the real drawings this also keeps three dashes of the bug's faint outline.
+- 1 new regression test.
+
 ## Test drive 1 (2026-11-10)
 
 First real scan: a cat on hair clip card 01, scanned with iPhone Notes.

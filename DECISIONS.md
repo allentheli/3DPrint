@@ -175,3 +175,8 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 - Lost-mark warning: a blob printing in a color farther than the merge distance (20) from its own, with chroma 20 or more, surviving a 0.25 card-mm opening (fringe does not) and at least 1 card mm². Colors merged by the color limit are skipped (they have their own note). The mark is not grown to a printable size: at 0.6 mm inside a 1 mm outline it would be covered by the thickened lines anyway.
 - Fine pen drawings on hair clips (25 mm) lose detail to the 1.0 mm minimum line width: lines get about 2.5x thicker, whiskers merge, small gaps fill. Asked Allen whether to try thinner minimum lines or bigger pieces; nothing changed until he answers.
 
+## Test drive 2
+
+- Speck length is the long side of the mark's rotated bounding rectangle (minAreaRect), not the upright box, so slanted whiskers keep their full length. Area and the 1.5 mm length limit are unchanged.
+- At keychain size (45 mm) her fine-pen face mostly survives; the outlined nose (0.3 mm² inside) fills in and one eye touches the mouth line once lines are 1.0 mm wide. Same open question as test drive 1.
+
