@@ -67,6 +67,7 @@ process:
   border: 1.5                     # die-cut style border in the base color
   border_default: true            # on for everyone; --no-border turns it off for a run
   min_ink_width: 1.0              # thinner ink gets thickened to this
+  min_gap: 0.4                    # ...but separate marks (eyes next to a mouth) never grow closer than this
   min_speck_area_mm2: 1.0         # smaller specks are removed...
   speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
   coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled

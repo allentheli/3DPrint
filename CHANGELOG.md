@@ -1,5 +1,11 @@
 # Changelog
 
+## Eyes stay eyes (2026-11-10)
+
+- The brown house creature (test drive 3) lost its eyes: on a 22 mm hair clip its 0.5 mm eyes sat 0.3 mm above the mouth, and thickening every line to 1 mm merged eyes and mouth into one blob. Thickening now never merges separate marks: each keeps at least 0.4 mm from its neighbor (or the gap she drew, if smaller), even if it then stays a little thinner than 1 mm. Tidy's redraw follows the same rule, and smoothing never wipes out a tiny mark.
+- Also keeps the hair clip cat's whiskers apart.
+- 2 new regression tests (plain and tidy).
+
 ## Tidy (2026-11-10)
 
 - New option `--tidy` (every card) or `--tidy <card>`: a clean, sticker-like version of the kid's own lines. The outline color's strokes are redrawn along their middle at one even thickness (her typical line width, 1.0 to 1.6 mm), with wobbly and grainy edges smoothed. Eyes, noses, filled areas and separate dots keep their shape; other colors only get smooth edges and fill up to the outline, including the thin white sliver kids leave between coloring and outline. No AI, nothing leaves the session. Off by default.

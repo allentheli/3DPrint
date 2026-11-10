@@ -204,3 +204,9 @@ Allen asked whether to run each drawing through an AI "redraw as a clean sticker
 - Where the outline gets thinner next to a color, that color grows into the freed space, also across a white sliver up to 0.3 mm from the old outline (kids often leave one). Elsewhere white stays white.
 - Known limits: tiny faces on hair clips (a 3 mm face) simplify; a beaded edge can remain where a thin colored mark crosses the outline (the garlic's tongue).
 
+## Eyes stay eyes
+
+- Separate marks of one color never grow into each other when thin lines are thickened (`process.min_gap`, 0.4 mm): growth is blocked in a band around the line halfway between them. If she drew them closer than that, they keep her gap. Where there is no room, a mark stays thinner than the 1.0 mm minimum rather than merging. Faithfulness wins over the minimum width for small details; not printed yet, so a 0.3 to 0.4 mm gap of another color is untested on the 0.4 mm nozzle.
+- Within one mark nothing changes: the two bumps of a "w" mouth can still close into one shape.
+- Tidy: redrawn strokes obey the same gap; smoothing keeps any mark it would otherwise erase entirely.
+

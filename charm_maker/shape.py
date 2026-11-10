@@ -102,8 +102,24 @@ def smooth_labels(label_map: np.ndarray, n_labels: int, radius_px: int) -> np.nd
     return out
 
 
-def thicken_thin_ink(mask: np.ndarray, min_width_px: float) -> tuple[np.ndarray, float]:
-    """Make ink at least `min_width_px` wide. Returns (mask, added pixel count)."""
+def _keep_apart(mask: np.ndarray, gap_px: float) -> np.ndarray:
+    """Where separate marks may not grow: a band around the line halfway between them, so
+    two marks thickened toward each other stop `gap_px` apart (or as far apart as they
+    were drawn, if closer). Eyes next to a mouth stay eyes."""
+    n = cv2.connectedComponents(_u8(mask), connectivity=8)[0]
+    if n <= 2 or gap_px <= 0:
+        return np.zeros_like(mask)
+    _, near = cv2.distanceTransformWithLabels(_u8(~mask), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_CCOMP)
+    edge = np.zeros_like(mask)
+    edge[:, 1:] |= near[:, 1:] != near[:, :-1]
+    edge[1:, :] |= near[1:, :] != near[:-1, :]
+    return cv2.dilate(_u8(edge), _disk(gap_px / 2.0)).astype(bool) & ~mask
+
+
+def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0) -> tuple[np.ndarray, float]:
+    """Make ink at least `min_width_px` wide, without merging separate marks: they keep
+    at least `gap_px` between them (or the gap that was drawn, if smaller), even if a mark
+    then stays a little thinner. Returns (mask, added pixel count)."""
     r = min_width_px / 2.0
     opened = cv2.morphologyEx(_u8(mask), cv2.MORPH_OPEN, _disk(r)).astype(bool)
     thin_zone = mask & ~opened
@@ -115,7 +131,7 @@ def thicken_thin_ink(mask: np.ndarray, min_width_px: float) -> tuple[np.ndarray,
     if not thin_zone.any():
         return mask, 0.0
     skel = skeletonize(mask) & cv2.dilate(_u8(thin_zone), np.ones((3, 3), np.uint8)).astype(bool)
-    add = cv2.dilate(_u8(skel), _disk(r)).astype(bool)
+    add = cv2.dilate(_u8(skel), _disk(r)).astype(bool) & ~_keep_apart(mask, gap_px)
     result = mask | add
     return result, float((result & ~mask).sum())
 
@@ -218,14 +234,23 @@ def tidy_strokes(cfg: dict, mask: np.ndarray, px_per_mm: float, width_mm: float,
     out = smooth_edges(cfg, keep, px_per_mm)
     if strokes.any():
         skel = prune_spurs(skeletonize(strokes), max(2, int(round(0.35 * w_px))))
-        out |= cv2.dilate(_u8(skel), _disk(w_px / 2.0)).astype(bool)
+        redrawn = cv2.dilate(_u8(skel), _disk(w_px / 2.0)).astype(bool)
+        # A stroke redrawn thicker must not grow into a separate mark next to it.
+        apart = _keep_apart(sm, cfg["process"]["min_gap"] * px_per_mm)
+        out |= (redrawn & ~apart) | (strokes & redrawn)
     return out
 
 
 def smooth_edges(cfg: dict, mask: np.ndarray, px_per_mm: float) -> np.ndarray:
-    """Wobble and grain smoothed off the edge; the shape and its size stay."""
+    """Wobble and grain smoothed off the edge; the shape and its size stay. A mark small
+    enough to vanish in the smoothing (a tiny eye) is kept as drawn."""
     sigma = max(0.5, 2.0 * cfg["tidy"]["smooth"] * px_per_mm)
-    return cv2.GaussianBlur(mask.astype(np.float32), (0, 0), sigma) > 0.5
+    out = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), sigma) > 0.5
+    n, lbl = cv2.connectedComponents(_u8(mask), connectivity=8)
+    lost = np.setdiff1d(np.arange(1, n), np.unique(lbl[out]))
+    if lost.size:
+        out |= np.isin(lbl, lost)
+    return out
 
 
 def tidy_labels(cfg: dict, label_map: np.ndarray, layers: list[InkLayer], px_per_mm: float):
@@ -388,7 +413,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         m = label_map == i
         if not m.any():
             continue
-        m, added = thicken_thin_ink(m, width_px)
+        m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm)
         if added > 0.5 * px_per_mm ** 2:
             fixes.append(f"{layer.name}: thin lines thickened to {pr['min_ink_width']} mm "
                          f"({added / px_per_mm ** 2:.1f} mm² added)")
