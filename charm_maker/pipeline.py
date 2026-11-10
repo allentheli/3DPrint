@@ -137,6 +137,11 @@ def _guide_zone(cfg: dict, read: CardRead) -> np.ndarray:
         cx, cy, d = lay.zones["cover_circle"]
         cv2.circle(zone, px(cx, cy), int(round(d / 2 * ppm)), 1, int(round(2 * m * ppm)) + 1)
         rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the circle"
+    if "cover_square" in lay.zones:
+        cx, cy, side = lay.zones["cover_square"]
+        a, b = px(cx - side / 2, cy + side / 2), px(cx + side / 2, cy - side / 2)
+        cv2.rectangle(zone, a, b, 1, int(round(2 * m * ppm)) + 1)
+        rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the square"
     if "ground_line" in lay.zones:
         x0, y0, x1, y1 = lay.zones["ground_line"]
         rect(x0, y0, x1, y1)

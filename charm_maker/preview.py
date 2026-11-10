@@ -204,9 +204,15 @@ def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0) 
         corners = [(-s, -s), (s, -s), (s, s), (-s, s), (-s, -s)]
         draw.line([((x - origin[0]) * px_per_mm, h - (y - origin[1]) * px_per_mm) for x, y in corners],
                   fill=(200, 40, 40), width=max(1, int(0.2 * px_per_mm)))
-        hx, hy = att["hole_center"]
-        _dashed_circle(draw, (hx - origin[0]) * px_per_mm, h - (hy - origin[1]) * px_per_mm,
-                       att["hole_diameter"] / 2 * px_per_mm, (200, 40, 40), max(1, int(0.2 * px_per_mm)))
+        hx, hy = att["hole_center"]          # the ring hole runs left to right: a dashed channel
+        rr, half = att["hole_diameter"] / 2, att["post_length"] / 2 + 1.0
+        for yy in (hy - rr, hy + rr):
+            py = h - (yy - origin[1]) * px_per_mm
+            n = max(2, int(2 * half / 0.6))
+            for i in range(0, n, 2):
+                xa, xb = hx - half + 2 * half * i / n, hx - half + 2 * half * min(i + 1, n) / n
+                draw.line([((xa - origin[0]) * px_per_mm, py), ((xb - origin[0]) * px_per_mm, py)],
+                          fill=(200, 40, 40), width=max(1, int(0.15 * px_per_mm)))
     elif att.get("kind") == "stem_socket":
         cx, cy = att["center"]
         r = att["post_diameter"] / 2 * px_per_mm
@@ -290,8 +296,8 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
         lines_att = [f"Keycap post {att['post_diameter']} mm (dashed) with a cross socket, stem fit {att['clearance']} mm; "
                      f"clears the switch by {att['travel_clearance']:.1f} mm when pressed"]
     elif att.get("kind") == "clicker_case":
-        lines_att = [f"Clicker case: {att['switch_hole']} mm switch hole, ring tab with a {att['hole_diameter']} mm hole, "
-                     f"{att['height']:.1f} mm tall"]
+        lines_att = [f"Clicker case: {att['switch_hole']} mm switch hole; ring hole {att['hole_diameter']} mm running "
+                     f"left to right at half height (dashed); {att['height']:.1f} mm tall"]
     else:
         lines_att = []
     fixes = ["Fixes made:"] + [f"- {x}" for x in d.fixes]

@@ -3,11 +3,13 @@
 ## Milestone 3: clicker keychain (2026-11-10)
 
 - Each clicker card makes two pieces. The keycap is the drawing as a flat charm with a 5.5 mm round post and the cross socket for the MX stem on its back, under the drawing's middle (a backer disc if the drawing is too thin there); it prints face-down with the charms. Clicker keycaps are always flat (the post is on the back).
-- The case is a rounded box about the keycap's size: a 1.5 mm lid with the switch hole, a 15.6 mm square hollow 9 mm deep for the switch body and pins, a floor with a push-out hole, and a ring tab on the bed. It prints upright on its own plate, 0.2 mm layers, one filament, no supports (the lid overhangs the hollow by under 1 mm).
+- The case is shaped like the drawing (Allen's call): its outline 1 mm bigger all round, smoothed, never smaller than the 18.8 mm box the switch needs. A 1.5 mm lid holds the switch hole right under the keycap's post; below it a 15.6 mm square hollow 9 mm deep for the switch body and pins, a floor with a push-out hole, and a ring tab at the top, flat on the bed. It prints upright on its own plate, 0.2 mm layers, one filament, no supports (the lid overhangs the hollow by under 1 mm).
 - Pressed all the way down, the keycap clears the switch housing by 1.5 mm (housing taken at 7 mm above the plate, the high end of the published 6.6 to 7).
+- The ring hangs from a post at the top that stands the case's full height, the hole running left to right at half height, so the ring never passes under the case and the clicker sits flat on a table (Allen's call). Teardrop hole, no supports.
+- The clicker card has a "cover the square" guide the size of the smallest keycap (16 mm), so the keycap covers the switch (Allen's call). A drawing still smaller is scaled up to 16 mm (never past 22 mm), with a note; only its size changes. The keycap post sits at the drawing's balance point, or as near it as fits.
 - Sizes come from the fit test (switch hole, stem fit, ring hole), with a check line while untested. The case preview shows the clicker assembled. The glue-on fallback (a plain charm for a store-bought blank keycap) is one setting.
 - `cards` now prints clicker cards too.
-- 6 new tests. Not printed yet.
+- 10 new tests. Not printed yet.
 
 
 ## Screw-top notes measure the head (2026-11-10)

@@ -10,7 +10,7 @@ from .plates import Plate
 FINISHING = {
     "hair_clip": "Hair clips: scuff the clip pad lightly, then glue the charm's pocket onto the pad with gel super glue or E6000. Let it cure fully before handing it out.",
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
-    "clicker": "Clickers: press the switch into the case's square hole from the top until it clicks (it only fits one way up, any of four turns), push the keycap's post onto the switch's cross stem, and thread a 25 mm split ring through the case's tab. A pen through the hole in the case's floor pushes the switch back out.",
+    "clicker": "Clickers: press the switch into the case's square hole from the top until it clicks (it only fits one way up, any of four turns), push the keycap's post onto the switch's cross stem, and thread a 25 mm split ring through the hole in the post at the top of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",

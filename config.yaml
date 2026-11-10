@@ -184,8 +184,11 @@ products:
     case_wall: 1.6
     case_floor: 1.2
     case_corner_radius: 3.0
+    case_margin: 1.0              # the case is the drawing's outline, this much bigger all round
+    case_smooth: 1.5              # notches and thin bits narrower than about twice this are smoothed over
     case_pushout_hole: 6.0        # a pen through the floor pushes the switch back out
-    case_tab_thickness: 3.2       # the ring tab, flat on the bed
+    ring_post_length: 6.0         # the ring post at the top: the hole runs left to right through it,
+    ring_post_gap: 0.8            # at half height; plastic between the hole and the case
     copies: 1
     card: clicker
   magnet_figure:

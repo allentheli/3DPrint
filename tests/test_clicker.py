@@ -80,13 +80,20 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     _, *holes = _slice(body, prod["case_floor"] + hw["mx_cavity_depth"] / 2)
     hollow = max(holes, key=lambda p: p.area)
     assert hollow.bounds[2] - hollow.bounds[0] >= hw["mx_cavity_size"] - 0.03
-    # The floor: closed but for the push-out hole.
+    # The floor: closed but for the push-out hole; the whole bottom sits flat on a table.
     _, *holes = _slice(body, prod["case_floor"] / 2)
-    assert len(holes) == 2, "the push-out hole and the ring hole"
-    ring = min(holes, key=lambda p: Point(*a["hole_center"]).distance(p.centroid))
-    assert ring.bounds[2] - ring.bounds[0] == pytest.approx(fit["keyring_hole_diameter"]["value"], abs=0.05)
-    # The ring hole is outside the box, in the tab, so a split ring can go through.
-    assert a["hole_center"][1] - fit["keyring_hole_diameter"]["value"] / 2 > a["side"] / 2
+    assert len(holes) == 1, "only the push-out hole"
+    # Allen: the ring hangs at half height, so the clicker sits flat on a table. The hole runs
+    # left to right through the post at the top, with plastic under it, like a pendant loop.
+    from tests.test_geometry import loop_hole_check
+
+    d = fit["keyring_hole_diameter"]["value"]
+    assert a["hole_z"] == pytest.approx(height / 2, abs=0.01)
+    loop_hole_check(body, a["hole_center"][0], a["hole_center"][1], d, height / 2 - d / 2 - 0.1, a["post_length"])
+    # The tunnel stays in the post: at half height the only enclosed hole is the hollow (the
+    # post's outer wall shows as a separate piece there; above and below it is joined).
+    outer, *rest = _slice(body, a["hole_z"])
+    assert len([q for q in rest if outer.contains(q)]) == 1
     # The lid hangs over the hollow by less than a millimeter: no supports.
     assert (hw["mx_cavity_size"] - fit["switch_cutout"]["value"]) / 2 < 1.0
 
@@ -118,10 +125,71 @@ def test_a_clicker_card_gives_a_keycap_plate_and_a_case_plate(cfg, tmp_path):
     where = {pp.piece.name: pl.number for pl in r.plates for pp in pl.pieces}
     assert where["click-03"] == where["clip-04"], "the keycap prints with the charms"
     assert where["click-03-case"] != where["click-03"], "the case has its own plate"
+    keycap_inks = {i.name for i in names["click-03"].design.inks}
+    assert keycap_inks == {"black", "pink"}, f"the printed guide square is not ink: {keycap_inks}"
     notes = r.files["notes"].read_text()
     assert f"**{cfg['printer']['layer_height_cases']} mm**" in notes and "Clicker cases" in notes
-    assert "split ring through the case's tab" in notes
+    assert "split ring through the hole in the post" in notes
     out = tmp_path / "out" / "designs"
     assert (out / "click-03-case-front.png").exists(), "the assembled view"
     case = json.loads((out / "click-03-case.json").read_text())
     assert any("switch hole" in w for w in case["warnings"]), "untested fit values are flagged"
+
+
+def test_case_follows_the_drawing_a_little_bigger(cfg):
+    """Allen: the case should be the shape of the drawing's outline, a little bigger. It
+    still always has room for the switch, centered under the keycap's post."""
+    from shapely import affinity
+    from shapely.geometry import Point as P
+
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    oval = affinity.scale(P(0, 0).buffer(1.0), 11.0, 7.5)                       # 22 x 15 mm
+    d = Design("click-05", "clicker", Polygon(oval.exterior), [InkRegion("pink", (236, 72, 153), _as_multi(oval.buffer(-2)))])
+    k = build_piece(cfg, d)
+    case = build_clicker_case(cfg, k)
+    body = case.parts[case.base_part]
+    whole = _slice(body, case.attachment["height"] - 0.5)[0]
+    above = box(-100, case.attachment["post_from_y"], 100, 100)              # leave out the ring post
+    footprint = whole.difference(above)
+    cx, cy = k.attachment["center"]
+    drawing = affinity.translate(k.design.outline, -cx, -cy).difference(above.buffer(prod["case_margin"]))
+    assert footprint.buffer(0.05).contains(drawing.buffer(prod["case_margin"] - 0.1)), "drawing-shaped, a bit bigger"
+    assert footprint.area < drawing.buffer(prod["case_margin"] + 1.0).area * 1.15, "not a big box"
+    hollow = box(-hw["mx_cavity_size"] / 2, -hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2)
+    assert whole.buffer(0.05).contains(hollow.buffer(1.0)), "room for the switch, with at least 1 mm of wall"
+    b = footprint.bounds
+    assert b[2] - b[0] > b[3] - b[1] + 3, "an oval drawing makes an oval case, not a square"
+
+
+def test_clicker_card_asks_for_a_drawing_big_enough_for_the_switch(cfg, tmp_path):
+    """Allen: the clicker card should ask for a size that fits the switch. It shows a
+    "cover the square" guide as big as the smallest keycap."""
+    import pymupdf
+
+    from charm_maker.cards import card_layout, write_cards_pdf
+
+    lay = card_layout(cfg, "clicker", 1)
+    cx, cy, side = lay.zones["cover_square"]
+    assert side == pytest.approx(cfg["products"]["clicker"]["size_min"] * cfg["process"]["card_scale"])
+    bx, by, bw, bh = lay.box
+    assert bx < cx - side / 2 and cx + side / 2 < bx + bw, "the square fits in the drawing box"
+    pdf = write_cards_pdf(cfg, ["clicker"], tmp_path / "cards.pdf", numbers=[1])
+    assert "cover the square" in pymupdf.open(str(pdf))[0].get_text()
+
+
+@pytest.mark.parametrize("shape,expect_short,expect_long", [
+    (Point(0, 0).buffer(4.0), 16.0, None),             # drawn too small: scaled up to cover the switch
+    (box(-10, -2, 10, 2), None, 22.0),                  # long and thin: grows only until 22 mm long
+])
+def test_small_drawings_are_scaled_up_to_cover_the_switch(cfg, shape, expect_short, expect_long):
+    d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
+    k = build_piece(cfg, d)
+    minx, miny, maxx, maxy = k.design.outline.bounds
+    w, h = maxx - minx, maxy - miny
+    if expect_short:
+        assert min(w, h) == pytest.approx(expect_short, abs=0.1)
+        assert any("scaled up" in f for f in k.design.fixes)
+    if expect_long:
+        assert max(w, h) == pytest.approx(expect_long, abs=0.1), "grown, but never past the largest keycap"
+        assert any("backer disc" in f for f in k.design.fixes), "still too thin for the post: a disc behind it"
+

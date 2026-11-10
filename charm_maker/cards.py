@@ -148,6 +148,9 @@ def card_layout(cfg: dict, product: str, number: int) -> CardLayout:
         zones["ground_line"] = (bx + 8, by + 12, bx + size - 8, by + 12)
     elif product == "pendant":
         zones["bail"] = (bx + size / 2, by + size + 5, 6.0)
+    elif product == "clicker":
+        # The keycap must cover the switch: draw at least as big as this square.
+        zones["cover_square"] = (bx + size / 2, by + size / 2, prod["size_min"] * scale)
     shape = half_drawn_shape_name(cfg, number)
     if shape:
         from shapely import affinity
@@ -266,6 +269,11 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
         pdf.circle(cx * mm, cy * mm, d / 2 * mm, stroke=1, fill=0)
         pdf.setFont("Helvetica", 8)
         pdf.drawCentredString(cx * mm, (cy - 1.5) * mm, "cover the circle")
+    if "cover_square" in lay.zones:
+        cx, cy, side = lay.zones["cover_square"]
+        pdf.roundRect((cx - side / 2) * mm, (cy - side / 2) * mm, side * mm, side * mm, 3 * mm, stroke=1, fill=0)
+        pdf.setFont("Helvetica", 8)
+        pdf.drawCentredString(cx * mm, (cy - 1.5) * mm, "cover the square")
     if "ring" in lay.zones:
         cx, cy, d = lay.zones["ring"]
         pdf.setLineWidth(1.0 * mm)

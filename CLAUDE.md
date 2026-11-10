@@ -17,6 +17,21 @@ you build. Never say something works unless you ran it. Say what you could not t
 - Fit-critical numbers come from `config.yaml` `fit:` and are set only from test prints.
   Each has a `tested` flag. Warn Allen before using an untested value for real pieces.
 
+## Where things stand (update this when it changes)
+
+Every product builds; nothing is printed and measured yet. Waiting on Allen:
+
+- **Fit test** (`output/fit-test`, printing as of 2026-11-10): he reports one number per group,
+  then run `fit-results` (see below). Until then every clip pocket, ring hole, loop, switch
+  hole and keycap socket uses an untested value and says so in a `check:` line.
+- **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
+  style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
+  container lid (thread clearance untested).
+- **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
+  changes spools at will and assigns colors in Bambu Studio.
+- Uploaded scans and downloaded models are not in git (private). A new session that needs
+  them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
+
 ## Setup in a fresh session
 
 The cloud environment's setup script may already have installed the packages; if
@@ -72,9 +87,14 @@ with a sideways hole, or `style: stud` for a flat back). A drawing without card 
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
 pieces. The keycap `click-NN` is the drawing as a flat charm (always flat) with a 5.5 mm post
-and cross socket on the back, printed face-down with the charms. The case `click-NN-case` is a
-box the switch snaps into (lid with the switch hole, hollow for the switch, floor with a
-push-out hole, ring tab), printed upright on its own plate at 0.2 mm in one filament. Both use
+and cross socket on the back, printed face-down with the charms. The case `click-NN-case` is
+the drawing's outline 1 mm bigger all round (never smaller than the switch box), with the
+switch snapping into its lid under the keycap's post, a hollow for the switch, a floor with a
+push-out hole, and a ring post at the top whose hole runs left to right at half height (so the
+clicker sits flat on a table); printed upright on its own plate at 0.2 mm in one filament, no
+supports. The clicker card has a "cover the square" guide (16 mm keycap); a smaller drawing is
+scaled up to 16 mm (never past 22 mm) with a note. The keycap post sits at the drawing's
+balance point, or as near it as fits. Both use
 the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
 case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
 makes a plain charm to glue onto a store-bought blank keycap instead.
@@ -219,4 +239,5 @@ in blue, whole (its faint body outline is found since pencil detection). Never c
 
 - Record every choice the spec did not settle as one line in `DECISIONS.md`.
 - Add to `CHANGELOG.md` at the end of each milestone.
-- Commit on branch `claude/jolly-keller-ifv0pq` unless told otherwise.
+- Commit on the branch the session is given (it was `claude/jolly-keller-ifv0pq`), and open a
+  pull request to `main` for Allen to merge; he merges with one button. Never push to `main`.
