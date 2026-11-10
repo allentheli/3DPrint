@@ -147,8 +147,9 @@ def test_stem_socket_is_a_plus_with_clearance(cfg, coupons):
         _, inner = _inner_contours(c.solid, top - ft["stem_socket_depth"] / 2)
         assert len(inner) == 1
         minx, miny, maxx, maxy = inner[0].bounds
-        assert maxx - minx == pytest.approx(hw["mx_stem_span"] + c.candidate, abs=0.02)
-        assert maxy - miny == pytest.approx(hw["mx_stem_span"] + c.candidate, abs=0.02)
+        span = hw["mx_stem_span"] + ft["stem_span_clearance"]
+        assert maxx - minx == pytest.approx(span, abs=0.02)
+        assert maxy - miny == pytest.approx(span, abs=0.02)
         # Socket bottom is closed: a slice just below the socket is the boss, no hole.
         _, below = _inner_contours(c.solid, top - ft["stem_socket_depth"] - 0.1)
         assert below == []
@@ -234,3 +235,16 @@ def test_loop_coupons_have_sideways_holes(cfg, coupons):
         loop = cfg["hardware"][f"{kind}_loop"]
         loop_hole_check(c.solid, x_c, y_c, c.candidate, loop["wall"], loop["length"])
         assert size(c.solid)[2] == pytest.approx(c.extras["loop_height"], abs=0.01)
+
+
+def test_stem_posts_are_the_real_keycap_size(cfg, coupons):
+    """Allen: test the 5.5 mm post the clicker keycap will really have. The plastic left
+    at the tips of the cross must still print as at least one nozzle-width line."""
+    hw = cfg["hardware"]
+    for c in (c for c in coupons if c.group == "stem_socket_clearance"):
+        post, inner = _inner_contours(c.solid, size(c.solid)[2] - 1.0)   # a slice through the post
+        minx, miny, maxx, maxy = post.bounds
+        assert maxx - minx == pytest.approx(hw["mx_keycap_post_diameter"], abs=0.05)
+        assert len(inner) == 1, "one cross-shaped hole"
+        thinnest = post.exterior.distance(inner[0])
+        assert thinnest >= 0.45, f"piece {c.number}: only {thinnest:.2f} mm at the cross tips"

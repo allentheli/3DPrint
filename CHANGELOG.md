@@ -2,6 +2,8 @@
 
 ## Switch housings in the fit test (2026-11-10)
 
+- Keycap posts (pieces 13 to 15) are now the real keycap size, 5.5 mm round, as Allen asked, so the fit found is the fit the clicker keycap gets. Only the arm thickness varies (1.32 / 1.42 / 1.52 mm and 1.46 / 1.56 / 1.66 mm); the cross length is a fixed 4.2 mm, which keeps about 0.5 mm of plastic at the cross tips (a 0.37 mm wall on piece 15 otherwise). The guide asks Allen to report a cracked post.
+
 - Allen's switch (photo): MX-style blue clicky. Fit-test pieces 10 to 12 are now small closed housings like the clicker case, as he asked: a 1.5 mm lid with the square hole (13.9 / 14.0 / 14.1 mm), a 15.6 mm square hollow 9 mm deep for the switch body and pins, and a floor with a 6 mm push-out hole to move the switch between the three boxes. The lid overhangs the hollow by only 0.8 mm, so no supports.
 - 1 new test; the size test knows the taller pieces.
 

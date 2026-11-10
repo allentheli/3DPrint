@@ -150,16 +150,19 @@ def build_coupons(cfg: dict) -> list[Coupon]:
         n += 1
         body, outline, (cx, cy), t = _coupon_body(cfg, "stem_coupon", n)
         boss_h = ft["stem_boss_height"]
-        boss = cylinder(ft["stem_boss_diameter"], boss_h, cx, cy, t)
+        boss = cylinder(hw["mx_keycap_post_diameter"], boss_h, cx, cy, t)
         arm_x = hw["mx_stem_arm_x"] + c
         arm_y = hw["mx_stem_arm_y"] + c
-        span = hw["mx_stem_span"] + c
+        # The grip comes from the arms' thickness, so only that varies; the cross length
+        # gets a small fixed allowance, which keeps ~0.5 mm of plastic at the tips of a
+        # real-size 5.5 mm post.
+        span = hw["mx_stem_span"] + ft["stem_span_clearance"]
         socket = extrude(plus(span, arm_x, arm_y, cx, cy), ft["stem_socket_depth"] + 1.0,
                          t + boss_h - ft["stem_socket_depth"])
         body = body + boss - socket
         coupons.append(Coupon(n, "stem_socket_clearance", c,
                               f"stem socket arms {arm_x:.2f} x {arm_y:.2f} mm (clearance {c} mm)",
-                              body, (cx, cy), ft["stem_boss_diameter"], outline,
+                              body, (cx, cy), hw["mx_keycap_post_diameter"], outline,
                               {"arm_x": arm_x, "arm_y": arm_y, "span": span,
                                "depth": ft["stem_socket_depth"]}))
     # 6. Necklace loops, same idea, bigger hole.
@@ -214,7 +217,7 @@ GROUP_TITLES = {
     "keyring_hole_diameter": ("Split-ring hole", "Thread a 25 mm split key ring through each hole. Best = goes on without forcing and turns freely."),
     "earring_hole_diameter": ("Earring loop", "Push an earring hook through each loop, left to right. Best = the hook goes through easily and the piece hangs facing forward; the smallest that does."),
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
-    "stem_socket_clearance": ("Keycap stem socket", "Press each boss onto a switch stem. Best = firm push-on, stays on when you shake it, comes off with a pull."),
+    "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 

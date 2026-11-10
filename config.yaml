@@ -140,6 +140,7 @@ hardware:
   mx_stem_arm_x: 1.17             # width of the arm that runs left-right
   mx_stem_arm_y: 1.31             # width of the arm that runs front-back
   mx_stem_height: 3.6
+  mx_keycap_post_diameter: 5.5     # round post around the keycap's cross socket (standard keycaps)
   mx_plate_thickness: 1.5
   mx_cavity_size: 15.6            # closed cavity under the plate, square
   mx_cavity_depth: 9.0
@@ -324,8 +325,8 @@ fit_test:
   stem_coupon: [16, 26, 2.4]
   earring_loop_coupon: [10, 16, 1.8]
   necklace_loop_coupon: [12, 18, 2.6]
-  stem_boss_diameter: 8.0
   stem_boss_height: 4.5
+  stem_span_clearance: 0.1         # added to the cross length (the arm widths get the tested clearance)
   stem_socket_depth: 4.0
 
 # Design cards (the printable PDF). Lengths in mm on the card.
