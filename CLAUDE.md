@@ -152,6 +152,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Record a spool in a slot | `python -m charm_maker load <slot> "<spool>" [--color "#RRGGBB"]` |
 | Show slots and calibration | `python -m charm_maker slots` |
 | Print the cards | `python -m charm_maker cards` (blank cards, plus calibration if slots are loaded; `--half-drawn` adds pre-set outlines, which Allen said he does not need) |
+| One card of each type | `python -m charm_maker cards --count 1 --out output/cards-one-each` (6 pages; Allen can print a page as often as he likes: repeats read as `key-01`, `key-01-b`, and pieces are named after the kid anyway) |
 | Read a calibration scan | `python -m charm_maker calibrate <scan>` |
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
