@@ -216,3 +216,7 @@ Allen asked whether to run each drawing through an AI "redraw as a clean sticker
 - Outline ink: a one-color drawing's only ink is its outline when its strokes average 2.5 mm or less (2 x area / perimeter, `relief.outline_max_line_width`); otherwise the darkest ink under lightness 50, as before.
 - On face-up pieces the side loop stays whole: color prisms are trimmed by the loop post instead of the post being cut by the prisms.
 
+## Allen's switch
+
+- Photo (2026-11-10): blue clicky switch, clear top housing, white bottom housing, plus-shaped stem, plate-mount clips, two metal pins and a center post. MX-style, so the fit test's switch cutouts (13.9 / 14.0 / 14.1 mm in a 1.5 mm plate) and stem sockets (0.15 / 0.25 / 0.35 mm clearance) stand as designed. Brand unknown; the fit test settles the numbers.
+
