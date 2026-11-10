@@ -1,5 +1,15 @@
 # Changelog
 
+## Milestone 3: clicker keychain (2026-11-10)
+
+- Each clicker card makes two pieces. The keycap is the drawing as a flat charm with a 5.5 mm round post and the cross socket for the MX stem on its back, under the drawing's middle (a backer disc if the drawing is too thin there); it prints face-down with the charms. Clicker keycaps are always flat (the post is on the back).
+- The case is a rounded box about the keycap's size: a 1.5 mm lid with the switch hole, a 15.6 mm square hollow 9 mm deep for the switch body and pins, a floor with a push-out hole, and a ring tab on the bed. It prints upright on its own plate, 0.2 mm layers, one filament, no supports (the lid overhangs the hollow by under 1 mm).
+- Pressed all the way down, the keycap clears the switch housing by 1.5 mm (housing taken at 7 mm above the plate, the high end of the published 6.6 to 7).
+- Sizes come from the fit test (switch hole, stem fit, ring hole), with a check line while untested. The case preview shows the clicker assembled. The glue-on fallback (a plain charm for a store-bought blank keycap) is one setting.
+- `cards` now prints clicker cards too.
+- 6 new tests. Not printed yet.
+
+
 ## Screw-top notes measure the head (2026-11-10)
 
 - The twist-off head's print notes always said "no supports", but a downloaded model's head can overhang on its own (Sebo3D's duck: the beak, 109 mm² steeper than 45 degrees). The notes now measure the head and, when it overhangs, say to turn tree supports on for the head, as the original does. 1 new test.

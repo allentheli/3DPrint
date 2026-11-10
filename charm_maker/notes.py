@@ -10,7 +10,7 @@ from .plates import Plate
 FINISHING = {
     "hair_clip": "Hair clips: scuff the clip pad lightly, then glue the charm's pocket onto the pad with gel super glue or E6000. Let it cure fully before handing it out.",
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
-    "clicker": "Clickers: press the switch into the case from the top until it clicks, then push the keycap onto the stem.",
+    "clicker": "Clickers: press the switch into the case's square hole from the top until it clicks (it only fits one way up, any of four turns), push the keycap's post onto the switch's cross stem, and thread a 25 mm split ring through the case's tab. A pen through the hole in the case's floor pushes the switch back out.",
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
@@ -57,6 +57,16 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append(f"| {slots[f]} | {f.name} ({f.hex}) | {', '.join(users)} |")
         lines.append("")
         products |= {"figurine" if pp.piece.supports else pp.piece.design.product for pp in plate.pieces}
+        cases = [pp.piece for pp in plate.pieces if pp.piece.group == "cases"]
+        if cases:
+            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the lid with the switch hole "
+                         "on top. Supports off: the lid hangs over the hollow by less than 1 mm.")
+            lines.append(f"- Layer height: **{pr['layer_height_cases']} mm**. One filament for the whole plate, any color; "
+                         "assign it to every part.")
+            lines.append("- Pieces: " + ", ".join(f"{c.name} ({c.size()[0]:.0f} x {c.size()[1]:.0f} mm, "
+                                                    f"{c.thickness:.0f} mm tall)" for c in cases))
+            lines.append("")
+            continue
         figs = [pp.piece.name for pp in plate.pieces if pp.piece.supports]
         if figs:
             lines.append(f"- Figurines ({', '.join(figs)}): they lie on their backs with the front up. Turn supports **on**: "

@@ -66,9 +66,18 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), and earrings for adults (a pair, top loop with a sideways
-hole, or `style: stud` for a flat back). The clicker is not built yet: ask Allen for the
-switch brand or a photo first. A drawing without card markers needs `--product`.
+figure (flat back, glued magnet), clicker keychain, and earrings for adults (a pair, top loop
+with a sideways hole, or `style: stud` for a flat back). A drawing without card markers needs
+`--product`.
+
+Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
+pieces. The keycap `click-NN` is the drawing as a flat charm (always flat) with a 5.5 mm post
+and cross socket on the back, printed face-down with the charms. The case `click-NN-case` is a
+box the switch snaps into (lid with the switch hole, hollow for the switch, floor with a
+push-out hole, ring tab), printed upright on its own plate at 0.2 mm in one filament. Both use
+the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
+case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
+makes a plain charm to glue onto a store-bought blank keycap instead.
 
 Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
 run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the

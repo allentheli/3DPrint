@@ -98,7 +98,7 @@ Every product can be flat (the default) or shaped. All shapes come straight from
 
 ### Clicker keychain
 
-- Allen has blue clicky keyboard switches. Assume Cherry MX-compatible (plus-shaped stem). Before building this product, ask Allen for the brand or a photo of one switch, and adapt if it is not MX-style.
+- Allen has blue clicky keyboard switches: MX-style (photo, 2026-11-10: plus-shaped stem, plate-mount clips, clear top and white bottom housing). Built to the standard MX numbers that popular printed clickers also use.
 - **Case:** a rounded box. The switch snaps in from the top.
   - Top plate 1.5 mm thick (the MX spec is 1.5 ± 0.1 mm) with a 14 × 14 mm square cutout (fit test: 13.9, 14.0, 14.1 mm).
   - A closed cavity under the plate, at least 15.6 mm square and about 9 mm deep. That covers the 5 mm of switch housing below the plate plus the pins.

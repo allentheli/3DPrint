@@ -115,10 +115,11 @@ def test_cards_for_every_product(tmp_path):
     assert main(["cards", "--out", str(tmp_path), "--count", "1"]) == 0
     doc = pymupdf.open(str(tmp_path / "design-cards.pdf"))
     titles = [doc[i].get_text().split("\n")[0] for i in range(doc.page_count)]
-    assert titles == ["Hair clip charm", "Keychain", "Necklace pendant", "Earrings (a pair)", "Magnet figure"]
+    assert titles == ["Hair clip charm", "Keychain", "Necklace pendant", "Earrings (a pair)", "Magnet figure",
+                      "Clicker keychain"]
     for i in range(doc.page_count):
         assert "Use the colors in the printer" in doc[i].get_text()
     assert not (tmp_path / "half-drawn-cards.pdf").exists(), "pre-set shapes only when asked"
     assert main(["cards", "--out", str(tmp_path / "h"), "--count", "1", "--half-drawn"]) == 0
     half = pymupdf.open(str(tmp_path / "h" / "half-drawn-cards.pdf"))
-    assert half.page_count == 40, "half-drawn cards for every product except earrings"
+    assert half.page_count == 50, "half-drawn cards for every product except earrings"

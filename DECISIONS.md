@@ -226,3 +226,10 @@ Allen asked whether to run each drawing through an AI "redraw as a clean sticker
 - Allen: AMS slots change at will, so they stay out of `config.yaml` for now; every color stays its own part and he picks spools in Bambu Studio.
 - Screw-top heads: up to 5 mm² of downward faces (the thread and the cone ceiling) counts as support-free; more means the head's own shape overhangs and the notes say to turn tree supports on for the head.
 
+## Clicker keychain
+
+- Keycap post: 5.5 mm round (`hardware.mx_keycap_post_diameter`), 4.5 mm tall behind a 2.4 mm keycap, socket 4.0 mm deep with a 0.5 mm floor; centered on the drawing's balance point if a circle of post radius + 0.8 mm fits there, else under its widest part, else with a backer disc.
+- Travel: stem top 11.6 mm above the plate at rest, 4 mm travel, cross 3.6 mm; housing top taken at 7.0 mm above the plate. The post's end sits at 4.0 mm above the plate when pressed, so the keycap's back is at 8.5 mm: 1.5 mm clear of the housing.
+- Case: square, side = the keycap's longest side clamped between 18.8 mm (hollow + two 1.6 mm walls) and the product's size_max; floor 1.2 mm; ring tab 3.2 mm thick flat on the bed, hole from `fit.keyring_hole_diameter` with the keychain's 2.5 mm minimum wall, sitting outside the box so a ring goes through. Push-out hole 6 mm in the floor so the switch can be reused.
+- Cases are their own plate group (upright, 0.2 mm layers, one filament); keycaps stay with the charms. Only flat keycaps: a shaped (face-up) keycap would hang its post off the bed.
+
