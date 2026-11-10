@@ -77,9 +77,11 @@ a filament. Output: `plates/plate-N.3mf`, `designs/<card>-preview.png`, `contact
 Shapes: add `--style puffy`, `--style outlined` (raised outline) or `--style puffy-outlined`
 for the whole run, or per card like `--style clip-03=puffy`. Flat is the default.
 
-Figurines: `--style figurine` (or per card, `--style fig-02=figurine`) inflates the drawing
-into a rounded 60 mm figure that prints lying on its back with tree supports. The back is
-blank unless you add `--figurine-back fig-02=mirror`; the bottom is flat so it stands, or
+Figurines: `--style figurine` (or per card, `--style fig-02=figurine`) rounds the drawing's
+front like a balloon. The back stays flat by default, so it is still a hair clip, magnet,
+keychain, pendant or earring, and it prints without supports. For a standalone round 60 mm
+figure add `--figurine-back fig-02=blank` (plain back) or `=mirror` (colors on both sides);
+those print lying on their backs with tree supports, standing on a flat-cut bottom or
 `--figurine-base fig-02=disc` for a round stand (`none` for fully round).
 
 The run never stops to ask about colors. Each color is a separate named part; parts

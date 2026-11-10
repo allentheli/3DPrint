@@ -2,12 +2,12 @@
 
 ## Figurines (2026-11-10)
 
-- New style `figurine` for any card: the drawing inflated into a rounded 60 mm figure, thick where the drawing is wide. One solid split into the kid's color parts.
-- Back blank (default) or mirror (`--figurine-back`); bottom flat (default), disc stand or round (`--figurine-base`); per card or for the whole run.
-- Figurines go on their own plates; print notes turn tree supports on, use 0.16 mm layers and say to peel the supports off.
+- New style `figurine` for any card: the drawing's front inflated like a balloon, thick where the drawing is wide. One solid split into the kid's color parts.
+- Flat back by default: still the card's hair clip, magnet, keychain, pendant or earring, at the card's size, printed face-up with no supports. The rounded front is capped per product (5 mm on hair clips, up to 10 mm on magnets).
+- Round backs for a standalone 60 mm figure (`--figurine-back blank` or `mirror`); bottom flat, disc stand or round (`--figurine-base`); per card or for the whole run. They go on their own plates; print notes turn tree supports on, use 0.16 mm layers and say to peel the supports off.
 - Fixed while building this: a figurine from a keychain card no longer gets the split-ring finishing step.
 - Fixed for every style: where two crayon colors interlock (the candy corn), the traced outline of one color closed over the other's thin teeth, so the two color parts overlapped by a fraction of a cubic millimetre. Earlier colors now keep the shared border; overlap on all six real drawings is now zero. Regression test in `tests/test_real_world.py`.
-- 11 new tests: one sound body with no part overlap for every back and base, size, thickness, colors only on the front with a blank back, flat bottom and plain disc, own plate and notes, interlocking colors.
+- 20 new tests: one sound body with no part overlap for every back and base and every product, flat back on the bed, clip pocket and ring hole kept, dome caps, colors only on the front, size, flat bottom and plain disc, plates and notes, interlocking colors.
 
 ## Test drive (2026-11-09)
 

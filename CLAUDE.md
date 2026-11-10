@@ -9,7 +9,7 @@ you build. Never say something works unless you ran it. Say what you could not t
 
 - Stay faithful to the drawing. No redrawing, no AI image generation.
 - Flat pieces by default (face-down, colors flush, built mirrored); puffy and outlined
-  styles on request (face-up); figurines on request (inflated 3D, lying on the back, supports on).
+  styles on request (face-up); figurines on request (rounded 3D front, flat back by default).
   One solid part per design.
 - Every output ships with a preview and a list of fixes.
 - Drawings stay private: no network calls while processing, never commit photos or outputs
@@ -59,13 +59,15 @@ run, or per card with `--style clip-03=puffy`; repeat the flag for several cards
 default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
-Figurines: `--style figurine` (or `--style fig-02=figurine`) inflates the drawing into a round
-60 mm figure, thick where the drawing is wide, like a balloon. Any card works; the card's ring,
-clip or loop is dropped. The back is blank by default (characters: no eyes on the back);
-`--figurine-back key-02=mirror` copies the front colors onto the back (patterns, two-faced
-ornaments). The bottom is cut flat so it stands; `--figurine-base fig-02=disc` adds a round
-stand, `none` keeps it round. Figurines go on their own plates with tree supports on and
-0.16 mm layers. Size and roundness are in `config.yaml` `figurine:`.
+Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
+balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
+card's product at the card's size (clip pad, glued magnet, ring tab, loop all work) and it prints
+back-down with no supports, on the normal plates. The dome is capped per product
+(`figurine.flat_back_max_dome`, e.g. 5 mm on hair clips). A round back makes a standalone 60 mm
+figure instead (the card's ring, clip or loop is dropped): `--figurine-back fig-02=blank` (plain
+back, for characters) or `=mirror` (front colors on the back too). Round-back figures stand on a
+flat-cut bottom; `--figurine-base fig-02=disc` adds a round stand, `none` keeps it round. They
+go on their own plates with tree supports on and 0.16 mm layers.
 
 Optional extras, only when Allen asks: the marker calibration card (`calibrate`), strict
 color checking (`run --ask-colors`, which stops with `QUESTION.md` and exit code 2), swap

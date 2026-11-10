@@ -152,12 +152,16 @@ Allen's calls: kids fill the containers themselves; small see-through holes; a l
 
 ## Figurines
 
-Allen's calls: supports are fine; the back is blank or a mirror of the front.
+Allen's calls: supports are fine; the back is blank or a mirror of the front; then: keep the back flat by default, because magnets and hair clips need a flat back anyway.
 
+- Flat back is the default: the figurine front on the card's product, at the card's size, with its attachment, through the same face-up builder as puffy (base slab per product from `relief.products`, then the dome). No supports, normal charm plates.
+- The flat-back dome is the same rise as the round figurine's front, scaled down as a whole when it passes the product's cap (`figurine.flat_back_max_dome`): hair clip 5, earrings 4, pendant 6, keychain 8, magnet figure 10 mm. Scaling keeps it round; clipping would flatten the top.
+- A figurine base option on a flat back is ignored with a warning.
+- Plates and notes split on "needs supports" (round backs only), not on the figurine style.
 - A fifth style, figurine, for any card. Thickness from the drawing's local width: each point takes the radius R of the largest inscribed circle covering it, and the half-thickness at distance d from the edge is roundness x sqrt(d(2R - d)) + 0.8 mm edge (roundness 0.75), so every part has a round cross-section of its own width.
-- The longest side is scaled to 60 mm (`figurine.size`), whatever the card's product size.
-- The card's attachment is dropped: a figurine has no ring, clip or loop, and the finishing step is pulling off supports.
-- Back blank by default; mirror puts the same colors on the back as a mirror image (seen from behind, they line up with the front).
+- Round backs: the longest side is scaled to 60 mm (`figurine.size`), whatever the card's product size.
+- Round backs drop the card's attachment: no ring, clip or loop, and the finishing step is pulling off supports.
+- Round backs: blank, or mirror, which puts the same colors on the back as a mirror image (seen from behind, they line up with the front).
 - Colors go 0.6 mm deep from the surface into the body (`process.color_face_depth`, as on flat pieces); the rest is the base color.
 - Bottom cut flat at 8% of the height (at least 2 mm) by default; disc base with a radius of 35% of the figure's width, 3 mm thick, plain base color; or none.
 - Prints lying on its back (front up), tree supports, 0.16 mm layers, figurines on their own plates so charm plates keep supports off.

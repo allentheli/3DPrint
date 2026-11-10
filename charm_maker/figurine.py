@@ -3,8 +3,12 @@
 No AI: the thickness at each point follows how wide the drawing is there. Each point
 takes the radius of the largest circle inside the outline that covers it, so a wide body
 becomes a fat round body and an arm becomes a round tube. The kid's colors sit on the
-front; the back is blank (characters) or a mirror of the front (patterns). A figurine
-prints lying on its back, front up, with tree supports underneath.
+front.
+
+The back is flat by default: only the front is rounded, so the card's product still
+works (clip pad, glued magnet, ring tab, loop) and it prints back-down with no supports.
+A round back makes a standalone figure: blank (characters) or a mirror of the front
+(patterns). It prints lying on its back, front up, with tree supports underneath.
 """
 
 from __future__ import annotations
@@ -62,6 +66,28 @@ def local_radius(dist_px: np.ndarray) -> np.ndarray:
     return R
 
 
+def inflation(outline, roundness: float, smoothing_px: float) -> tuple[_Field, np.ndarray]:
+    """How far the front rises above the middle plane at each point (mm, on a raster):
+    a round cross-section as wide as the drawing is there."""
+    f = _Field(outline)
+    d = f.dist * FIELD_RES
+    R = np.maximum(local_radius(f.dist) * FIELD_RES, d)
+    rise = roundness * np.sqrt(np.clip(d * (2 * R - d), 0, None))
+    return f, cv2.GaussianBlur(rise.astype(np.float32), (0, 0), smoothing_px)
+
+
+def flat_back_dome(cfg: dict, outline, product: str):
+    """The rounded front of a flat-back figurine, as a height function (mm above the base
+    slab), scaled down as a whole if it would stand taller than the product allows.
+    Returns (function, tallest point, scale)."""
+    fc = cfg["figurine"]
+    f, rise = inflation(outline, fc["roundness"], fc["smoothing_px"])
+    cap = fc["flat_back_max_dome"].get(product, 6.0)
+    k = min(1.0, cap / max(float(rise.max()), 1e-6))
+    rise = rise * k
+    return (lambda xy: f.sample(rise, xy)), float(rise.max()), k
+
+
 def scale_to_figurine(cfg: dict, design) -> float:
     """Scale the drawing so its longest side is the figurine size. Returns the factor."""
     size = cfg["figurine"]["size"]
@@ -77,20 +103,17 @@ def build_figurine_parts(cfg: dict, design, back: str | None = None, base: str |
     """Parts for a figurine lying on its back (drawing in x/y, thickness along z, front up).
     Returns (parts {name: solid}, colors {name: rgb}, base part name, info)."""
     fc = cfg["figurine"]
-    back = back or fc["back"]
+    back = back or "blank"
     base = base or fc["base"]
     if back not in ("blank", "mirror"):
-        raise ValueError("figurine back must be 'blank' or 'mirror'")
+        raise ValueError("a round figurine back must be 'blank' or 'mirror'")
     if base not in ("flat", "disc", "none"):
         raise ValueError("figurine base must be 'flat', 'disc' or 'none'")
     face = cfg["process"]["color_face_depth"]
     sample = fc["sample"]
 
-    f = _Field(design.outline)
-    d = f.dist * FIELD_RES
-    R = np.maximum(local_radius(f.dist) * FIELD_RES, d)
-    half = fc["roundness"] * np.sqrt(np.clip(d * (2 * R - d), 0, None)) + fc["edge_half_thickness"]
-    half = cv2.GaussianBlur(half.astype(np.float32), (0, 0), fc["smoothing_px"])
+    f, rise = inflation(design.outline, fc["roundness"], fc["smoothing_px"])
+    half = rise + fc["edge_half_thickness"]
 
     def top(xy):
         return f.sample(half, xy)

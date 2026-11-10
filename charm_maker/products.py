@@ -31,6 +31,7 @@ class Piece:
     style: str = "flat"
     face_up: bool = False          # True for puffy and outlined styles: colors on top
     mirrored: bool = False         # flat pieces print face-down, so they are built mirrored
+    supports: bool = False         # round-back figurines lie on their backs on tree supports
 
     def solid_xy(self, x: float, y: float) -> tuple[float, float]:
         """Where a point of the drawing ends up in the printed solid."""
@@ -51,7 +52,13 @@ TAB_ANGLES = {"top": 0.0, "top-left": 45.0, "top-right": -45.0, "left": 90.0, "r
 def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat",
                 figurine_back: str | None = None, figurine_base: str | None = None) -> Piece:
     if style == "figurine":
-        return _build_figurine(cfg, design, figurine_back, figurine_base)
+        back = figurine_back or cfg["figurine"]["back"]
+        if back != "flat":
+            return _build_figurine(cfg, design, back, figurine_base)
+        # Flat back: the card's product as usual (size, clip pad, magnet, ring, loop),
+        # with a rounded figurine front. No supports.
+        if figurine_base and figurine_base != cfg["figurine"]["base"]:
+            design.warnings.append(f"figurine base '{figurine_base}' is only for round-back figurines; ignored")
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
@@ -286,7 +293,7 @@ def _add_side_loop(cfg: dict, design: Design, kind: str) -> dict:
 
 
 def _build_figurine(cfg: dict, design: Design, back: str | None, base: str | None) -> Piece:
-    """Any card's drawing as a standalone figurine (the card's own attachment is not used)."""
+    """Any card's drawing as a standalone round-back figurine (the card's own attachment is not used)."""
     from .figurine import build_figurine_parts, scale_to_figurine
 
     scale_to_figurine(cfg, design)
@@ -297,4 +304,4 @@ def _build_figurine(cfg: dict, design: Design, back: str | None, base: str | Non
         slots[f"{design.name} {ink.name}"] = ink.slot
     height = max(float(np.asarray(s.bounding_box())[5]) for s in parts.values())
     return Piece(design, round(height, 2), parts, colors, base_name, info, part_slots=slots,
-                 style="figurine", face_up=True)
+                 style="figurine", face_up=True, supports=True)

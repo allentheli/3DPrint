@@ -257,9 +257,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--style", action="append",
                    help="flat (default), puffy, outlined, puffy-outlined or figurine; for every card, or one card: 'clip-03=puffy'")
     p.add_argument("--figurine-back", action="append",
-                   help="blank (default) or mirror; for every figurine, or one card: 'key-02=mirror'")
+                   help="flat (default: only the front is rounded, the product still works, no supports), "
+                        "or a round back: blank or mirror; for every figurine, or one card: 'key-02=mirror'")
     p.add_argument("--figurine-base", action="append",
-                   help="flat (default), disc or none; for every figurine, or one card: 'key-02=disc'")
+                   help="round-back figurines only: flat (default), disc or none; for every figurine, or one card: 'key-02=disc'")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)

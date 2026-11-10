@@ -263,8 +263,13 @@ poop_critters:
 
 # Figurines: a drawing inflated into a rounded 3D figure (style "figurine", any card).
 figurine:
+  back: flat                      # flat: only the front is rounded, the card's product (clip pad, magnet,
+                                  # ring, loop) still works, no supports. Round backs make a standalone
+                                  # figure: blank (characters) or mirror (patterns: the front shows through)
+  flat_back_max_dome: {hair_clip: 5.0, keychain: 8.0, pendant: 6.0, earrings: 4.0, magnet_figure: 10.0, clicker: 4.0}
+                                  # tallest the rounded front may stand above the base slab, mm
+  # Round-back figurines only:
   size: 60                        # longest side, mm
-  back: blank                     # blank (characters) or mirror (patterns: the front shows through)
   base: flat                      # flat (bottom cut so it stands), disc (a round base) or none
   roundness: 0.75                 # 1.0 = round cross-sections, lower = flatter
   edge_half_thickness: 0.8        # so thin edges still print

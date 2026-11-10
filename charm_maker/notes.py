@@ -14,7 +14,7 @@ FINISHING = {
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
-    "figurine": "Figurines: let the plate cool, then peel the tree supports off the back with your fingers or flush cutters; sand any nubs. Figurines have no ring, clip or loop: they are toys to stand up or hold.",
+    "figurine": "Round-back figurines: let the plate cool, then peel the tree supports off the back with your fingers or flush cutters; sand any nubs. They have no ring, clip or loop: they are toys to stand up or hold.",
 }
 
 
@@ -56,8 +56,8 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             users = sorted({pp.piece.name for pp in plate.pieces for ff in pp.assignments.values() if ff == f})
             lines.append(f"| {slots[f]} | {f.name} ({f.hex}) | {', '.join(users)} |")
         lines.append("")
-        products |= {"figurine" if pp.piece.style == "figurine" else pp.piece.design.product for pp in plate.pieces}
-        figs = [pp.piece.name for pp in plate.pieces if pp.piece.style == "figurine"]
+        products |= {"figurine" if pp.piece.supports else pp.piece.design.product for pp in plate.pieces}
+        figs = [pp.piece.name for pp in plate.pieces if pp.piece.supports]
         if figs:
             lines.append(f"- Figurines ({', '.join(figs)}): they lie on their backs with the front up. Turn supports **on**: "
                          "in the Process panel open the **Support** tab, tick **Enable support**, set **Type** to **tree(auto)**.")
@@ -74,9 +74,14 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         if down:
             lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
         if up:
-            lines.append(f"- Puffy and outlined pieces ({', '.join(up)}) print face-up with the colors on top. "
-                         "Their colors change over more layers than flat ones, so they print slower and purge more. "
+            lines.append(f"- Shaped pieces ({', '.join(up)}) print face-up with the colors on top, flat back on the bed, "
+                         "no supports. Their colors change over more layers than flat ones, so they print slower and purge more. "
                          "Keep 0.12 mm layers so the curves stay smooth.")
+            tall = [pp.piece for pp in plate.pieces if pp.piece.style == "figurine"]
+            if tall:
+                top = max(pc.thickness for pc in tall)
+                lines.append(f"- Figurine fronts ({', '.join(pc.name for pc in tall)}) stand up to {top:.0f} mm tall, so "
+                             "their colors change over many layers: expect more filament changes and more printer poop.")
             if any(pp.piece.face_up and pp.piece.attachment.get("kind") == "clip_pocket" for pp in plate.pieces):
                 lines.append("- On face-up hair clips the clip pocket is on the bed side; the printer bridges over it.")
         lines.append("- Pieces: " + ", ".join(f"{pp.piece.name} ({pp.piece.size()[0]:.0f} x {pp.piece.size()[1]:.0f} mm)" for pp in plate.pieces))

@@ -122,10 +122,10 @@ def unanswered_off_palette(piece: Piece, assignments: dict[str, Filament]) -> li
 
 def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
                 assignments: dict[str, dict[str, Filament]]) -> list[Plate]:
-    """Charms first, then figurines on plates of their own (they need supports and a
-    different layer height)."""
-    charms = [p for p in pieces if p.style != "figurine"]
-    figs = [p for p in pieces if p.style == "figurine"]
+    """Charms first (flat-back figurines included), then round-back figurines on plates of
+    their own (they need supports and a different layer height)."""
+    charms = [p for p in pieces if not p.supports]
+    figs = [p for p in pieces if p.supports]
     plates = _pack_group(cfg, charms, palette, assignments) if charms else []
     if figs:
         more = _pack_group(cfg, figs, palette, assignments)

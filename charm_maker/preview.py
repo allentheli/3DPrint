@@ -246,7 +246,9 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
     style_word = {"flat": "flat, prints face-down", "puffy": "puffy, prints face-up",
                   "outlined": "raised outline, prints face-up",
                   "puffy-outlined": "puffy + raised outline, prints face-up",
-                  "figurine": "figurine, prints lying on its back with supports"}.get(getattr(piece, "style", "flat"), "")
+                  "figurine": "figurine front, flat back, prints face-up"}.get(getattr(piece, "style", "flat"), "")
+    if getattr(piece, "supports", False):
+        style_word = f"round figurine, back {piece.attachment.get('back')}, prints lying on its back with supports"
     lines = [f"{d.name}: {cfg['products'][d.product]['label']}",
              f"size {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm, {piece.thickness} mm thick",
              f"style: {style_word}", ""]
