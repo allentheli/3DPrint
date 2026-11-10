@@ -148,6 +148,12 @@ def card_layout(cfg: dict, product: str, number: int) -> CardLayout:
         zones["ground_line"] = (bx + 8, by + 12, bx + size - 8, by + 12)
     elif product == "pendant":
         zones["bail"] = (bx + size / 2, by + size + 5, 6.0)
+    elif product == "clicker":
+        # The keycap must cover the switch: draw at least as big as this square.
+        zones["cover_square"] = (bx + size / 2, by + size / 2, prod["size_min"] * scale)
+    from .options import option_zones
+
+    zones.update(option_zones(cfg, product))
     shape = half_drawn_shape_name(cfg, number)
     if shape:
         from shapely import affinity
@@ -266,6 +272,11 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
         pdf.circle(cx * mm, cy * mm, d / 2 * mm, stroke=1, fill=0)
         pdf.setFont("Helvetica", 8)
         pdf.drawCentredString(cx * mm, (cy - 1.5) * mm, "cover the circle")
+    if "cover_square" in lay.zones:
+        cx, cy, side = lay.zones["cover_square"]
+        pdf.roundRect((cx - side / 2) * mm, (cy - side / 2) * mm, side * mm, side * mm, 3 * mm, stroke=1, fill=0)
+        pdf.setFont("Helvetica", 8)
+        pdf.drawCentredString(cx * mm, (cy - 1.5) * mm, "cover the square")
     if "ring" in lay.zones:
         cx, cy, d = lay.zones["ring"]
         pdf.setLineWidth(1.0 * mm)
@@ -308,12 +319,15 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
     pdf.drawString((nx - 16) * mm, (ny + 3) * mm, "Name:")
     pdf.line(nx * mm, ny * mm, (nx + nw) * mm, ny * mm)
 
-    # Picture rules.
+    # Picture rules (a small strip under the title) and the kid's choices (tick boxes).
     _draw_rules(pdf, cfg, lay)
+    _draw_options(pdf, cfg, lay)
 
     # Check ruler and print note between the bottom markers.
     m, ms = c["margin"], c["marker_size"]
     rx, ry = m + ms + 10, m + 8
+    pdf.setStrokeColorRGB(0, 0, 0)
+    pdf.setFillColorRGB(0, 0, 0)
     pdf.setLineWidth(0.3 * mm)
     pdf.line(rx * mm, ry * mm, (rx + 50) * mm, ry * mm)
     for t in range(0, 51, 10):
@@ -328,47 +342,98 @@ def _draw_rules(pdf, cfg: dict, lay: CardLayout):
     return _draw_kid_rules(pdf, cfg, lay)
 
 
+def _draw_options(pdf, cfg: dict, lay: CardLayout):
+    """Tick boxes in the light guide color: one shape (with a side-view picture of each)
+    and "neat lines". The reader finds which box is marked."""
+    from reportlab.lib.units import mm
+
+    from .options import WORDS
+
+    c = cfg["cards"]
+    guide = _hex_to_rgb01(c["guide_color"])
+    pdf.setLineWidth(c["guide_line_width"] * mm)
+
+    def box(x, y, s):
+        pdf.setStrokeColorRGB(*guide)
+        pdf.roundRect(x * mm, y * mm, s * mm, s * mm, 1.0 * mm, stroke=1, fill=0)
+
+    boxes = lay.zones.get("shape_boxes", [])
+    pdf.setFillColorRGB(0, 0, 0)
+    if boxes:
+        from reportlab.lib.utils import ImageReader
+
+        from .options import PICTURE, shape_pictures
+
+        pics = shape_pictures(cfg)
+        ims, ppm = pics["images"], pics["px_per_mm"]
+        pw, ph = PICTURE
+        # One scale for all, so the figurine really looks taller than the flat one.
+        k = min(pw / max(i.width / ppm for i in ims.values()), ph / max(i.height / ppm for i in ims.values()))
+        x0, y0 = boxes[0][1], boxes[0][2]
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(x0 * mm, (y0 + 13.5) * mm, "Pick a shape (tick one box):")
+        for key, x, y, s in boxes:
+            box(x, y, s)
+            im = ims[key]
+            w, h = im.width / ppm * k, im.height / ppm * k
+            px = x + s + 1.5 + (pw - w) / 2
+            pdf.drawImage(ImageReader(im), px * mm, (y - 2.5) * mm, w * mm, h * mm)
+            pdf.setFillColorRGB(0, 0, 0)
+            pdf.setFont("Helvetica", 8.5)
+            pdf.drawCentredString((x + s + 1.5 + pw / 2) * mm, (y - 6.0) * mm, WORDS[key])
+    elif lay.product == "clicker":
+        nx, ny = c["name_box"][0], c["name_box"][1]
+        pdf.setFont("Helvetica", 9)
+        pdf.drawString((c["margin"] + 8) * mm, (ny - 14) * mm, "Clicker keys stay flat: the switch sits right under them.")
+    x, y, s = lay.zones["tidy_box"]
+    box(x, y, s)
+    pdf.setFillColorRGB(0, 0, 0)
+    pdf.setFont("Helvetica", 8)
+    pdf.drawString((x + s + 2.0) * mm, (y + 4.5) * mm, "neat lines")
+    pdf.drawString((x + s + 2.0) * mm, (y + 1.2) * mm, "(smooth, even)")
+
+
 def _draw_kid_rules(pdf, cfg: dict, lay: CardLayout):
-    """Three small pictures: use the colors in the printer, big and bold, color it in."""
+    """Three small pictures with their words, in one line near the bottom, between the
+    check ruler and the shape boxes: use the colors in the printer, big and bold, color it
+    in. Clear of the corner markers (they need white around them)."""
     from reportlab.lib.units import mm
 
     c = cfg["cards"]
-    y = c["name_box"][1] - 17
-    x0 = c["margin"] + 8
-    pdf.setFillColorRGB(0, 0, 0)
+    y = c["margin"] + c["marker_size"] - 4.4               # above the check ruler's words
+    x = c["margin"] + c["marker_size"] + 4.0
     pdf.setStrokeColorRGB(0, 0, 0)
-
-    # 1. A small printer: frame, a plate, a nozzle, and four spools on top.
-    pdf.setLineWidth(0.4 * mm)
-    pdf.roundRect(x0 * mm, (y + 0.5) * mm, 22 * mm, 10 * mm, 1.2 * mm, stroke=1, fill=0)
-    pdf.line((x0 + 3) * mm, (y + 2.5) * mm, (x0 + 19) * mm, (y + 2.5) * mm)              # plate
-    pdf.rect((x0 + 9) * mm, (y + 5.5) * mm, 4 * mm, 2.5 * mm, stroke=1, fill=1)           # toolhead
-    pdf.line((x0 + 11) * mm, (y + 5.5) * mm, (x0 + 11) * mm, (y + 4.2) * mm)              # nozzle
-    spool_colors = [(0.95, 0.95, 0.95), (0.1, 0.1, 0.1), (0.93, 0.3, 0.55), (0.2, 0.45, 0.9)]
-    for i, col in enumerate(spool_colors):
-        pdf.setFillColorRGB(*col)
-        pdf.circle((x0 + 4 + i * 4.7) * mm, (y + 12.8) * mm, 1.9 * mm, stroke=1, fill=1)
     pdf.setFillColorRGB(0, 0, 0)
-    pdf.setFont("Helvetica", 8)
-    pdf.drawString(x0 * mm, (y - 3) * mm, "Use the colors in the printer")
+    pdf.setFont("Helvetica", 7.5)
+
+    # 1. A small printer with four spools on top.
+    pdf.setLineWidth(0.3 * mm)
+    pdf.roundRect(x * mm, y * mm, 11 * mm, 5 * mm, 0.8 * mm, stroke=1, fill=0)
+    pdf.line((x + 1.5) * mm, (y + 1.2) * mm, (x + 9.5) * mm, (y + 1.2) * mm)
+    pdf.rect((x + 4.3) * mm, (y + 2.6) * mm, 2.4 * mm, 1.4 * mm, stroke=1, fill=1)
+    for i, col in enumerate([(0.95, 0.95, 0.95), (0.1, 0.1, 0.1), (0.93, 0.3, 0.55), (0.2, 0.45, 0.9)]):
+        pdf.setFillColorRGB(*col)
+        pdf.circle((x + 1.8 + i * 2.5) * mm, (y + 6.4) * mm, 1.0 * mm, stroke=1, fill=1)
+    pdf.setFillColorRGB(0, 0, 0)
+    pdf.drawString((x + 13) * mm, (y + 2.2) * mm, "Use the colors in the printer")
 
     # 2. Big and bold: one fat stroke.
-    x1 = x0 + 62
+    x2 = x + 56
     pdf.setLineCap(1)
-    pdf.setLineWidth(4.0 * mm)
-    pdf.line((x1 + 2) * mm, (y + 5) * mm, (x1 + 24) * mm, (y + 9) * mm)
+    pdf.setLineWidth(2.2 * mm)
+    pdf.line((x2 + 1.5) * mm, (y + 1.8) * mm, (x2 + 11) * mm, (y + 4.5) * mm)
     pdf.setLineCap(0)
     pdf.setLineWidth(0.3 * mm)
-    pdf.drawString(x1 * mm, (y - 3) * mm, "Big and bold")
+    pdf.drawString((x2 + 14) * mm, (y + 2.2) * mm, "Big and bold")
 
     # 3. Color it in: an outline with its inside filled.
-    x2 = x1 + 55
+    x3 = x2 + 36
     pdf.setFillColorRGB(0.93, 0.3, 0.55)
-    pdf.setLineWidth(1.4 * mm)
-    pdf.circle((x2 + 7) * mm, (y + 6.5) * mm, 6 * mm, stroke=1, fill=1)
+    pdf.setLineWidth(0.8 * mm)
+    pdf.circle((x3 + 3.2) * mm, (y + 3.2) * mm, 3.0 * mm, stroke=1, fill=1)
     pdf.setFillColorRGB(0, 0, 0)
     pdf.setLineWidth(0.3 * mm)
-    pdf.drawString(x2 * mm, (y - 3) * mm, "Color it in")
+    pdf.drawString((x3 + 8) * mm, (y + 2.2) * mm, "Color it in")
 
 
 def write_calibration_pdf(cfg: dict, palette, out_path: Path, number: int = 1) -> Path:

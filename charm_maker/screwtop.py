@@ -42,6 +42,9 @@ class ScrewTop:
         return self.lid.translate([0.0, 0.0, -self.cut_z - 0.5])
 
 
+HEAD_OVERHANG_OK = 5.0     # mm² of downward faces a twist-off head may have and still print without supports
+
+
 def load_model(path: Path, scale: float = 1.0) -> m3d.Manifold:
     geo = trimesh.load(str(path))
     mesh = geo.to_geometry() if hasattr(geo, "to_geometry") else geo
@@ -179,12 +182,23 @@ def write_screw_top(cfg: dict, st: ScrewTop, out_dir: Path, name: str) -> dict[s
                                              view=(0.0, 90.0), px_per_mm=8, labels=False,
                                              colors={"body": (200, 200, 195), "head": (252, 205, 40)})
     i = st.info
+    # The socket and thread print without supports; the head's own shape may not (a
+    # duck's beak hangs out over the bed). Measure it instead of promising.
+    hangs = overhang_area(st.lid_for_printing())
+    i["head_overhang_mm2"] = round(hangs, 1)
+    if hangs > HEAD_OVERHANG_OK:
+        head_line = ("- Print the head standing on its flat cut face. Its own shape (a beak, a chin) hangs out "
+                     f"over the bed ({hangs:.0f} mm² steeper than 45 degrees), so turn supports **on** for the head, "
+                     "as the original model does: in the Process panel open the **Support** tab, tick **Enable support**, "
+                     "set **Type** to **tree(auto)**. The socket and thread inside need none.")
+    else:
+        head_line = "- Print the head standing on its flat cut face. No supports (the socket has a pointed ceiling)."
     (out_dir / "PRINT_NOTES.md").write_text("\n".join([
         f"# {name}: screw-top version",
         "",
         f"- The head is now a twist-off lid. The opening is {i['opening_mm']:.0f} mm across; the head closes in about one turn.",
         "- Print the body upright, like the original, but with no pause: kids fill it later.",
-        "- Print the head standing on its flat cut face. No supports (the socket has a pointed ceiling).",
+        head_line,
         "- Layer height 0.20 mm. Same settings as the original model otherwise.",
         "- Print one first and try the head: it should twist shut in about one turn and stay on when shaken. "
         "Too tight or too loose: tell Claude (one setting).",

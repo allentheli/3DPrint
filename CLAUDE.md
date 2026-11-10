@@ -17,6 +17,21 @@ you build. Never say something works unless you ran it. Say what you could not t
 - Fit-critical numbers come from `config.yaml` `fit:` and are set only from test prints.
   Each has a `tested` flag. Warn Allen before using an untested value for real pieces.
 
+## Where things stand (update this when it changes)
+
+Every product builds; nothing is printed and measured yet. Waiting on Allen:
+
+- **Fit test** (`output/fit-test`, printing as of 2026-11-10): he reports one number per group,
+  then run `fit-results` (see below). Until then every clip pocket, ring hole, loop, switch
+  hole and keycap socket uses an untested value and says so in a `check:` line.
+- **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
+  style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
+  container lid (thread clearance untested).
+- **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
+  changes spools at will and assigns colors in Bambu Studio.
+- Uploaded scans and downloaded models are not in git (private). A new session that needs
+  them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
+
 ## Setup in a fresh session
 
 The cloud environment's setup script may already have installed the packages; if
@@ -66,19 +81,42 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), and earrings for adults (a pair, top loop with a sideways
-hole, or `style: stud` for a flat back). The clicker is not built yet: ask Allen for the
-switch brand or a photo first. A drawing without card markers needs `--product`.
+figure (flat back, glued magnet), clicker keychain, and earrings for adults (a pair, top loop
+with a sideways hole, or `style: stud` for a flat back). A drawing without card markers needs
+`--product`.
 
-Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
-run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
-default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
+Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
+pieces. The keycap `click-NN` is the drawing as a flat charm (always flat) with a 5.5 mm post
+and cross socket on the back, printed face-down with the charms. The case `click-NN-case` is
+the drawing's outline 1 mm bigger all round (never smaller than the switch box), with the
+switch snapping into its lid under the keycap's post, a hollow for the switch, a floor with a
+push-out hole, and a ring post at the top whose hole runs left to right at half height (so the
+clicker sits flat on a table); printed upright on its own plate at 0.2 mm in one filament, no
+supports. The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
+(Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm (never past
+40 mm) with a note. Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
+(their drawing box is smaller). The keycap post sits at the drawing's
+balance point, or as near it as fits. Both use
+the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
+case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
+makes a plain charm to glue onto a store-bought blank keycap instead.
+
+Card tick boxes: under the name line, every card (except clicker) shows the five shapes, each
+with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
+Figurine. A "neat lines" box beside the name turns on tidy. The run reads the ticks itself and
+says so in the fixes ("shape ticked on the card: Puffy"); no tick means flat; two ticks use the
+stronger mark with a `check:` line. Cards printed before the boxes still read (no ticks).
+
+Shape styles from the command line: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`)
+for every card in a run, or per card with `--style clip-03=puffy`; repeat the flag for several
+cards. Order: a style named for that card, then the card's tick, then a style for every card,
+then flat. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
 (`--style`, `--tidy`, `--figurine-back`, `--figurine-base`) take that exact name too. To let
 Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
-Tidy: `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
+Tidy: the card's "neat lines" box, `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
 or "make them all tidy" means this. It redraws the outline color's strokes at one even
 thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
 only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.
@@ -210,4 +248,5 @@ in blue, whole (its faint body outline is found since pencil detection). Never c
 
 - Record every choice the spec did not settle as one line in `DECISIONS.md`.
 - Add to `CHANGELOG.md` at the end of each milestone.
-- Commit on branch `claude/jolly-keller-ifv0pq` unless told otherwise.
+- Commit on the branch the session is given (it was `claude/jolly-keller-ifv0pq`), and open a
+  pull request to `main` for Allen to merge; he merges with one button. Never push to `main`.

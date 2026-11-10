@@ -1,5 +1,30 @@
 # Changelog
 
+## Kids pick the shape on the card (2026-11-10)
+
+- Every card (except clicker) now shows the five shapes under the name line, each with a small 3D picture the tool renders itself from a sample heart: Flat, Puffy, Raised lines, Puffy + lines, Figurine. The kid ticks one; no tick means flat. A "neat lines" box beside the name turns on tidy.
+- The run reads the ticks and says so in each design's fixes; two ticked shapes use the stronger mark and warn. A style named for one card on the command line still wins; a style for all cards does not override a tick.
+- Older cards still read (no ticks); the drawing box and markers did not move. The three kid rules ("use the colors in the printer", "big and bold", "color it in") moved to a compact strip between the bottom markers.
+- Clicker keycaps can now be 16 to 40 mm (were 16 to 22); the clicker card's drawing box grew to match, so clicker cards printed before must be reprinted.
+- 4 new tests.
+
+## Milestone 3: clicker keychain (2026-11-10)
+
+- Each clicker card makes two pieces. The keycap is the drawing as a flat charm with a 5.5 mm round post and the cross socket for the MX stem on its back, under the drawing's middle (a backer disc if the drawing is too thin there); it prints face-down with the charms. Clicker keycaps are always flat (the post is on the back).
+- The case is shaped like the drawing (Allen's call): its outline 1 mm bigger all round, smoothed, never smaller than the 18.8 mm box the switch needs. A 1.5 mm lid holds the switch hole right under the keycap's post; below it a 15.6 mm square hollow 9 mm deep for the switch body and pins, a floor with a push-out hole, and a ring tab at the top, flat on the bed. It prints upright on its own plate, 0.2 mm layers, one filament, no supports (the lid overhangs the hollow by under 1 mm).
+- Pressed all the way down, the keycap clears the switch housing by 1.5 mm (housing taken at 7 mm above the plate, the high end of the published 6.6 to 7).
+- The ring hangs from a post at the top that stands the case's full height, the hole running left to right at half height, so the ring never passes under the case and the clicker sits flat on a table (Allen's call). Teardrop hole, no supports.
+- The clicker card has a "cover the square" guide the size of the smallest keycap (16 mm), so the keycap covers the switch (Allen's call). A drawing still smaller is scaled up to 16 mm (never past 22 mm), with a note; only its size changes. The keycap post sits at the drawing's balance point, or as near it as fits.
+- Sizes come from the fit test (switch hole, stem fit, ring hole), with a check line while untested. The case preview shows the clicker assembled. The glue-on fallback (a plain charm for a store-bought blank keycap) is one setting.
+- `cards` now prints clicker cards too.
+- 10 new tests. Not printed yet.
+
+
+## Screw-top notes measure the head (2026-11-10)
+
+- The twist-off head's print notes always said "no supports", but a downloaded model's head can overhang on its own (Sebo3D's duck: the beak, 109 mm² steeper than 45 degrees). The notes now measure the head and, when it overhangs, say to turn tree supports on for the head, as the original does. 1 new test.
+
+
 ## Switch housings in the fit test (2026-11-10)
 
 - Checked established clicker designs (popular MakerWorld clickers, a clicker generator, keyboard builders): no clicker-specific standard; all use the MX keyboard standard (14.0 mm square cutout, 1.5 mm plate, plate top 5 mm above the PCB) and a printed fit test. The switch holes (13.9 / 14.0 / 14.1) already bracket it; the keycap clearances are now 0.10 / 0.15 / 0.20 mm, centered on the common printed-clicker default of 0.15 in 0.05 mm steps (they were 0.15 / 0.25 / 0.35).

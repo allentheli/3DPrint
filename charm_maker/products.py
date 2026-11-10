@@ -13,7 +13,7 @@ from shapely import affinity
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
-from .geom import circle, cylinder, extrude
+from .geom import circle, cylinder, extrude, plus, rounded_rect, square
 from .shape import Design, InkRegion, _as_multi
 
 
@@ -29,6 +29,7 @@ class Piece:
     part_slots: dict[str, int | None] = field(default_factory=dict)
     part_off_palette: dict[str, dict] = field(default_factory=dict)
     style: str = "flat"
+    group: str = "charms"          # plates are packed per group: charms, cases (clicker), figurines
     face_up: bool = False          # True for puffy and outlined styles: colors on top
     mirrored: bool = False         # flat pieces print face-down, so they are built mirrored
     supports: bool = False         # round-back figurines lie on their backs on tree supports
@@ -51,6 +52,10 @@ TAB_ANGLES = {"top": 0.0, "top-left": 45.0, "top-right": -45.0, "left": 90.0, "r
 
 def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat",
                 figurine_back: str | None = None, figurine_base: str | None = None) -> Piece:
+    prod0 = cfg["products"][design.product]
+    if prod0.get("attachment") == "stem_socket" and not prod0.get("glue_on_fallback") and style != "flat":
+        design.warnings.append(f"clicker keycaps are flat: the stem post is on the back ({style} not used)")
+        style = "flat"
     if style == "figurine":
         back = figurine_back or cfg["figurine"]["back"]
         if back != "flat":
@@ -76,6 +81,13 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
         info = _add_side_loop(cfg, design, prod["loop"])
     elif attachment == "flat_back":
         info = {"kind": "flat_back"}
+    elif attachment == "stem_socket":
+        if prod.get("glue_on_fallback"):
+            design.fixes.append("glue-on keycap: a flat charm to glue onto a store-bought blank flat-top MX keycap")
+            attachment = None
+        else:
+            _keycap_min_size(design, prod)
+            info = _place_stem_post(cfg, design)
     elif attachment is None:
         if prod.get("style") == "stud":
             design.fixes.append("stud style: flat back for a glue-on post")
@@ -121,6 +133,8 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
     if attachment == "clip_pocket":
         cx, cy = info["center"]
         base = base - cylinder(info["diameter"], info["depth"] + 1.0, cx, cy, t - info["depth"])
+    if attachment == "stem_socket":
+        base = base + info.pop("post") - info.pop("socket")
     base_name = f"{design.name} base"
     parts[base_name] = base
     colors[base_name] = design.paper_rgb if cfg["process"]["base_color"] == "white" else design.inks[-1].rgb
@@ -139,6 +153,132 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
     return Piece(design, t, parts, colors, base_name, info, part_slots=slots, part_off_palette=off,
                  mirrored=True)
 
+
+
+# ---------------------------------------------------------------------------
+# Clicker: keycap post and case
+# ---------------------------------------------------------------------------
+
+def _keycap_min_size(design: Design, prod: dict) -> None:
+    """A keycap must cover the switch under it. A drawing smaller than the card's square
+    is scaled up (only its size changes) so its short side is size_min, without letting
+    its long side pass size_max."""
+    from .shape import scale_design
+
+    minx, miny, maxx, maxy = design.outline.bounds
+    short, long_ = min(maxx - minx, maxy - miny), max(maxx - minx, maxy - miny)
+    if short >= prod["size_min"] - 0.05:
+        return
+    k = min(prod["size_min"] / short, prod["size_max"] / long_)
+    if k > 1.0:
+        scale_design(design, k)
+        design.fixes.append(f"drawing scaled up {k:.2f}x so the keycap covers the switch "
+                            f"(at least {prod['size_min']} mm, at most {prod['size_max']} mm)")
+
+
+def _place_stem_post(cfg: dict, design: Design) -> dict:
+    """The keycap's round post with the cross socket for the MX stem, on the back of the
+    drawing (which prints face-down, so the post points up). At the drawing's balance point
+    when it fits there, else at the nearest spot where it fits; if the drawing is too thin
+    everywhere, a backer disc behind the balance point carries it."""
+    hw, prod = cfg["hardware"], cfg["products"][design.product]
+    fit = cfg["fit"]["stem_socket_clearance"]
+    c = float(fit["value"])
+    if not fit["tested"]:
+        design.warnings.append(f"keycap stem fit {c} mm is not from a fit test yet")
+    d = hw["mx_keycap_post_diameter"]
+    need_r = d / 2.0 + prod["post_margin"]
+    # As near the balance point as the post fits, so the keycap presses evenly.
+    from shapely.ops import nearest_points
+
+    ctr = design.outline.centroid
+    room = design.outline.buffer(-need_r)
+    if not room.is_empty:
+        p = ctr if room.contains(ctr) else nearest_points(room, ctr)[0]
+    else:
+        p = ctr if design.outline.contains(ctr) else nearest_points(design.outline, ctr)[0]
+        disc = circle(2 * need_r, p.x, p.y)
+        design.outline = Polygon(unary_union([design.outline, disc]).exterior)
+        design.fixes.append(f"{2 * need_r:.1f} mm backer disc added behind the drawing for the keycap post")
+    center = (p.x, p.y)
+    cx, cy = center
+    t, h, depth = float(prod["thickness"]), prod["post_height"], prod["socket_depth"]
+    span = hw["mx_stem_span"] + cfg["fit_test"]["stem_span_clearance"]
+    post = cylinder(d, h, cx, cy, t)
+    socket = extrude(plus(span, hw["mx_stem_arm_x"] + c, hw["mx_stem_arm_y"] + c, cx, cy), depth + 1.0, t + h - depth)
+    # At full travel the post's end sits where the stem's cross ends; the keycap's back
+    # must still clear the top of the switch housing.
+    end_full = hw["mx_stem_top_above_plate"] - hw["mx_full_travel"] - min(depth, hw["mx_stem_height"])
+    travel_clear = end_full + h - hw["mx_housing_above_plate"]
+    if travel_clear < 0.5:
+        design.warnings.append(f"keycap clears the switch by only {travel_clear:.1f} mm when pressed")
+    design.fixes.append(f"keycap post {d} mm with a cross socket on the back, under the drawing's middle")
+    return {"kind": "stem_socket", "center": center, "post": post, "socket": socket, "post_diameter": d,
+            "post_height": h, "socket_depth": depth, "clearance": c, "travel_clearance": round(travel_clear, 2)}
+
+
+def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
+    """The case the switch snaps into, shaped like the drawing: the keycap's outline grown
+    by `case_margin`, smoothed, and never smaller than the box the switch needs. It has a
+    1.5 mm lid holding the switch hole (under the keycap's post), a hollow for the switch
+    body and pins, a floor with a push-out hole, and a ring post at the top with the hole at
+    half height, so the clicker sits flat on a table. Prints upright, one filament, no
+    supports."""
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    cut_fit = cfg["fit"]["switch_cutout"]
+    cut = float(cut_fit["value"])
+    name = f"{keycap.name}-case"
+    cav, depth, lid = hw["mx_cavity_size"], hw["mx_cavity_depth"], hw["mx_plate_thickness"]
+    floor, wall, r = prod["case_floor"], prod["case_wall"], prod["case_corner_radius"]
+    cx, cy = keycap.attachment["center"]                 # the post: the switch sits right under it
+    shape = affinity.translate(keycap.design.outline, -cx, -cy).buffer(prod["case_margin"], join_style="round")
+    shape = unary_union([shape, rounded_rect(cav + 2 * wall, cav + 2 * wall, r, 0.0, 0.0)])
+    smooth = prod["case_smooth"]
+    shape = shape.buffer(smooth, join_style="round").buffer(-smooth, join_style="round")
+    shape = Polygon(max(_as_multi(shape).geoms, key=lambda g: g.area).exterior)
+    height = floor + depth + lid
+    design = Design(name, "clicker", shape, [], [], [])
+    if not cut_fit["tested"]:
+        design.warnings.append(f"switch hole {cut} mm is not from a fit test yet")
+    # The ring hangs from a post at the top that stands the case's full height, with the
+    # hole running left to right at half height: the ring never passes under the case, so
+    # the clicker sits flat on a table. A teardrop hole prints upright without supports.
+    ring_fit = cfg["fit"]["keyring_hole_diameter"]
+    hole_d = float(ring_fit["value"])
+    if not ring_fit["tested"]:
+        design.warnings.append(f"keyring hole {hole_d} mm is not from a fit test yet")
+    r_h = hole_d / 2.0
+    core = shape.buffer(-2.0, join_style="round")
+    core = max(_as_multi(core if not core.is_empty else shape).geoms, key=lambda g: g.area)
+    hx = max(core.exterior.coords, key=lambda q: q[1])[0]
+    length = max(prod["ring_post_length"], hole_d + 1.0)
+    y_attach = box(hx - length / 2, shape.bounds[1] - 1, hx + length / 2, shape.bounds[3] + 1).intersection(shape).bounds[3]
+    hy, hz = y_attach + prod["ring_post_gap"] + r_h, height / 2
+    outer = hy + r_h + hw["keyring_hole_min_wall"]
+    post_shape = rounded_rect(length, outer - (y_attach - 2.0), min(2.0, length / 2 - 0.1), hx, (outer + y_attach - 2.0) / 2)
+    merged = unary_union([shape, post_shape]).buffer(1.0, join_style="round").buffer(-1.0, join_style="round")
+    design.outline = Polygon(max(_as_multi(merged).geoms, key=lambda g: g.area).exterior)
+    k = r_h / 2 ** 0.5
+    drop = unary_union([Point(hy, hz).buffer(r_h, 48), Polygon([(hy - k, hz + k), (hy + k, hz + k), (hy, hz + r_h * 2 ** 0.5)])])
+    body = extrude(design.outline, height) - _xsection_along_x(drop, length + 4.0, hx - length / 2 - 2.0)
+    design.fixes.append(f"ring post at the top: a {hole_d} mm hole running left to right at half height, "
+                        "so the clicker sits flat on a table")
+    body = body - extrude(square(cav), depth, floor)                         # the hollow
+    body = body - extrude(square(cut), lid + 2.0, height - lid - 1.0)        # the switch hole
+    body = body - cylinder(prod["case_pushout_hole"], floor + 2.0, 0.0, 0.0, -1.0)
+    minx, miny, maxx, maxy = shape.bounds
+    design.fixes.insert(0, f"case shaped like the drawing, {prod['case_margin']} mm bigger all round "
+                           f"({maxx - minx:.1f} x {maxy - miny:.1f} mm, {height:.1f} mm tall): switch hole {cut} mm "
+                           f"in a {lid} mm lid, room for the switch below, push-out hole in the floor")
+    design.paper_rgb = keycap.design.paper_rgb
+    design.source = keycap.design.source
+    base_name = f"{name} base"
+    info = {"kind": "clicker_case", "switch_hole": cut, "hole_diameter": hole_d, "height": round(height, 2),
+            "lid": lid, "cavity": cav, "cavity_depth": depth, "floor": floor,
+            "hole_center": (round(hx, 2), round(hy, 2)), "hole_z": round(hz, 2), "post_length": length,
+            "post_from_y": round(y_attach - 2.0, 2), "margin": prod["case_margin"]}
+    return Piece(design, round(height, 2), {base_name: body}, {base_name: design.paper_rgb}, base_name, info,
+                 part_slots={base_name: None}, style="case", group="cases", face_up=True)
 
 # ---------------------------------------------------------------------------
 # Hair clip pocket

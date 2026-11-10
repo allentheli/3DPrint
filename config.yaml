@@ -145,6 +145,8 @@ hardware:
   mx_cavity_size: 15.6            # closed cavity under the plate, square
   mx_cavity_depth: 9.0
   mx_full_travel: 4.0
+  mx_stem_top_above_plate: 11.6   # top of the stem at rest (secondary sources; no official MX drawing)
+  mx_housing_above_plate: 7.0     # top of the switch housing; sources say 6.6 to 7, taken high to be safe
 
 # Products. Flat products share the same pipeline; `attachment` picks the extra
 # feature. New flat products can be added here without new code.
@@ -170,12 +172,23 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
-    size_min: 16
-    size_max: 22
+    size_min: 16                  # the keycap covers the switch at least
+    size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch
     default_size: 19
     thickness: 2.4                # keycap top plate; the socket boss sits behind it
     attachment: stem_socket
     glue_on_fallback: false       # true makes a flat charm for a store-bought blank keycap
+    post_height: 4.5              # the round post behind the keycap (hardware.mx_keycap_post_diameter)
+    socket_depth: 4.0             # the cross socket in the post, open at the post's end
+    post_margin: 0.8              # drawing around the post, at least
+    case_wall: 1.6
+    case_floor: 1.2
+    case_corner_radius: 3.0
+    case_margin: 1.0              # the case is the drawing's outline, this much bigger all round
+    case_smooth: 1.5              # notches and thin bits narrower than about twice this are smoothed over
+    case_pushout_hole: 6.0        # a pen through the floor pushes the switch back out
+    ring_post_length: 6.0         # the ring post at the top: the hole runs left to right through it,
+    ring_post_gap: 0.8            # at half height; plastic between the hole and the case
     copies: 1
     card: clicker
   magnet_figure:
@@ -376,6 +389,7 @@ reader:
   guide_hue: 197                  # hue of the guide color, degrees
   guide_hue_tolerance: 25
   guide_saturation_max: 0.45      # pale pixels near the guide hue are guides, not ink
+  option_mark_min: 0.08           # a tick box counts as ticked when this much of its inside is marked
   hue_merge_deg: 30               # hues closer than this are one color
   min_color_fraction: 0.03        # a color with fewer pixels than this share is merged away
 

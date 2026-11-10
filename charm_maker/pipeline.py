@@ -137,6 +137,11 @@ def _guide_zone(cfg: dict, read: CardRead) -> np.ndarray:
         cx, cy, d = lay.zones["cover_circle"]
         cv2.circle(zone, px(cx, cy), int(round(d / 2 * ppm)), 1, int(round(2 * m * ppm)) + 1)
         rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the circle"
+    if "cover_square" in lay.zones:
+        cx, cy, side = lay.zones["cover_square"]
+        a, b = px(cx - side / 2, cy + side / 2), px(cx + side / 2, cy - side / 2)
+        cv2.rectangle(zone, a, b, 1, int(round(2 * m * ppm)) + 1)
+        rect(cx - 14, cy - 4, cx + 14, cy + 1.5)                     # "cover the square"
     if "ground_line" in lay.zones:
         x0, y0, x1, y1 = lay.zones["ground_line"]
         rect(x0, y0, x1, y1)
@@ -182,9 +187,11 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         if st not in STYLES:
             raise ValueError(f"unknown style {st!r} for {key}; use one of {', '.join(STYLES)}")
 
-    def style_for(*cards: str) -> str:
-        """The exact name first (clip-01-b, a second copy of a card), then the card, then all."""
-        return next((styles[c] for c in (*cards, "*") if c in styles), cfg["relief"]["default_style"])
+    def style_for(*cards: str, picked: str | None = None) -> str:
+        """The exact name first (clip-01-b, a second copy of a card), then the card, then the
+        shape ticked on the card itself, then the style for all cards."""
+        named = next((styles[c] for c in cards if c in styles), None)
+        return named or picked or styles.get("*") or cfg["relief"]["default_style"]
 
     figurine_back = dict(figurine_back or {})
     figurine_base = dict(figurine_base or {})
@@ -245,20 +252,33 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         else:
             used_names[name] = 1
         try:
+            from .options import read_options
+
+            opts = read_options(cfg, read)                 # boxes the kid ticked on the card
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
-                                      tidy=bool(tidy & {name, base_name, "*"}))
+                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False))
             design.source = label
+            design.fixes += opts.get("notes", [])
+            design.warnings += opts.get("warnings", [])
             if name != base_name:
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name),
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name, picked=opts.get("style")),
                                     figurine_back=option_for(figurine_back, name, base_name),
                                     figurine_base=option_for(figurine_base, name, base_name))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)
                 new.append(piece)
+                if piece.attachment.get("kind") == "stem_socket":       # a clicker: its case too
+                    from .products import build_clicker_case
+
+                    case = build_clicker_case(cfg, piece)
+                    _check_piece(case)
+                    _map_to_palette(cfg, case, palette)
+                    _set_base_slot(cfg, case, palette)
+                    new.append(case)
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -316,6 +336,10 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         front, back = (piece.parts, turned) if piece.face_up else (turned, piece.parts)
         render_shaded(back, d / f"{piece.name}-back.png", view=(40.0, 20.0), px_per_mm=12,
                       labels=False, colors=colors)
+        if piece.group == "cases":
+            # Show the clicker put together: case, the switch, and the keycap on top.
+            keycap = next(p for p in pieces if p.name == piece.name[: -len("-case")])
+            front, colors = _assembled_clicker(cfg, piece, keycap, assignments[keycap.name], colors)
         front_png = render_shaded(front, d / f"{piece.name}-front.png", view=(40.0, 20.0), px_per_mm=12,
                                   labels=False, colors=colors)
         p = render_design_preview(cfg, piece, a, d / f"{piece.name}-preview.png", palette_ready=palette.ready,
@@ -404,6 +428,31 @@ def _set_base_slot(cfg: dict, piece: Piece, palette: Palette) -> None:
 
 def _safe_stem(s: str) -> str:
     return "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in s)[:40] or "drawing"
+
+
+def _assembled_clicker(cfg: dict, case: Piece, keycap: Piece, keycap_colors: dict, case_colors: dict):
+    """The clicker as it will look: the case, a plain stand-in for the switch, and the
+    keycap turned face-up on the stem at rest. For the preview only."""
+    import manifold3d as m3d
+
+    hw = cfg["hardware"]
+    top = case.attachment["height"]                     # the case's lid is the switch plate
+    housing = m3d.Manifold.cube([hw["mx_cavity_size"], hw["mx_cavity_size"], hw["mx_housing_above_plate"]], True)
+    housing = housing.translate([0.0, 0.0, top + hw["mx_housing_above_plate"] / 2])
+    stem_h = hw["mx_stem_top_above_plate"] - hw["mx_housing_above_plate"]
+    stem = m3d.Manifold.cube([4.0, 4.0, stem_h], True).translate([0.0, 0.0, top + hw["mx_housing_above_plate"] + stem_h / 2])
+    att = keycap.attachment
+    cx, cy = att["center"]
+    rest = top + hw["mx_stem_top_above_plate"] - min(att["socket_depth"], hw["mx_stem_height"])  # post end
+    lift = rest + keycap.thickness + att["post_height"]
+    parts = {f"{case.name} switch": housing, f"{case.name} stem": stem}
+    colors = {f"{case.name} switch": (205, 205, 210), f"{case.name} stem": (60, 120, 220)}
+    for n, s in case.parts.items():
+        parts[n], colors[n] = s, case_colors[n]
+    for n, s in keycap.parts.items():
+        parts[n] = s.rotate([0.0, 180.0, 0.0]).translate([-cx, -cy, lift])   # turned over, face up
+        colors[n] = keycap_colors[n].rgb
+    return parts, colors
 
 
 def _check_piece(piece: Piece) -> None:
