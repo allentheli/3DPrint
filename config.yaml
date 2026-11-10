@@ -153,6 +153,7 @@ hardware:
 products:
   hair_clip:
     label: Hair clip charm
+    file_word: clip
     size_min: 14
     size_max: 25
     default_size: 22
@@ -162,6 +163,7 @@ products:
     card: hair_clip
   keychain:
     label: Keychain
+    file_word: keychain              # files are named keychain-jack after the kid
     size_min: 35
     size_max: 55
     default_size: 45
@@ -172,6 +174,7 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
+    file_word: clicker
     size_min: 16                  # the keycap covers the switch at least
     size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch
     default_size: 19
@@ -193,6 +196,7 @@ products:
     card: clicker
   magnet_figure:
     label: Magnet figure
+    file_word: magnet
     size_min: 30
     size_max: 55
     default_size: 45
@@ -202,6 +206,7 @@ products:
     card: magnet_figure
   earrings:
     label: Earrings (a pair)
+    file_word: earrings
     adults_only: true
     size_min: 15
     size_max: 35
@@ -215,6 +220,7 @@ products:
     card: earrings
   pendant:
     label: Necklace pendant
+    file_word: necklace
     size_min: 25
     size_max: 45
     default_size: 35

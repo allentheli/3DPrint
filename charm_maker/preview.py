@@ -155,6 +155,39 @@ def render_plan(plate, path: Path, *, dpi: int = 300, title: str = "") -> Path:
     return path
 
 
+def render_plate_map(cfg: dict, plate, path: Path, *, px_per_mm: float = 4.0) -> Path:
+    """Who's who: the plate from above with each piece's name on it, so pieces can be
+    handed out straight off the bed. The front of the printer is at the bottom."""
+    W, H = cfg["printer"]["bed_size"]
+    pad, top = 30, 70
+    img = Image.new("RGB", (int(W * px_per_mm) + 2 * pad, int(H * px_per_mm) + 2 * pad + top), "white")
+    draw = ImageDraw.Draw(img)
+
+    def P(x, y):
+        return (pad + x * px_per_mm, top + pad + (H - y) * px_per_mm)
+
+    draw.rectangle([P(0, H), P(W, 0)], outline=(150, 150, 150), width=2)
+    draw.text((pad, 18), f"Plate {plate.number} from above: who's who (front of the printer at the bottom)",
+              fill=(0, 0, 0), font=_font(26))
+    font = _font(max(14, int(px_per_mm * 4.5)))
+    for pp in plate.pieces:
+        u = None
+        for solid in pp.solids().values():
+            u = solid if u is None else u + solid
+        for ring in u.project().to_polygons():
+            r = np.asarray(ring, dtype=np.float64)
+            if len(r) < 3 or abs(np.dot(r[:, 0], np.roll(r[:, 1], 1)) - np.dot(r[:, 1], np.roll(r[:, 0], 1))) < 4.0:
+                continue                                   # specks from inside the solid, not an edge
+            draw.polygon([P(x, y) for x, y in r], outline=(60, 60, 60), width=2)
+        x0, y0, _, x1, y1, _ = (float(v) for v in u.bounding_box())
+        cx, cy = P((x0 + x1) / 2, (y0 + y1) / 2)
+        box = draw.textbbox((cx, cy), pp.piece.name, font=font, anchor="mm")
+        draw.rectangle([box[0] - 4, box[1] - 3, box[2] + 4, box[3] + 3], fill=(255, 255, 255), outline=(200, 200, 200))
+        draw.text((cx, cy), pp.piece.name, fill=(0, 0, 0), font=font, anchor="mm")
+    img.save(path)
+    return path
+
+
 # ---------------------------------------------------------------------------
 # Design previews
 # ---------------------------------------------------------------------------
@@ -269,7 +302,7 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
                   "case": "clicker case, prints upright"}.get(getattr(piece, "style", "flat"), "")
     if getattr(piece, "supports", False):
         style_word = f"round figurine, back {piece.attachment.get('back')}, prints lying on its back with supports"
-    lines = [f"{d.name}: {cfg['products'][d.product]['label']}",
+    lines = [f"{d.name}: {cfg['products'][d.product]['label']}" + (f" (card {d.card})" if d.card else ""),
              f"size {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm, {piece.thickness} mm thick",
              f"style: {style_word}", ""]
     lines.append("Colors:")

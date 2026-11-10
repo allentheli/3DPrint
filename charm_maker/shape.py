@@ -34,6 +34,7 @@ class Design:
     name_image: np.ndarray | None = None
     source: str = ""
     paper_rgb: tuple[int, int, int] = (250, 250, 250)
+    card: str = ""                # the card it came from (key-03), when named after the kid
     extras: dict = field(default_factory=dict)   # attachment info filled by products
 
 

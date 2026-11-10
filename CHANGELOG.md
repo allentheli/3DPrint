@@ -1,5 +1,12 @@
 # Changelog
 
+## Pieces named after the kid (2026-11-10)
+
+- New quick first step, `names`: every card's handwritten name line on one sheet. Claude reads it and runs with `--names key-01=Jack`, and every file, Bambu Studio part, preview and print note says `keychain-jack` instead of `key-01` (a second one is `keychain-jack-2`). The card number stays in the preview and still works for every flag. A blank name keeps the card number.
+- Each plate gets a who's-who map (`plate-N-map.png`): the plate from above with each kid's name on their piece.
+- The card's name label is now a bold "Your name:".
+- 2 new tests.
+
 ## Kids pick the shape on the card (2026-11-10)
 
 - Every card (except clicker) now shows the five shapes under the name line, each with a small 3D picture the tool renders itself from a sample heart: Flat, Puffy, Raised lines, Puffy + lines, Figurine. The kid ticks one; no tick means flat. A "neat lines" box beside the name turns on tidy.

@@ -57,15 +57,24 @@ a minute and a half). Allen's wait is everything else, so on an upload:
 
 ## When Allen uploads photos or images
 
-Put the uploads in a folder (not in git), then:
+Put the uploads in a folder (not in git), then read the kids' names first (a few seconds):
 
 ```bash
-python -m charm_maker run <folder or files> --out output/<batch-name>
+python -m charm_maker names <folder or files> --out output/<batch-name>
+```
+
+Look at `output/<batch-name>/names.png` (each card's handwritten name line) and run with
+the names you read, so every piece is named after its kid (`keychain-jack`, `clip-mia`;
+a second one is `keychain-jack-2`; a blank or unreadable name keeps the card number):
+
+```bash
+python -m charm_maker run <folder or files> --out output/<batch-name> --names key-01=Jack clip-02=Mia
 ```
 
 1. Run the pipeline on all of them. Do not ask which product if the cards say it.
    For a drawing without card markers, pass `--product <key>` (keys are in `config.yaml`).
-2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of.
+2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of,
+   including any name you could not read (the contact sheet shows the handwriting beside it).
 3. Ask only if a card is unreadable. Do not ask about colors: every distinct ink color is
    its own named part in the 3MF, and Allen assigns spools in Bambu Studio. If loaded slots
    are in config, parts start on the nearest loaded spool as a head start.
@@ -112,7 +121,8 @@ for every card in a run, or per card with `--style clip-03=puffy`; repeat the fl
 cards. Order: a style named for that card, then the card's tick, then a style for every card,
 then flat. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
-(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`) take that exact name too. To let
+(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`, `--names`, `--map`) take that exact
+card name too, even when the piece is named after the kid. To let
 Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
@@ -144,7 +154,8 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Print the cards | `python -m charm_maker cards` (blank cards, plus calibration if slots are loaded; `--half-drawn` adds pre-set outlines, which Allen said he does not need) |
 | Read a calibration scan | `python -m charm_maker calibrate <scan>` |
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
-| Photos to plates | `python -m charm_maker run photos/ --out output/<batch>` |
+| Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
+| Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
@@ -171,6 +182,9 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
+- `plates/plate-N-map.png`: who's who, each piece's name where it sits on the plate (send it
+  with the plate; it stops matching if Allen presses Arrange in Bambu Studio).
+- `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
   value, a color that starts on a spool that doesn't really match, two colors starting on
@@ -184,7 +198,7 @@ plate, and the print notes say what goes in and out of which slot.
 
 ## Handing files over
 
-In a cloud session, send `output/.../plates/*.3mf`, the contact sheet and `PRINT_NOTES.md`
+In a cloud session, send `output/.../plates/*.3mf`, the plate maps, the contact sheet and `PRINT_NOTES.md`
 with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 

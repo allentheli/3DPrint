@@ -34,6 +34,8 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
     for plate in plates:
         lines.append(f"## Plate {plate.number}: `plates/plate-{plate.number}.3mf`")
         lines.append("")
+        lines.append(f"Who's who: `plates/plate-{plate.number}-map.png` shows each piece's name where it sits on the plate.")
+        lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")
             lines.append("")

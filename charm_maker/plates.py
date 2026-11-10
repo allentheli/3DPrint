@@ -89,7 +89,8 @@ def assign_filaments(piece: Piece, palette: Palette, overrides: dict[tuple[str, 
     out: dict[str, Filament] = {}
     for part, rgb in piece.part_colors.items():
         short = part[len(piece.name) + 1:]
-        ov = overrides.get((piece.name, short)) or overrides.get(("*", short))
+        ov = (overrides.get((piece.name, short)) or overrides.get((piece.design.card, short))
+              or overrides.get(("*", short)))
         slot = piece.part_slots.get(part)
         off = piece.part_off_palette.get(part)
         if ov:
