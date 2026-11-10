@@ -179,4 +179,6 @@ Allen's calls: supports are fine; the back is blank or a mirror of the front; th
 
 - Speck length is the long side of the mark's rotated bounding rectangle (minAreaRect), not the upright box, so slanted whiskers keep their full length. Area and the 1.5 mm length limit are unchanged.
 - At keychain size (45 mm) her fine-pen face mostly survives; the outlined nose (0.3 mm² inside) fills in and one eye touches the mouth line once lines are 1.0 mm wide. Same open question as test drive 1.
+- Allen's call: keep the 1.0 mm minimum line width and hair clip size as they are for now (option A), even though fine pen detail merges on 25 mm hair clips.
+- Allen said each upload took too long. The tool runs in seconds (one card 4 s, eight cards 20 s); the time went to fixing bugs before handing over, the 2.5 minute test suite and, in a fresh session, a 4 minute package install. Runbook now: hand over first and fix after, tests only after code changes, one PDF for all cards; and a setup script installs the packages when a session starts.
 

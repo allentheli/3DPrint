@@ -19,10 +19,26 @@ you build. Never say something works unless you ran it. Say what you could not t
 
 ## Setup in a fresh session
 
+The cloud environment's setup script may already have installed the packages; if
+`python -c "import manifold3d, cv2, pymupdf"` works, skip the install (a clean one takes
+about 4 minutes).
+
 ```bash
 pip install -r requirements.txt
-python -m pytest -q
 ```
+
+Run `python -m pytest -q` (about 2.5 minutes) only after changing code, never before
+processing an upload.
+
+## Speed: Allen waits on every upload
+
+The tool itself takes about 4 seconds per run plus 2.5 seconds per card (30 cards: about
+a minute and a half). Allen's wait is everything else, so on an upload:
+
+1. Run it, show the contact sheet, hand over the plates and print notes. That is the reply.
+2. If you spot a bug, say so in one line and fix it after the handover, unless it makes a
+   piece wrong to print (then hold that card only and hand over the rest).
+3. Ask him to scan all cards into one Notes PDF (one page per card) and upload once.
 
 ## When Allen uploads photos or images
 
