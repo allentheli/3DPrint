@@ -33,9 +33,9 @@ def _parent_page(cfg: dict, path: Path) -> Path:
     st = getSampleStyleSheet()
     body = st["BodyText"]
     body.fontSize = 10.5
-    body.leading = 14
+    body.leading = 13
     doc = SimpleDocTemplate(str(path), pagesize=letter, leftMargin=18 * mm, rightMargin=18 * mm,
-                            topMargin=14 * mm, bottomMargin=14 * mm)
+                            topMargin=11 * mm, bottomMargin=11 * mm)
 
     def steps(items):
         return ListFlowable([ListItem(Paragraph(t, body), leftIndent=12) for t in items], bulletType="1", leftIndent=14)
@@ -74,6 +74,11 @@ def _parent_page(cfg: dict, path: Path) -> Path:
             'Share the PDF into the Claude chat for this project and say "test drive".',
             "Claude sends back a contact sheet (what each piece will look like), print files and print notes.",
         ]),
+        Paragraph("Let her pick a shape (optional)", st["Heading2"]),
+        Paragraph("Every card can come out <b>flat</b> (the default), <b>puffy</b> like a pillow, with a <b>raised "
+                  "outline</b>, or as a <b>figurine</b> (a rounded front like a toy, still flat on the back so the clip "
+                  'or magnet works). Ask her which she wants and tell Claude, for example: "keychain 1 puffy, the '
+                  'magnet a figurine".', body),
         Paragraph("What to look for", st["Heading2"]),
         bullets([
             "Does each preview look like her drawing? Anything missing, or anything extra?",

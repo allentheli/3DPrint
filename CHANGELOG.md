@@ -7,6 +7,7 @@
 - Round backs for a standalone 60 mm figure (`--figurine-back blank` or `mirror`); bottom flat, disc stand or round (`--figurine-base`); per card or for the whole run. They go on their own plates; print notes turn tree supports on, use 0.16 mm layers and say to peel the supports off.
 - Fixed while building this: a figurine from a keychain card no longer gets the split-ring finishing step.
 - Fixed for every style: where two crayon colors interlock (the candy corn), the traced outline of one color closed over the other's thin teeth, so the two color parts overlapped by a fraction of a cubic millimetre. Earlier colors now keep the shared border; overlap on all six real drawings is now zero. Regression test in `tests/test_real_world.py`.
+- The test-drive parent page now offers the shapes (flat, puffy, raised outline, figurine) and still fits on one page.
 - 20 new tests: one sound body with no part overlap for every back and base and every product, flat back on the bed, clip pocket and ring hole kept, dome caps, colors only on the front, size, flat bottom and plain disc, plates and notes, interlocking colors.
 
 ## Test drive (2026-11-09)

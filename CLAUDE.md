@@ -131,7 +131,8 @@ pick the file, choose **Load geometry only** if asked.
 page (print at Actual size, markers, what to draw on each card, how to scan with iPhone
 Notes, what to look for) and six blank cards: hair clip 01 and 02, keychain 01 and 02,
 magnet figure 01, necklace pendant 01. When Allen uploads
-the scan and says "test drive", run it like any batch, show the contact sheet, and ask
+the scan and says "test drive", run it like any batch (with `--style` for any shapes she picked:
+the parent page offers flat, puffy, raised outline and figurine), show the contact sheet, and ask
 what his daughter liked and what looked wrong. Note which problems are real-world ones to
 fix (and add a regression test in `tests/test_real_world.py`).
 
