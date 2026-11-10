@@ -92,22 +92,31 @@ the drawing's outline 1 mm bigger all round (never smaller than the switch box),
 switch snapping into its lid under the keycap's post, a hollow for the switch, a floor with a
 push-out hole, and a ring post at the top whose hole runs left to right at half height (so the
 clicker sits flat on a table); printed upright on its own plate at 0.2 mm in one filament, no
-supports. The clicker card has a "cover the square" guide (16 mm keycap); a smaller drawing is
-scaled up to 16 mm (never past 22 mm) with a note. The keycap post sits at the drawing's
+supports. The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
+(Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm (never past
+40 mm) with a note. Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
+(their drawing box is smaller). The keycap post sits at the drawing's
 balance point, or as near it as fits. Both use
 the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
 case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
 makes a plain charm to glue onto a store-bought blank keycap instead.
 
-Shape styles: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`) for every card in a
-run, or per card with `--style clip-03=puffy`; repeat the flag for several cards. Flat is the
-default. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
+Card tick boxes: under the name line, every card (except clicker) shows the five shapes, each
+with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
+Figurine. A "neat lines" box beside the name turns on tidy. The run reads the ticks itself and
+says so in the fixes ("shape ticked on the card: Puffy"); no tick means flat; two ticks use the
+stronger mark with a `check:` line. Cards printed before the boxes still read (no ticks).
+
+Shape styles from the command line: `--style puffy` (or `outlined`, `puffy-outlined`, `flat`)
+for every card in a run, or per card with `--style clip-03=puffy`; repeat the flag for several
+cards. Order: a style named for that card, then the card's tick, then a style for every card,
+then flat. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
 (`--style`, `--tidy`, `--figurine-back`, `--figurine-base`) take that exact name too. To let
 Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
 
-Tidy: `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
+Tidy: the card's "neat lines" box, `--tidy` for every card, or `--tidy clip-03` for one (repeat for more). "Tidy card 3"
 or "make them all tidy" means this. It redraws the outline color's strokes at one even
 thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
 only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.

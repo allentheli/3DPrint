@@ -179,7 +179,7 @@ def test_clicker_card_asks_for_a_drawing_big_enough_for_the_switch(cfg, tmp_path
 
 @pytest.mark.parametrize("shape,expect_short,expect_long", [
     (Point(0, 0).buffer(4.0), 16.0, None),             # drawn too small: scaled up to cover the switch
-    (box(-10, -2, 10, 2), None, 22.0),                  # long and thin: grows only until 22 mm long
+    (box(-10, -1, 10, 1), None, 40.0),                  # long and thin: grows only until 40 mm long
 ])
 def test_small_drawings_are_scaled_up_to_cover_the_switch(cfg, shape, expect_short, expect_long):
     d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])

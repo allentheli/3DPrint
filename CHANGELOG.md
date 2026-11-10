@@ -1,5 +1,13 @@
 # Changelog
 
+## Kids pick the shape on the card (2026-11-10)
+
+- Every card (except clicker) now shows the five shapes under the name line, each with a small 3D picture the tool renders itself from a sample heart: Flat, Puffy, Raised lines, Puffy + lines, Figurine. The kid ticks one; no tick means flat. A "neat lines" box beside the name turns on tidy.
+- The run reads the ticks and says so in each design's fixes; two ticked shapes use the stronger mark and warn. A style named for one card on the command line still wins; a style for all cards does not override a tick.
+- Older cards still read (no ticks); the drawing box and markers did not move. The three kid rules ("use the colors in the printer", "big and bold", "color it in") moved to a compact strip between the bottom markers.
+- Clicker keycaps can now be 16 to 40 mm (were 16 to 22); the clicker card's drawing box grew to match, so clicker cards printed before must be reprinted.
+- 4 new tests.
+
 ## Milestone 3: clicker keychain (2026-11-10)
 
 - Each clicker card makes two pieces. The keycap is the drawing as a flat charm with a 5.5 mm round post and the cross socket for the MX stem on its back, under the drawing's middle (a backer disc if the drawing is too thin there); it prints face-down with the charms. Clicker keycaps are always flat (the post is on the back).

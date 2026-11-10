@@ -56,7 +56,7 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 | --- | --- | --- | --- | --- |
 | Hair clip charm | 14 to 25 mm | 2.4 mm | Round pocket on the back for the clip pad* | 1 |
 | Keychain | 35 to 55 mm | 3.2 mm | Ring tab with a 5 mm hole* | 1 |
-| Clicker keychain | Keycap top 16 to 22 mm | See below | Switch case with ring tab | 1 |
+| Clicker keychain | Keycap top 16 to 40 mm | See below | Switch case with ring tab | 1 |
 | Magnet figure | 30 to 55 mm | About 3.2 mm | Flat back; the magnet is glued on | 1 |
 | Earrings | 15 to 35 mm | 1.8 mm | Top loop with a 2.0 mm hole running left to right*, or a flat back for glue-on studs | 2 |
 | Pendant | 25 to 45 mm | 2.6 mm | Top loop with a 3.5 mm hole running left to right* | 1 |

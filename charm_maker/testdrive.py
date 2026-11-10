@@ -75,10 +75,11 @@ def _parent_page(cfg: dict, path: Path) -> Path:
             "Claude sends back a contact sheet (what each piece will look like), print files and print notes.",
         ]),
         Paragraph("Let her pick a shape (optional)", st["Heading2"]),
-        Paragraph("Every card can come out <b>flat</b> (the default), <b>puffy</b> like a pillow, with a <b>raised "
-                  "outline</b>, or as a <b>figurine</b> (a rounded front like a toy, still flat on the back so the clip "
-                  'or magnet works). Ask her which she wants and tell Claude, for example: "keychain 1 puffy, the '
-                  'magnet a figurine".', body),
+        Paragraph("Under the name line, every card shows the five shapes with a picture of each: <b>flat</b>, "
+                  "<b>puffy</b> like a pillow, <b>raised lines</b>, <b>puffy + lines</b>, and <b>figurine</b> (a rounded "
+                  "front like a toy, still flat on the back so the clip or magnet works). She ticks one box; no tick "
+                  "means flat. The <b>neat lines</b> box beside the name smooths her outline to one even thickness. "
+                  "Claude reads the ticks from the scan, so there is nothing to tell it.", body),
         Paragraph("What to look for", st["Heading2"]),
         bullets([
             "Does each preview look like her drawing? Anything missing, or anything extra?",

@@ -172,8 +172,8 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
-    size_min: 16
-    size_max: 22
+    size_min: 16                  # the keycap covers the switch at least
+    size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch
     default_size: 19
     thickness: 2.4                # keycap top plate; the socket boss sits behind it
     attachment: stem_socket
@@ -389,6 +389,7 @@ reader:
   guide_hue: 197                  # hue of the guide color, degrees
   guide_hue_tolerance: 25
   guide_saturation_max: 0.45      # pale pixels near the guide hue are guides, not ink
+  option_mark_min: 0.08           # a tick box counts as ticked when this much of its inside is marked
   hue_merge_deg: 30               # hues closer than this are one color
   min_color_fraction: 0.03        # a color with fewer pixels than this share is merged away
 

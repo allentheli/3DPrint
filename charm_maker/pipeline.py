@@ -187,9 +187,11 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         if st not in STYLES:
             raise ValueError(f"unknown style {st!r} for {key}; use one of {', '.join(STYLES)}")
 
-    def style_for(*cards: str) -> str:
-        """The exact name first (clip-01-b, a second copy of a card), then the card, then all."""
-        return next((styles[c] for c in (*cards, "*") if c in styles), cfg["relief"]["default_style"])
+    def style_for(*cards: str, picked: str | None = None) -> str:
+        """The exact name first (clip-01-b, a second copy of a card), then the card, then the
+        shape ticked on the card itself, then the style for all cards."""
+        named = next((styles[c] for c in cards if c in styles), None)
+        return named or picked or styles.get("*") or cfg["relief"]["default_style"]
 
     figurine_back = dict(figurine_back or {})
     figurine_base = dict(figurine_base or {})
@@ -250,14 +252,19 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         else:
             used_names[name] = 1
         try:
+            from .options import read_options
+
+            opts = read_options(cfg, read)                 # boxes the kid ticked on the card
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
-                                      tidy=bool(tidy & {name, base_name, "*"}))
+                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False))
             design.source = label
+            design.fixes += opts.get("notes", [])
+            design.warnings += opts.get("warnings", [])
             if name != base_name:
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name),
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name, picked=opts.get("style")),
                                     figurine_back=option_for(figurine_back, name, base_name),
                                     figurine_base=option_for(figurine_base, name, base_name))
                 _check_piece(piece)
