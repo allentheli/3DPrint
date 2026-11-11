@@ -170,6 +170,11 @@ def render_plate_map(cfg: dict, plate, path: Path, *, px_per_mm: float = 4.0) ->
     draw.text((pad, 18), f"Plate {plate.number} from above: who's who (front of the printer at the bottom)",
               fill=(0, 0, 0), font=_font(26))
     font = _font(max(14, int(px_per_mm * 4.5)))
+    taken: list[tuple[float, float, float, float]] = []
+
+    def free(b):
+        return not any(b[0] < t[2] and t[0] < b[2] and b[1] < t[3] and t[1] < b[3] for t in taken)
+
     for pp in plate.pieces:
         u = None
         for solid in pp.solids().values():
@@ -180,9 +185,22 @@ def render_plate_map(cfg: dict, plate, path: Path, *, px_per_mm: float = 4.0) ->
                 continue                                   # specks from inside the solid, not an edge
             draw.polygon([P(x, y) for x, y in r], outline=(60, 60, 60), width=2)
         x0, y0, _, x1, y1, _ = (float(v) for v in u.bounding_box())
-        cx, cy = P((x0 + x1) / 2, (y0 + y1) / 2)
-        box = draw.textbbox((cx, cy), pp.piece.name, font=font, anchor="mm")
-        draw.rectangle([box[0] - 4, box[1] - 3, box[2] + 4, box[3] + 3], fill=(255, 255, 255), outline=(200, 200, 200))
+        cx, _ = P((x0 + x1) / 2, 0)
+        _, y_mid = P(0, (y0 + y1) / 2)
+        _, y_top = P(0, y1)
+        _, y_bot = P(0, y0)
+        # On the piece if there's room, else just above it, else just below, stepping
+        # further out until the label is clear of the others.
+        spots = [y_mid] + [v for k in range(4) for v in (y_top - 14 - 30 * k, y_bot + 14 + 30 * k)]
+        for cy in spots:
+            box = draw.textbbox((cx, cy), pp.piece.name, font=font, anchor="mm")
+            box = (box[0] - 4, box[1] - 3, box[2] + 4, box[3] + 3)
+            if free(box):
+                break
+        taken.append(box)
+        if cy != y_mid:
+            draw.line([cx, cy, cx, y_mid], fill=(150, 150, 150), width=1)
+        draw.rectangle(list(box), fill=(255, 255, 255), outline=(200, 200, 200))
         draw.text((cx, cy), pp.piece.name, fill=(0, 0, 0), font=font, anchor="mm")
     img.save(path)
     return path

@@ -170,7 +170,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
-              names: dict[str, str] | None = None) -> BatchResult:
+              names: dict[str, str] | None = None, one_plate: bool = False) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -305,7 +305,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
     else:
         try:
-            plates = pack_plates(cfg, pieces, palette, assignments)
+            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate)
         except ValueError as e:
             problems.append(str(e))
         if plates:

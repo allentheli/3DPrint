@@ -60,7 +60,12 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         lines.append("")
         products |= {"figurine" if pp.piece.supports else pp.piece.design.product for pp in plate.pieces}
         cases = [pp.piece for pp in plate.pieces if pp.piece.group == "cases"]
-        if cases:
+        n_slots = cfg["printer"]["ams_slots"]
+        if len(plate.filaments) > n_slots:
+            lines.append(f"- **{len(plate.filaments)} colors, {n_slots} AMS slots:** before slicing, set some parts to the same "
+                         "filament in Bambu Studio so the plate uses at most "
+                         f"{n_slots}. The slot numbers above past {n_slots} are only labels.")
+        if cases and len(cases) == len(plate.pieces):
             lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the lid with the switch hole "
                          "on top. Supports off: the lid hangs over the hollow by less than 1 mm.")
             lines.append(f"- Layer height: **{pr['layer_height_cases']} mm**. One filament for the whole plate, any color; "
@@ -70,7 +75,7 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append("")
             continue
         figs = [pp.piece.name for pp in plate.pieces if pp.piece.supports]
-        if figs:
+        if figs and len(figs) == len(plate.pieces):
             lines.append(f"- Figurines ({', '.join(figs)}): they lie on their backs with the front up. Turn supports **on**: "
                          "in the Process panel open the **Support** tab, tick **Enable support**, set **Type** to **tree(auto)**.")
             lines.append(f"- Layer height: **{cfg['figurine']['layer_height']} mm**. Plate: either PEI plate; "
@@ -80,9 +85,19 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append("")
             continue
         layer = pr["layer_height_charms"]
-        lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
-        up = [pp.piece.name for pp in plate.pieces if pp.piece.face_up]
-        down = [pp.piece.name for pp in plate.pieces if not pp.piece.face_up]
+        if figs:
+            lines.append(f"- Layer height: **{layer} mm** for the whole plate. Supports: **on** for the round-back figurines "
+                         f"({', '.join(figs)}): **Support** tab, tick **Enable support**, **Type** **tree(auto)**. "
+                         "The other pieces have nothing to hold up, so they get none.")
+        else:
+            lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
+        if cases:
+            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) stand upright on this plate, the lid with the "
+                         f"switch hole on top. At {layer} mm they just take longer than on their own plate "
+                         f"({pr['layer_height_cases']} mm). Set each case to any one filament.")
+        charms = [pp for pp in plate.pieces if pp.piece.group != "cases" and not pp.piece.supports]
+        up = [pp.piece.name for pp in charms if pp.piece.face_up]
+        down = [pp.piece.name for pp in charms if not pp.piece.face_up]
         if down:
             lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
         if up:

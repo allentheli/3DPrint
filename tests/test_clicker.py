@@ -197,3 +197,15 @@ def test_small_drawings_are_scaled_up_to_cover_the_switch(cfg, shape, expect_sho
         assert max(w, h) == pytest.approx(expect_long, abs=0.1), "grown, but never past the largest keycap"
         assert any("backer disc" in f for f in k.design.fixes), "still too thin for the post: a disc behind it"
 
+
+
+def test_one_plate_puts_the_case_with_the_charms(cfg, tmp_path):
+    """Allen: everything in one 3MF, the clicker case on the same plate as the charms."""
+    a = draw_blob_card(cfg, tmp_path, "clicker", 5, BLACK, PINK)
+    b = draw_blob_card(cfg, tmp_path, "hair_clip", 6, BLACK, YELLOW)
+    r = run_batch(cfg, [a, b], tmp_path / "out", one_plate=True)
+    assert r.problems == [] and len(r.plates) == 1
+    assert {pp.piece.name for pp in r.plates[0].pieces} == {"click-05", "click-05-case", "clip-06"}
+    notes = r.files["notes"].read_text()
+    assert "stand upright on this plate" in notes and f"**{cfg['printer']['layer_height_charms']} mm**" in notes
+    assert "Shaped pieces (click-05-case" not in notes

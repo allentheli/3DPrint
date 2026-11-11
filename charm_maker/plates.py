@@ -122,18 +122,22 @@ def unanswered_off_palette(piece: Piece, assignments: dict[str, Filament]) -> li
 
 
 def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
-                assignments: dict[str, dict[str, Filament]]) -> list[Plate]:
+                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
     """Charms first (flat-back figurines and clicker keycaps included), then clicker cases
     (upright, thicker layers, one filament), then round-back figurines (they need supports
-    and a different layer height), each group on plates of its own."""
+    and a different layer height), each group on plates of its own. With `one_plate`,
+    everything shares a plate (as many as the bed needs, usually one), whatever the
+    layer heights and however many colors: Allen sets the spools in Bambu Studio."""
     groups = [[p for p in pieces if not p.supports and p.group != "cases"],
               [p for p in pieces if p.group == "cases"],
               [p for p in pieces if p.supports]]
+    if one_plate:
+        groups = [list(pieces)]
     plates: list[Plate] = []
     for group in groups:
         if not group:
             continue
-        more = _pack_group(cfg, group, palette, assignments)
+        more = _pack_group(cfg, group, palette, assignments, one_plate=one_plate)
         for pl in more:
             pl.number += len(plates)
         plates += more
@@ -141,16 +145,18 @@ def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
 
 
 def _pack_group(cfg: dict, pieces: list[Piece], palette: Palette,
-                assignments: dict[str, dict[str, Filament]]) -> list[Plate]:
+                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
     items = [(p, assignments[p.name]) for p in pieces]
     if not palette.ready:
-        return _pack_by_filament_sets(cfg, items)
+        return _pack_by_filament_sets(cfg, items, any_colors=one_plate)
 
     loaded = set(palette.loaded_filaments())
     groups: dict[frozenset, list] = {}
     for piece, assign in items:
         need = frozenset(f for f in assign.values() if f not in loaded)
         groups.setdefault(need, []).append((piece, assign))
+    if one_plate and len(groups) > 1:
+        groups = {frozenset().union(*groups): items}
     plates: list[Plate] = []
     for need in sorted(groups, key=lambda k: (len(k), sorted(f.name for f in k))):
         group = groups[need]
@@ -212,12 +218,13 @@ def _shelf_pack(cfg: dict, group: list, start: int) -> list[Plate]:
     return plates
 
 
-def _pack_by_filament_sets(cfg: dict, items: list) -> list[Plate]:
-    """Before loaded slots are set: group designs so no plate needs more than N filaments."""
+def _pack_by_filament_sets(cfg: dict, items: list, *, any_colors: bool = False) -> list[Plate]:
+    """Before loaded slots are set: group designs so no plate needs more than N filaments
+    (unless `any_colors`: then only the bed size splits them)."""
     pv = cfg["preview"]
     bed_w, bed_h = cfg["printer"]["bed_size"]
     margin, gap = pv["bed_margin"], pv["piece_gap"]
-    max_f = cfg["printer"]["max_filaments_per_plate"]
+    max_f = 10 ** 6 if any_colors else cfg["printer"]["max_filaments_per_plate"]
     usable_w, usable_h = bed_w - 2 * margin, bed_h - 2 * margin
     items = [(p, a, set(a.values())) for p, a in items]
     items.sort(key=lambda t: (-len(t[2]), -max(t[0].size())))

@@ -161,6 +161,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
+| Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |

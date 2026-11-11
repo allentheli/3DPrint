@@ -170,7 +170,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                        off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
-                       tidy=set(args.tidy or ()), names=_names(args.names))
+                       tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate)
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -285,6 +285,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
+    p.add_argument("--one-plate", action="store_true",
+                   help="everything on one plate in one 3MF (clicker cases and figurines too, any number of colors)")
     p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",
                    help="name pieces after the kid, e.g. key-01=Jack clip-02=Mia (from the names sheet)")
     p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",
