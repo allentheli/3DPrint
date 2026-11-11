@@ -13,7 +13,7 @@ def cmd_fit_test(args: argparse.Namespace) -> int:
     from .fittest import build_fit_plate, write_fit_test
 
     cfg = load_config(args.config)
-    plate = build_fit_plate(cfg)
+    plate = build_fit_plate(cfg, only=args.only)
     paths = write_fit_test(cfg, plate, Path(args.out))
     print("Fit-test plate written:")
     for k, p in paths.items():
@@ -239,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("fit-test", help="build the milestone 0 fit-test plate")
     p.add_argument("--out", default="output/fit-test", help="output folder")
+    p.add_argument("--only", default=None, metavar="GROUP",
+                   help="just one group's coupons, e.g. earring_hole_diameter (to reprint after a change)")
     p.set_defaults(func=cmd_fit_test)
 
     p = sub.add_parser("fit-results", help="record which fit-test pieces fit, e.g. 2 5 8 11 14 17")

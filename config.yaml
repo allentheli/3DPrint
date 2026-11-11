@@ -99,10 +99,10 @@ fit:
     candidates: [4.5, 5.0, 5.5]
     note: hole in a keychain's ring tab for a 25 mm split ring
   earring_hole_diameter:
-    value: 2.0
+    value: 1.5
     tested: false
-    candidates: [1.8, 2.0, 2.3]
-    note: sideways hole (left to right) in the earring's top loop; the hook goes straight through
+    candidates: [1.3, 1.5, 1.8]
+    note: front-to-back hole in the earring's small top tab; a 4 mm jump ring goes through it (Allen, 2026-11-11)
   switch_cutout:
     value: 13.9
     tested: true   # 2026-11-11
@@ -133,7 +133,8 @@ hardware:
   # Side loops for pendants and earrings: a loop on top with a hole running left to
   # right, so the piece hangs facing forward. The loop sits flush with the front face
   # and stands taller than the charm on the back.
-  earring_loop: {wall: 1.0, length: 4.5}
+  jump_ring_diameter: 4.0         # Allen's earring jump rings (outside); about 2.5 mm inside
+  earring_tab_wall: 1.0           # plastic around the earring's hole: thin, so the jump ring closes around it
   necklace_loop: {wall: 1.2, length: 7.0}
   loop_overlap: 2.0               # how far the loop reaches into the charm
   loop_gap: 0.8                   # plastic between the hole and the charm's top edge
@@ -215,9 +216,8 @@ products:
     size_max: 35
     default_size: 25
     thickness: 1.8
-    attachment: side_loop
-    loop: earring                 # hardware.earring_loop, fit.earring_hole_diameter
-    style: hook                   # hook (side loop) or stud (flat back, no loop)
+    attachment: jump_ring_tab     # Allen: a 4 mm jump ring through a small hole near the top, the hook on the ring
+    style: hook                   # hook (jump ring tab) or stud (flat back, no tab)
     pair_mode: mirrored           # Allen: the second earring is the mirror image (or identical)
     copies: 2
     card: earrings
@@ -345,7 +345,7 @@ fit_test:
   switch_housing_floor: 1.2       # the switch housings are closed boxes like the clicker case...
   switch_pushout_hole: 6.0        # ...with a hole in the floor to push the switch back out
   stem_coupon: [16, 26, 2.4]
-  earring_loop_coupon: [10, 16, 1.8]
+  earring_tab_coupon: [10, 12, 1.8]
   necklace_loop_coupon: [12, 18, 2.6]
   stem_boss_height: 4.5
   stem_span_clearance: 0.1         # added to the cross length (the arm widths get the tested clearance)

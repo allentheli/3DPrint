@@ -12,6 +12,7 @@
 - A thin strip of color between two lines (a straw colored in yellow) is kept: the lines thicken on the paper side instead of over it, plain and with neat lines. 2 new tests (fail on the old code).
 - A color that thins out to a faint streak past a line is joined back into one piece along that streak, 0.5 mm wide so it prints (her straw is now one continuous yellow strip). A plain dark bar between two patches is never bridged. 2 new tests.
 - Clicker fit results recorded: switch hole 13.9 mm, keycap socket 0.10 mm (tested 2026-11-11).
+- Earrings hang from a 4 mm jump ring (Allen's call): a small tab above the balance point with a 1.5 mm hole front to back and 1 mm of plastic around it, instead of the sideways loop a jump ring could not get around. Fit pieces 7-9 are the new tabs; `fit-test --only earring_hole_diameter` prints just those three. 3 new tests, 3 updated.
 - 2 new tests.
 
 ## Kids pick the shape on the card (2026-11-10)

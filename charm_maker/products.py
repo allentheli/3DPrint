@@ -67,7 +67,7 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
-    if attachment == "side_loop" and prod.get("style") == "stud":
+    if attachment in ("side_loop", "jump_ring_tab") and prod.get("style") == "stud":
         attachment = None            # stud earrings: flat back, glue-on post
     info: dict = {}
     holes = []   # 2D shapes removed from every part through the full thickness
@@ -77,6 +77,12 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
     elif attachment == "ring_tab":
         info = _add_ring_tab(cfg, design, tab_position or prod.get("tab_position", "top"))
         holes.append(info["hole"])
+    elif attachment == "jump_ring_tab":
+        # Earrings: a jump ring through a small hole near the top, then the hook on the ring.
+        info = _add_ring_tab(cfg, design, "top", fit_key="earring_hole_diameter",
+                             wall=cfg["hardware"]["earring_tab_wall"], balance=True)
+        holes.append(info["hole"])
+        attachment = "ring_tab"      # from here on, built like a keychain's tab
     elif attachment == "side_loop":
         info = _add_side_loop(cfg, design, prod["loop"])
     elif attachment == "flat_back":
@@ -319,13 +325,17 @@ def _deepest_point(poly: Polygon) -> tuple[tuple[float, float], float]:
 # Keychain ring tab
 # ---------------------------------------------------------------------------
 
-def _add_ring_tab(cfg: dict, design: Design, position: str) -> dict:
+def _add_ring_tab(cfg: dict, design: Design, position: str, *, fit_key: str = "keyring_hole_diameter",
+                  wall: float | None = None, balance: bool = False) -> dict:
+    """A round tab with a hole through it, front to back. Keychains: a split ring, a
+    2.5 mm wall. Earrings (`balance`): a small tab right above the balance point, so the
+    earring hangs straight, with a thin wall a small jump ring closes around."""
     hw = cfg["hardware"]
-    fit = cfg["fit"]["keyring_hole_diameter"]
+    fit = cfg["fit"][fit_key]
     hole_d = float(fit["value"])
-    wall = hw["keyring_hole_min_wall"]
+    wall = hw["keyring_hole_min_wall"] if wall is None else wall
     if not fit["tested"]:
-        design.warnings.append(f"keyring hole {hole_d} mm is not from a fit test yet")
+        design.warnings.append(f"{fit_key.replace('_diameter', '').replace('_', ' ')} {hole_d} mm is not from a fit test yet")
     angle = TAB_ANGLES.get(position)
     if angle is None:
         raise ValueError(f"unknown tab position {position!r}; use one of {list(TAB_ANGLES)}")
@@ -338,7 +348,8 @@ def _add_ring_tab(cfg: dict, design: Design, position: str) -> dict:
     core = core if not core.is_empty else shape
     core = max(_as_multi(core).geoms, key=lambda g: g.area)
     top_pt = max(core.exterior.coords, key=lambda p: p[1])
-    x_tab = top_pt[0]
+    # A hanging piece turns until its weight is right under the hole.
+    x_tab = float(origin[0]) if balance else top_pt[0]
     minx, miny, maxx, maxy = shape.bounds
     strip = box(x_tab - tab_w / 2, miny - 1, x_tab + tab_w / 2, maxy + 1).intersection(shape)
     y_attach = strip.bounds[3]
@@ -353,9 +364,14 @@ def _add_ring_tab(cfg: dict, design: Design, position: str) -> dict:
     design.outline = affinity.rotate(merged, -angle, origin=origin)
     hole = affinity.rotate(hole, -angle, origin=origin)
     hc = hole.centroid.coords[0]
-    design.fixes.append(f"ring tab added at the {position} with a {hole_d} mm hole")
+    if balance:
+        design.fixes.append(f"small tab added on top, above the balance point, with a {hole_d} mm hole front to "
+                            f"back for a {hw['jump_ring_diameter']:g} mm jump ring ({wall:g} mm of plastic around it)")
+    else:
+        design.fixes.append(f"ring tab added at the {position} with a {hole_d} mm hole")
     return {"kind": "ring_tab", "hole": hole, "hole_center": (float(hc[0]), float(hc[1])),
-            "hole_diameter": hole_d, "position": position}
+            "hole_diameter": hole_d, "position": position, "wall": wall,
+            "ring": "jump ring" if balance else "split ring"}
 
 
 # ---------------------------------------------------------------------------

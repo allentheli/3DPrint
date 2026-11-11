@@ -18,7 +18,7 @@ Kids (and adults) draw on printed design cards. Allen takes a photo of each card
 | Magnet figure | Anyone | A flat character with a magnet glued onto its flat back. It goes on the fridge or stands up on the universal stand |
 | Figure stand | (no drawing) | One stand design that holds any magnet figure |
 | Necklace pendant | Anyone | A flat charm with a loop on top; the chain goes through it left to right |
-| Earrings | Adults | A matching pair of light flat charms with a loop on top for the hook (left to right), or a flat back for stud posts |
+| Earrings | Adults | A mirror-image pair of light flat charms with a small tab on top: a 4 mm jump ring goes through its hole and the hook hangs on the ring; or a flat back for stud posts |
 
 First use: a design party for four girls aged 5 and 8 (two families), with the parents making earrings and pendants. The tool should keep working for later parties and one-off drawings.
 
@@ -58,7 +58,7 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 | Keychain | 35 to 55 mm | 3.2 mm | Ring tab with a 5 mm hole* | 1 |
 | Clicker keychain | Keycap top 16 to 40 mm | See below | Switch case with ring tab | 1 |
 | Magnet figure | 30 to 55 mm | About 3.2 mm | Flat back; the magnet is glued on | 1 |
-| Earrings | 15 to 35 mm | 1.8 mm | Top loop with a 2.0 mm hole running left to right*, or a flat back for glue-on studs | 2 |
+| Earrings | 15 to 35 mm | 1.8 mm | Small top tab with a 1.5 mm hole front to back for a 4 mm jump ring*, or a flat back for glue-on studs | 2 |
 | Pendant | 25 to 45 mm | 2.6 mm | Top loop with a 3.5 mm hole running left to right* | 1 |
 
 ### Shape styles
@@ -123,7 +123,7 @@ The same figure lives on the fridge or stands up on the universal stand.
 ### Earrings
 
 - For adults. Always a pair on the same plate from one drawing: the second one is the mirror image (Allen's call), or identical (setting).
-- Two styles: hook (the top loop above, with a 2.0 mm hole running left to right) or stud (no loop, flat back for a glue-on post).
+- Two styles: hook (a small tab right above the balance point with a 1.5 mm hole front to back and 1 mm of plastic around it, so Allen's 4 mm jump ring goes through and closes around it; the hook hangs on the ring) or stud (no tab, flat back for a glue-on post). Allen's call, 2026-11-11: the old sideways loop was a 4.5 mm tunnel a 4 mm jump ring could not pass.
 - Keep them light: 1.8 mm thick and 35 mm at most.
 
 ### Pendant
@@ -191,7 +191,7 @@ You generate the printable cards, so the markers on the cards always match what 
 
 Finish and show each milestone before starting the next. Each ends with something Allen can print or hold.
 
-**Milestone 0: fit test.** One small single-color plate with numbered test pieces: coupons with the three clip pocket sizes, three keyring hole sizes, three earring loops (sideways holes), three MX switch housings (small closed boxes like the clicker case: a 1.5 mm lid with the switch cutout, the hollow under it, a floor with a push-out hole), three keycap stem sockets, three necklace loops (sideways holes), and one figure stand with its washer recess. Give Allen numbered steps: print it, then try the real clip pad, a switch, a keycap stem test, a split ring, an earring hook, a necklace chain, and a magnet glued onto a coupon (checked on the fridge and on the stand with a washer). He reports which numbers fit, and you write the results into config. Done when config holds tested values.
+**Milestone 0: fit test.** One small single-color plate with numbered test pieces: coupons with the three clip pocket sizes, three keyring hole sizes, three earring jump-ring tabs (1.3, 1.5, 1.8 mm holes), three MX switch housings (small closed boxes like the clicker case: a 1.5 mm lid with the switch cutout, the hollow under it, a floor with a push-out hole), three keycap stem sockets, three necklace loops (sideways holes), and one figure stand with its washer recess. Give Allen numbered steps: print it, then try the real clip pad, a switch, a keycap stem test, a split ring, a 4 mm jump ring, a necklace chain, and a magnet glued onto a coupon (checked on the fridge and on the stand with a washer). He reports which numbers fit, and you write the results into config. Done when config holds tested values.
 
 **Milestone 1: cards, hair clips and keychains.** The card PDF (clip and keychain cards first), the reader, the full pipeline, previews and 3MF export. Done when Allen scans a test card with the iPhone Notes document scanner, uploads it, gets a file that opens in Bambu Studio and prints, and the charm sits on the real clip.
 

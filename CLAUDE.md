@@ -24,7 +24,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Fit test** (`output/fit-test`, printed 2026-11-10): clicker results are in (2026-11-11:
   switch hole piece 10 = 13.9 mm, keycap socket piece 13 = 0.10 mm; both the tightest of the
   three, so if they still feel loose, add tighter candidates). Still waiting on the clip pocket,
-  keyring hole, earring loop and necklace loop: run `fit-results` with all six numbers when he
+  keyring hole, earring jump-ring hole (pieces 7-9 changed on 2026-11-11: reprint them with
+  `fit-test --only earring_hole_diameter`) and necklace loop: run `fit-results` with all six numbers when he
   reports them (see below). Until then those use untested values and say so in a `check:` line.
 - **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
   style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
@@ -83,8 +84,8 @@ python -m charm_maker run <folder or files> --out output/<batch-name> --names ke
 4. Hand over the plate files (as downloads in a cloud session) and say, for each plate,
    which filament goes in which AMS slot, the layer height and the plate type.
 5. Remind him of finishing steps only when they apply: glue (clip pads, stud posts, magnets
-   on the flat back of figures), split rings (keychains), the hook or chain straight through
-   the loop (earrings, pendants), switch insertion (clickers).
+   on the flat back of figures), split rings (keychains), a 4 mm jump ring then the hook (earrings), the chain straight through
+   the loop (pendants), switch insertion (clickers).
 
 When Allen says he swapped a spool ("pink is in slot 3 now"): run
 `python -m charm_maker load 3 "Pink PLA"` (add `--color "#RRGGBB"` for a spool not in
@@ -93,7 +94,7 @@ sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
 figure (flat back, glued magnet), clicker keychain, and earrings for adults (one drawing makes a
-mirror-image pair, top loop with a sideways hole, or `style: stud` for a flat back). A drawing without card markers needs
+mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm jump rings, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
@@ -160,6 +161,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
+| Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
 | Test-drive pack | `python -m charm_maker test-drive` |
@@ -176,7 +178,7 @@ candidates to that group's `candidates` in `config.yaml`, rebuild the plate, and
 the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
-7-9 earring loop (sideways hole), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
+7-9 earring jump-ring hole (small top tab, front to back), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
 16-18 necklace loop (sideways hole).
 
 ## Reading the results

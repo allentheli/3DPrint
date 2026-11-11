@@ -1,5 +1,6 @@
-"""Every product from a drawing: pendant and earrings with sideways loops, earring
-pairs, magnet figures with a flat back, and colors kept as separate parts."""
+"""Every product from a drawing: the pendant's sideways loop, earrings with a small
+jump-ring tab, earring pairs, magnet figures with a flat back, and colors kept as
+separate parts."""
 
 import pymupdf
 import pytest
@@ -44,7 +45,39 @@ def test_every_product_builds(batch):
     assert batch.plates
 
 
-@pytest.mark.parametrize("name,kind", [("pend-01", "necklace"), ("ear-01-1", "earring"), ("ear-01-2", "earring")])
+@pytest.mark.parametrize("name", ["ear-01-1", "ear-01-2"])
+def test_earrings_hang_from_a_jump_ring(cfg, batch, name):
+    """Allen: a 4 mm jump ring goes through the earring, then the hook on the ring. The
+    old sideways loop was a 4.5 mm tunnel a 4 mm ring could not get through and around.
+    Now a small tab right above the balance point has a hole front to back, with so
+    little plastic around it that the ring closes around it."""
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+
+    p = _piece(batch, name)
+    att, hw = p.attachment, cfg["hardware"]
+    assert att["kind"] == "ring_tab" and att["ring"] == "jump ring"
+    assert att["hole_diameter"] == cfg["fit"]["earring_hole_diameter"]["value"]
+    # Through, front to back: no plastic at the hole's center on any layer.
+    hx, hy = p.solid_xy(*att["hole_center"])
+    for z in (0.2, p.thickness / 2, p.thickness - 0.2):
+        face = [Polygon(q) for q in p.parts[p.base_part].slice(z).to_polygons()]
+        covering = sum(q.contains(Point(hx, hy)) for q in face)
+        assert covering % 2 == 0, f"plastic in the hole at z={z}"
+    # The ring closes around the plastic beside the hole: wall by thickness fits inside it.
+    inside = hw["jump_ring_diameter"] - 2 * 0.75                     # a typical 4 mm ring's wire
+    assert (att["wall"] ** 2 + p.thickness ** 2) ** 0.5 < inside - 0.2
+    # The tab's outer edge is only the wall away from the hole (the ring goes around there).
+    top = p.design.outline.bounds[3]
+    assert top - att["hole_center"][1] == pytest.approx(att["hole_diameter"] / 2 + att["wall"], abs=0.15)
+    # It hangs straight: the hole is above the balance point.
+    inks = unary_union([i.geometry for i in p.design.inks])
+    assert att["hole_center"][0] == pytest.approx(p.design.outline.centroid.x, abs=1.0)
+    assert att["hole_center"][0] == pytest.approx(inks.centroid.x, abs=1.0)
+    assert _sound(p).bounding_box()[5] == pytest.approx(p.thickness, abs=0.01), "flat: nothing on the back"
+
+
+@pytest.mark.parametrize("name,kind", [("pend-01", "necklace")])
 def test_loops_run_left_to_right(cfg, batch, name, kind):
     p = _piece(batch, name)
     att = p.attachment

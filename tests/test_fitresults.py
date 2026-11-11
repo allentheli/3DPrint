@@ -22,7 +22,7 @@ def test_apply_fit_results_updates_values_and_keeps_comments(tmp_path):
     cfg = load_config(cfg_path)
     assert cfg["fit"]["clip_pocket_diameter"]["value"] == 11.8
     assert cfg["fit"]["keyring_hole_diameter"]["value"] == 4.5
-    assert cfg["fit"]["earring_hole_diameter"]["value"] == 2.3
+    assert cfg["fit"]["earring_hole_diameter"]["value"] == 1.8
     assert cfg["fit"]["switch_cutout"]["value"] == 14.0
     assert cfg["fit"]["stem_socket_clearance"]["value"] == 0.15
     assert cfg["fit"]["necklace_hole_diameter"]["value"] == 3.0

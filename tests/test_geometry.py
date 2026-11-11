@@ -46,7 +46,7 @@ def test_every_coupon_is_a_single_watertight_solid(coupons):
         _assert_solid(c.solid)
 
 
-LOOP_GROUPS = ("earring_hole_diameter", "necklace_hole_diameter")
+LOOP_GROUPS = ("earring_hole_diameter", "necklace_hole_diameter")   # tags with their own shape
 
 
 def test_coupon_sizes_match_config(cfg, coupons):
@@ -229,12 +229,37 @@ def loop_hole_check(solid, x_c: float, y_c: float, d: float, wall: float, length
 
 
 def test_loop_coupons_have_sideways_holes(cfg, coupons):
-    for c in (c for c in coupons if c.group in LOOP_GROUPS):
-        kind = c.group.split("_")[0]
+    for c in (c for c in coupons if c.group == "necklace_hole_diameter"):
         x_c, y_c = c.feature_center
-        loop = cfg["hardware"][f"{kind}_loop"]
+        loop = cfg["hardware"]["necklace_loop"]
         loop_hole_check(c.solid, x_c, y_c, c.candidate, loop["wall"], loop["length"])
         assert size(c.solid)[2] == pytest.approx(c.extras["loop_height"], abs=0.01)
+
+
+def test_earring_coupons_have_the_jump_ring_tab(cfg, coupons):
+    """The same small tab the earrings get, one hole size per coupon, through front to back."""
+    t = cfg["fit_test"]["earring_tab_coupon"][2]
+    for c in (c for c in coupons if c.group == "earring_hole_diameter"):
+        x_c, y_c = c.feature_center
+        for z in (0.2, t / 2):
+            face = [Polygon(q) for q in c.solid.slice(z).to_polygons()]
+            holes = [q for q in face if q.contains(Point(x_c, y_c))]
+            assert len(holes) % 2 == 0, f"piece {c.number}: the hole goes through"
+        inner = [q for q in (Polygon(q) for q in c.solid.slice(t / 2).to_polygons()) if q.contains(Point(x_c, y_c))]
+        hole = min(inner, key=lambda q: q.area)
+        assert hole.bounds[2] - hole.bounds[0] == pytest.approx(c.candidate, abs=0.1)
+        assert c.outline.bounds[3] - y_c == pytest.approx(c.candidate / 2 + c.extras["wall"], abs=0.15)
+        assert size(c.solid)[2] == pytest.approx(t + cfg["fit_test"]["label_raise"], abs=0.01)
+
+
+def test_one_group_can_be_reprinted_alone(cfg, tmp_path):
+    from charm_maker.fittest import build_fit_plate, write_fit_test
+
+    plate = build_fit_plate(cfg, only="earring_hole_diameter")
+    assert [c.number for c in plate.coupons] == [7, 8, 9] and plate.stand is None
+    paths = write_fit_test(cfg, plate, tmp_path)
+    guide = paths["guide-md"].read_text()
+    assert "one group again" in guide and "Stand and washer" not in guide and "7, 8, 9" in guide
 
 
 def test_stem_posts_are_the_real_keycap_size(cfg, coupons):

@@ -136,14 +136,14 @@ def render_plan(plate, path: Path, *, dpi: int = 300, title: str = "") -> Path:
         draw.text((X(ox + w_mm / 2), Y(oy + w_mm + (l_mm - w_mm) / 2)), str(c.number),
                   fill=(0, 0, 0), font=font, anchor="mm")
         draw.text((X(ox + w_mm / 2), Y(oy - 0.5)), f"{c.candidate}", fill=(90, 90, 90), font=small, anchor="ma")
-    # Stand footprint.
-    sx, sy = plate.positions["stand"]
-    from .geom import bounds
+    # Stand footprint (not on a plate that reprints one group).
+    if "stand" in plate.placed:
+        from .geom import bounds
 
-    lo, hi = bounds(plate.placed["stand"])
-    draw.rectangle([X(lo[0]), Y(hi[1]), X(hi[0]), Y(lo[1])], outline=(0, 0, 0), width=max(1, int(0.25 * px)))
-    draw.text((X((lo[0] + hi[0]) / 2), Y((lo[1] + hi[1]) / 2)), "stand\n(seen from above)",
-              fill=(0, 0, 0), font=small, anchor="mm", align="center")
+        lo, hi = bounds(plate.placed["stand"])
+        draw.rectangle([X(lo[0]), Y(hi[1]), X(hi[0]), Y(lo[1])], outline=(0, 0, 0), width=max(1, int(0.25 * px)))
+        draw.text((X((lo[0] + hi[0]) / 2), Y((lo[1] + hi[1]) / 2)), "stand\n(seen from above)",
+                  fill=(0, 0, 0), font=small, anchor="mm", align="center")
     # Title and 50 mm check ruler.
     draw.text((X(0), int(2 * px)), title or "Charm Maker fit-test plate", fill=(0, 0, 0), font=font, anchor="la")
     ry = int(7 * px)
@@ -318,7 +318,9 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
     if att.get("kind") == "clip_pocket":
         lines_att = [f"Clip pad pocket {att['diameter']} mm (dashed), {att['wall']:.1f} mm wall"]
     elif att.get("kind") == "ring_tab":
-        lines_att = [f"Ring tab at the {att['position']}, {att['hole_diameter']} mm hole"]
+        lines_att = ([f"Small tab on top: {att['hole_diameter']} mm hole front to back for a jump ring, "
+                      f"{att['wall']:g} mm of plastic around it"] if att.get("ring") == "jump ring"
+                     else [f"Ring tab at the {att['position']}, {att['hole_diameter']} mm hole"])
     elif att.get("kind") == "side_loop":
         lines_att = [f"Loop on top: {att['hole_diameter']} mm hole running left to right (dashed), "
                      f"{att['height']:.1f} mm tall on the back"]
