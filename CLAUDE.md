@@ -105,10 +105,12 @@ face-down with the charms. The case `click-NN-case` is a cup (Allen, after the f
 2026-11-11: the switch showed and the keycap floated over a gap): the switch snaps into a plate
 at the bottom of an opening shaped like the keycap, the keycap sits in that opening (0.6 mm
 clearance, face 1.5 mm above the rim) and presses down into it, so nothing of the switch shows.
-Below the plate a hollow for the switch body and pins and a floor with a push-out hole; a ring
-post at the top whose hole runs left to right at half height (so the clicker sits flat on a
-table). About 25 mm tall plus the keycap (the switch needs that height); printed upright on its
-own plate at 0.2 mm in one filament, no supports. The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
+Below the plate a hollow for the switch body and pins and a floor with a push-out hole; a short
+ring tab (about 9.5 mm tall, Allen: not the whole height) halfway up the side, its hole running
+left to right (the ring hangs beside the case, so it sits flat on a table). About 25 mm tall plus
+the keycap (the switch needs that height); printed upright on its own plate at 0.2 mm in one
+filament, tree supports on (only the tab's underside needs them; `ring_tab_supports: false`
+gives it a 45-degree underside and no supports). The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
 (Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm (never past
 40 mm) with a note. Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
 (their drawing box is smaller). The keycap post sits at the drawing's

@@ -103,7 +103,7 @@ Every product can be flat (the default) or shaped. All shapes come straight from
   - Switch plate 1.5 mm thick (the MX spec is 1.5 ± 0.1 mm) with a square cutout (fit test: 13.9, 14.0, 14.1 mm; 13.9 tested).
   - A closed cavity under the plate, at least 15.6 mm square and about 9 mm deep. That covers the 5 mm of switch housing below the plate plus the pins.
   - Print upright with the top plate bridging the cavity. If the bridge prints poorly, switch to a two-piece case and record it in `DECISIONS.md`.
-  - A ring tab on one side. The case prints in one filament, chosen per order.
+  - A short ring tab halfway up one side, the hole running left to right (Allen's call: not the whole height); tree supports under it. The case prints in one filament, chosen per order.
 - **Keycap:** a flat charm-shaped top made from the kid's design, filled out behind to at least the switch's 15.6 mm square so it covers it, with a cross-shaped socket underneath for the MX stem (fit test: three tolerances). Print it face-down with the socket pointing up, so the design face comes out smooth. Check that the keycap clears the switch housing and the case at full travel (about 4 mm).
 - **Fallback setting:** if printed sockets turn out unreliable, make the design as a flat charm to glue onto a store-bought blank flat-top MX keycap.
 
