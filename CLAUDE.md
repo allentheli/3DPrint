@@ -24,8 +24,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Fit test** (`output/fit-test`, printed 2026-11-10): clicker results are in (2026-11-11:
   switch hole piece 10 = 13.9 mm, keycap socket piece 13 = 0.10 mm; both the tightest of the
   three, so if they still feel loose, add tighter candidates). Still waiting on the clip pocket,
-  keyring hole, earring jump-ring hole (pieces 7-9 changed on 2026-11-11: reprint them with
-  `fit-test --only earring_hole_diameter`) and necklace loop: run `fit-results` with all six numbers when he
+  keyring hole, earring jump-ring hole (pieces 7-9 changed on 2026-11-11; Allen tests with
+  Madison's real earrings instead, 1.5 mm = piece 8: if the jump ring goes on and closes, record 8)
+  and necklace loop: run `fit-results` with the numbers when he reports them
   reports them (see below). Until then those use untested values and say so in a `check:` line.
 - **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
   style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
