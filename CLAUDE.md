@@ -21,9 +21,11 @@ you build. Never say something works unless you ran it. Say what you could not t
 
 Every product builds; nothing is printed and measured yet. Waiting on Allen:
 
-- **Fit test** (`output/fit-test`, printing as of 2026-11-10): he reports one number per group,
-  then run `fit-results` (see below). Until then every clip pocket, ring hole, loop, switch
-  hole and keycap socket uses an untested value and says so in a `check:` line.
+- **Fit test** (`output/fit-test`, printed 2026-11-10): clicker results are in (2026-11-11:
+  switch hole piece 10 = 13.9 mm, keycap socket piece 13 = 0.10 mm; both the tightest of the
+  three, so if they still feel loose, add tighter candidates). Still waiting on the clip pocket,
+  keyring hole, earring loop and necklace loop: run `fit-results` with all six numbers when he
+  reports them (see below). Until then those use untested values and say so in a `check:` line.
 - **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
   style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
   container lid (thread clearance untested).

@@ -10,6 +10,8 @@
 - The name picture now starts where the line starts, so it shows only the handwriting (it caught the end of the bigger "Your name:" label).
 - First real scan with the new card (a pendant): the handwritten name and the Figurine tick were both read correctly.
 - A thin strip of color between two lines (a straw colored in yellow) is kept: the lines thicken on the paper side instead of over it, plain and with neat lines. 2 new tests (fail on the old code).
+- A color that thins out to a faint streak past a line is joined back into one piece along that streak, 0.5 mm wide so it prints (her straw is now one continuous yellow strip). A plain dark bar between two patches is never bridged. 2 new tests.
+- Clicker fit results recorded: switch hole 13.9 mm, keycap socket 0.10 mm (tested 2026-11-11).
 - 2 new tests.
 
 ## Kids pick the shape on the card (2026-11-10)

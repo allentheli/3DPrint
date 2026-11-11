@@ -116,6 +116,10 @@ def test_glue_on_fallback_is_a_plain_charm(cfg):
 
 
 def test_a_clicker_card_gives_a_keycap_plate_and_a_case_plate(cfg, tmp_path):
+    import copy
+
+    cfg = copy.deepcopy(cfg)
+    cfg["fit"]["switch_cutout"]["tested"] = False          # the warning path, whatever the real results
     a = draw_blob_card(cfg, tmp_path, "clicker", 3, BLACK, PINK)
     b = draw_blob_card(cfg, tmp_path, "hair_clip", 4, BLACK, YELLOW)
     r = run_batch(cfg, [a, b], tmp_path / "out")

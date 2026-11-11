@@ -59,6 +59,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
                                guide_zone=_guide_zone(cfg, read))
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy)
+        design.fixes[:0] = inks.fixes
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
         design.name_image = read.name_image
@@ -88,6 +89,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy)
+    design.fixes[:0] = inks.fixes
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
     design.fixes.append(f"scaled so the longest side is {size_mm} mm (no card markers)")

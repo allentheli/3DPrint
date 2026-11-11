@@ -69,6 +69,8 @@ process:
   min_ink_width: 1.0              # thinner ink gets thickened to this
   min_gap: 0.4                    # ...but separate marks (eyes next to a mouth) never grow closer than this
   thin_strip_min_area: 0.3        # mm²: a separate thin strip of color this big (a straw colored in) is kept; lines thicken around it
+  rejoin_max_length: 2.0          # mm: a faint trace of a color joins two pieces of it this far apart at most
+  rejoin_width: 0.5               # mm: how wide the join is made, so it prints
   min_speck_area_mm2: 1.0         # smaller specks are removed...
   speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
   coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
@@ -102,13 +104,13 @@ fit:
     candidates: [1.8, 2.0, 2.3]
     note: sideways hole (left to right) in the earring's top loop; the hook goes straight through
   switch_cutout:
-    value: 14.0
-    tested: false
+    value: 13.9
+    tested: true   # 2026-11-11
     candidates: [13.9, 14.0, 14.1]
     note: square cutout in the 1.5 mm clicker top plate for an MX-style switch
   stem_socket_clearance:
-    value: 0.15
-    tested: false
+    value: 0.1
+    tested: true   # 2026-11-11
     candidates: [0.10, 0.15, 0.20]     # centered on the common printed-clicker default (0.15, 0.05 steps)
     note: added to each arm width of the keycap's cross socket for the MX stem
   necklace_hole_diameter:
