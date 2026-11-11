@@ -215,7 +215,7 @@ products:
     attachment: side_loop
     loop: earring                 # hardware.earring_loop, fit.earring_hole_diameter
     style: hook                   # hook (side loop) or stud (flat back, no loop)
-    pair_mode: identical          # identical or mirrored
+    pair_mode: mirrored           # Allen: the second earring is the mirror image (or identical)
     copies: 2
     card: earrings
   pendant:

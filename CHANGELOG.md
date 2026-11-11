@@ -5,7 +5,8 @@
 - New quick first step, `names`: every card's handwritten name line on one sheet. Claude reads it and runs with `--names key-01=Jack`, and every file, Bambu Studio part, preview and print note says `keychain-jack` instead of `key-01` (a second one is `keychain-jack-2`). The card number stays in the preview and still works for every flag. A blank name keeps the card number.
 - Each plate gets a who's-who map (`plate-N-map.png`): the plate from above with each kid's name on their piece.
 - The card's name label is now a bold "Your name:".
-- The earring card says "Draw just ONE earring. We print a matching pair." under the title (the title "Earrings (a pair)" read like "draw two").
+- The earring card says "Draw just ONE earring. We print a mirror-image pair." under the title (the title "Earrings (a pair)" read like "draw two").
+- Earring pairs are now mirror images by default (Allen's call): the second one is flipped left to right.
 - 2 new tests.
 
 ## Kids pick the shape on the card (2026-11-10)

@@ -90,8 +90,8 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), clicker keychain, and earrings for adults (a pair, top loop
-with a sideways hole, or `style: stud` for a flat back). A drawing without card markers needs
+figure (flat back, glued magnet), clicker keychain, and earrings for adults (one drawing makes a
+mirror-image pair, top loop with a sideways hole, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two

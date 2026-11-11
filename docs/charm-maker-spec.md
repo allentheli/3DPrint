@@ -122,7 +122,7 @@ The same figure lives on the fridge or stands up on the universal stand.
 
 ### Earrings
 
-- For adults. Always a pair on the same plate from one drawing: identical by default, or the second one mirrored (setting).
+- For adults. Always a pair on the same plate from one drawing: the second one is the mirror image (Allen's call), or identical (setting).
 - Two styles: hook (the top loop above, with a 2.0 mm hole running left to right) or stud (no loop, flat back for a glue-on post).
 - Keep them light: 1.8 mm thick and 35 mm at most.
 

@@ -261,7 +261,7 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
     if int(prod.get("copies", 1)) == 2:                     # earrings: one drawing makes the pair
         pdf.setFont("Helvetica-Bold", 12)
         pdf.drawCentredString(pw / 2 * mm, (ph - c["margin"] - 26) * mm,
-                              "Draw just ONE earring. We print a matching pair.")
+                              "Draw just ONE earring. We print a mirror-image pair.")
 
     # Drawing box and guides (guide color only).
     bx, by, bw, bh = lay.box
