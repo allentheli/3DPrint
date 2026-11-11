@@ -117,10 +117,34 @@ def _keep_apart(mask: np.ndarray, gap_px: float) -> np.ndarray:
     return cv2.dilate(_u8(edge), _disk(gap_px / 2.0)).astype(bool) & ~mask
 
 
-def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0) -> tuple[np.ndarray, float]:
+def thin_strips(label_map: np.ndarray, n_labels: int, min_width_px: float, min_area_px: float) -> np.ndarray:
+    """Separate bits of color that are thin all along (a straw colored in between two
+    lines), at least `min_area_px` big. A line made thicker grows over the paper instead
+    of over these. The pointed tips of a bigger colored area are not strips: a line may
+    still cover those, as before."""
+    out = np.zeros(label_map.shape, bool)
+    for j in range(1, n_labels + 1):
+        m = label_map == j
+        if not m.any():
+            continue
+        wide = cv2.morphologyEx(_u8(m), cv2.MORPH_OPEN, _disk(min_width_px / 2.0)).astype(bool)
+        n, lbl, stats, _ = cv2.connectedComponentsWithStats(_u8(m), connectivity=8)
+        for i in range(1, n):
+            x, y, w, h, area = stats[i]
+            if area < min_area_px:
+                continue
+            comp = lbl[y:y + h, x:x + w] == i
+            if (wide[y:y + h, x:x + w] & comp).sum() < 0.25 * area:
+                out[y:y + h, x:x + w] |= comp
+    return out
+
+
+def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0,
+                     blocked: np.ndarray | None = None) -> tuple[np.ndarray, float]:
     """Make ink at least `min_width_px` wide, without merging separate marks: they keep
     at least `gap_px` between them (or the gap that was drawn, if smaller), even if a mark
-    then stays a little thinner. Returns (mask, added pixel count)."""
+    then stays a little thinner. It never grows into `blocked` (thin strips of other
+    colors), so there it grows on the other side only. Returns (mask, added pixel count)."""
     r = min_width_px / 2.0
     opened = cv2.morphologyEx(_u8(mask), cv2.MORPH_OPEN, _disk(r)).astype(bool)
     thin_zone = mask & ~opened
@@ -133,6 +157,8 @@ def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0)
         return mask, 0.0
     skel = skeletonize(mask) & cv2.dilate(_u8(thin_zone), np.ones((3, 3), np.uint8)).astype(bool)
     add = cv2.dilate(_u8(skel), _disk(r)).astype(bool) & ~_keep_apart(mask, gap_px)
+    if blocked is not None:
+        add &= ~blocked
     result = mask | add
     return result, float((result & ~mask).sum())
 
@@ -266,7 +292,11 @@ def tidy_labels(cfg: dict, label_map: np.ndarray, layers: list[InkLayer], px_per
     line = min(present, key=lambda i: rgb_to_lab(layers[i - 1].rgb)[0])
     width, typical = tidy_line_width(cfg, label_map == line, px_per_mm)
     new = np.zeros_like(label_map)
-    new[tidy_strokes(cfg, label_map == line, px_per_mm, width, typical)] = line
+    # The redrawn line never covers a thin strip she colored next to it (a straw).
+    pr = cfg["process"]
+    thin = thin_strips(label_map, len(layers), pr["min_ink_width"] * px_per_mm, pr["thin_strip_min_area"] * px_per_mm ** 2)
+    keep_colors = thin & (label_map > 0) & (label_map != line)
+    new[tidy_strokes(cfg, label_map == line, px_per_mm, width, typical) & ~keep_colors] = line
     colors = [i for i in present if i != line]
     for i in colors:
         m = smooth_edges(cfg, label_map == i, px_per_mm) & (new == 0)
@@ -410,11 +440,15 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         label_map, tidy_w = tidy_labels(cfg, label_map, layers, px_per_mm)
         fixes.append(f"tidy: outlines redrawn at an even {tidy_w:.1f} mm, edges smoothed")
     masks: list[tuple[InkLayer, np.ndarray]] = []
+    # A line next to a thin strip of another color (a straw colored in between two lines)
+    # thickens over the paper side, so the strip she colored stays.
+    thin = thin_strips(label_map, len(layers), width_px, pr["thin_strip_min_area"] * px_per_mm ** 2)
     for i, layer in enumerate(layers, start=1):
         m = label_map == i
         if not m.any():
             continue
-        m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm)
+        m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm,
+                                    blocked=thin & (label_map > 0) & (label_map != i))
         if added > 0.5 * px_per_mm ** 2:
             fixes.append(f"{layer.name}: thin lines thickened to {pr['min_ink_width']} mm "
                          f"({added / px_per_mm ** 2:.1f} mm² added)")

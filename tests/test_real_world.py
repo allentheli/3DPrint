@@ -360,3 +360,28 @@ def test_eyes_next_to_a_mouth_stay_eyes(cfg, tidy):
     d = fix_design(cfg, layers, ppm, border_on=True, name="t", product="hair_clip", tidy=tidy)
     ink = next(i for i in d.inks if i.name == "black").geometry
     assert len(ink.geoms) >= 3, f"two eyes and a mouth, not {len(ink.geoms)} blob(s)"
+
+
+@pytest.mark.parametrize("tidy", [False, True])
+def test_a_thin_colored_in_straw_keeps_its_color(cfg, tidy):
+    """Alison's pendant: a straw drawn as two thin black lines with yellow colored in
+    between, only 1.4 mm wide in all. Thickening the lines to 1 mm grew them over the
+    yellow, leaving a black straw with yellow specks. Lines now thicken over the paper
+    side of a thin strip of color, so the strip stays; the lines still get thicker."""
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    h, w = 300, 200
+    yy, xx = np.mgrid[0:h, 0:w]
+    rows = (yy > 60) & (yy < 240)
+    left, strip, right = (xx >= 89) & (xx < 96), (xx >= 96) & (xx < 107), (xx >= 107) & (xx < 114)
+    cap = (yy > 53) & (yy <= 60) & (xx >= 89) & (xx < 114)
+    black = (rows & (left | right)) | cap              # one 0.4 mm line around it, closed at the top
+    yellow = rows & strip                              # 0.6 mm of yellow inside
+    layers = [InkLayer("black", (25, 25, 30), black), InkLayer("yellow", (250, 200, 60), yellow)]
+    d = fix_design(cfg, layers, ppm, border_on=True, name="t", product="pendant", tidy=tidy)
+    inks = {i.name: i.geometry for i in d.inks}
+    length = 180 / ppm
+    assert "yellow" in inks and inks["yellow"].area > 0.6 * (11 / ppm) * length, "the yellow strip stays"
+    assert inks["black"].area > 1.4 * 2 * (7 / ppm) * length, "the lines still got thicker, on the outside"

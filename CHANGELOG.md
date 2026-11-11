@@ -9,6 +9,7 @@
 - Earring pairs are now mirror images by default (Allen's call): the second one is flipped left to right.
 - The name picture now starts where the line starts, so it shows only the handwriting (it caught the end of the bigger "Your name:" label).
 - First real scan with the new card (a pendant): the handwritten name and the Figurine tick were both read correctly.
+- A thin strip of color between two lines (a straw colored in yellow) is kept: the lines thicken on the paper side instead of over it, plain and with neat lines. 2 new tests (fail on the old code).
 - 2 new tests.
 
 ## Kids pick the shape on the card (2026-11-10)
