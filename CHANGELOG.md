@@ -4,6 +4,7 @@
 
 - After the first printed clicker (switch top showing, keycap floating over a gap), the case is now a cup: the switch sits inside it, the keycap sits in its drawing-shaped opening with 0.6 mm to spare and its face 1.5 mm above the rim, and presses down into it. Nothing of the switch or the gap shows. Same overall height (about 25 mm plus the keycap), now one solid shape.
 - Clicker keycaps are filled out behind the drawing to the switch's 15.6 mm square, so they cover it.
+- The clicker's ring post is now a short tab halfway up the side (9.5 mm tall instead of the case's whole height), printed on tree supports; the print notes say to turn them on.
 - The assembled preview shows the keycap in the cup. Print notes and assembly steps updated. 1 new test, 2 updated.
 
 ## Pieces named after the kid (2026-11-10)

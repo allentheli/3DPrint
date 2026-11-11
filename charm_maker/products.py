@@ -262,9 +262,11 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
     design = Design(name, "clicker", shape, [], [], [])
     if not cut_fit["tested"]:
         design.warnings.append(f"switch hole {cut} mm is not from a fit test yet")
-    # The ring hangs from a post at the top that stands the case's full height, with the
-    # hole running left to right at half height: the ring never passes under the case, so
-    # the clicker sits flat on a table. A teardrop hole prints upright without supports.
+    # The ring hangs from a short tab halfway up the case's side, the hole running left to
+    # right: the ring hangs beside the case, never under it, so the clicker sits flat on a
+    # table. Allen: not the whole height, at the middle. The tab's flat underside needs
+    # supports (tree supports grow only under it); with `ring_tab_supports: false` it gets
+    # a 45-degree underside instead, printing without supports but reaching further down.
     ring_fit = cfg["fit"]["keyring_hole_diameter"]
     hole_d = float(ring_fit["value"])
     if not ring_fit["tested"]:
@@ -275,16 +277,28 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
     hx = max(core.exterior.coords, key=lambda q: q[1])[0]
     length = max(prod["ring_post_length"], hole_d + 1.0)
     y_attach = box(hx - length / 2, shape.bounds[1] - 1, hx + length / 2, shape.bounds[3] + 1).intersection(shape).bounds[3]
+    tab_wall = hw["keyring_hole_min_wall"]
+    tab_h = min(height, hole_d + 2 * tab_wall)
     hy, hz = y_attach + prod["ring_post_gap"] + r_h, height / 2
-    outer = hy + r_h + hw["keyring_hole_min_wall"]
-    post_shape = rounded_rect(length, outer - (y_attach - 2.0), min(2.0, length / 2 - 0.1), hx, (outer + y_attach - 2.0) / 2)
-    merged = unary_union([shape, post_shape]).buffer(1.0, join_style="round").buffer(-1.0, join_style="round")
+    outer = hy + r_h + tab_wall
+    y0 = y_attach - 2.0                                   # reaches 2 mm into the case wall
+    post_shape = rounded_rect(length, outer - y0, min(2.0, length / 2 - 0.1), hx, (outer + y0) / 2)
+    supported = prod.get("ring_tab_supports", True)
+    z_bot, z_top = hz - tab_h / 2, hz + tab_h / 2
+    if supported:
+        section = box(y0, z_bot, outer, z_top)
+    else:                                                 # 45 degrees back to the wall underneath
+        z_wall = max(0.0, z_bot - (outer - y_attach))
+        section = Polygon([(y0, z_wall), (y_attach, z_wall), (outer, z_bot), (outer, z_top), (y0, z_top)])
+    tab = extrude(post_shape, height) ^ _xsection_along_x(section, length + 2.0, hx - length / 2 - 1.0)
+    merged = unary_union([shape, post_shape])
     design.outline = Polygon(max(_as_multi(merged).geoms, key=lambda g: g.area).exterior)
     k = r_h / 2 ** 0.5
     drop = unary_union([Point(hy, hz).buffer(r_h, 48), Polygon([(hy - k, hz + k), (hy + k, hz + k), (hy, hz + r_h * 2 ** 0.5)])])
-    body = extrude(design.outline, height) - _xsection_along_x(drop, length + 4.0, hx - length / 2 - 2.0)
-    design.fixes.append(f"ring post at the top: a {hole_d} mm hole running left to right at half height, "
-                        "so the clicker sits flat on a table")
+    body = (extrude(shape, height) + tab) - _xsection_along_x(drop, length + 4.0, hx - length / 2 - 2.0)
+    design.fixes.append(f"ring tab halfway up the side, {tab_h:.1f} mm tall (not the whole height): a {hole_d} mm hole running "
+                        "left to right, so the ring hangs beside the case and it sits flat on a table"
+                        + ("; tree supports under the tab" if supported else "; 45-degree underside, no supports"))
     body = body - extrude(opening, rim + 1.0, plate_z)                       # the cup the keycap sits in
     body = body - extrude(square(cav), depth, floor)                         # the hollow under the plate
     body = body - extrude(square(cut), lid + 2.0, plate_z - lid - 1.0)       # the switch hole
@@ -302,7 +316,8 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
             "lid": lid, "cavity": cav, "cavity_depth": depth, "floor": floor, "plate_z": round(plate_z, 2),
             "rim": round(rim, 2), "proud": round(proud, 2), "clearance": clr, "opening": opening,
             "hole_center": (round(hx, 2), round(hy, 2)), "hole_z": round(hz, 2), "post_length": length,
-            "post_from_y": round(y_attach - 2.0, 2)}
+            "post_from_y": round(y_attach - 2.0, 2), "tab_height": round(tab_h, 2), "tab_bottom": round(z_bot, 2),
+            "needs_supports": bool(supported)}
     return Piece(design, round(height, 2), {base_name: body}, {base_name: design.paper_rgb}, base_name, info,
                  part_slots={base_name: None}, style="case", group="cases", face_up=True)
 

@@ -92,6 +92,13 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     d = fit["keyring_hole_diameter"]["value"]
     assert a["hole_z"] == pytest.approx(height / 2, abs=0.01)
     loop_hole_check(body, a["hole_center"][0], a["hole_center"][1], d, height / 2 - d / 2 - 0.1, a["post_length"])
+    # Allen: the ring tab is short, halfway up the side, not the case's whole height.
+    assert a["tab_height"] < height / 2 and a["tab_bottom"] > 3.0
+    assert a["tab_bottom"] + a["tab_height"] / 2 == pytest.approx(height / 2, abs=0.01)
+    hx, hy = a["hole_center"]
+    for z in (a["tab_bottom"] / 2, a["tab_bottom"] + a["tab_height"] + 2.0):
+        assert not any(Polygon(q).contains(Point(hx, hy)) for q in body.slice(z).to_polygons()), f"no tab at z={z:.1f}"
+    assert a["needs_supports"], "its flat underside prints on tree supports"
     # The tunnel stays in the post: at half height the only enclosed hole is the hollow (the
     # post's outer wall shows as a separate piece there; above and below it is joined).
     outer, *rest = _slice(body, a["hole_z"])

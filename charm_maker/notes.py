@@ -66,8 +66,14 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
                          "filament in Bambu Studio so the plate uses at most "
                          f"{n_slots}. The slot numbers above past {n_slots} are only labels.")
         if cases and len(cases) == len(plate.pieces):
-            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the open cup on top. "
-                         "Supports off: the switch plate inside hangs over the hollow under it by less than 1 mm.")
+            if any(c.attachment.get("needs_supports") for c in cases):
+                lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the open cup on top. "
+                             "Turn supports **on** for the ring tab on the side: in the Process panel open the **Support** "
+                             "tab, tick **Enable support**, set **Type** to **tree(auto)**. Supports grow only under the tab; "
+                             "snap them off after printing. (The switch plate inside needs none.)")
+            else:
+                lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the open cup on top. "
+                             "Supports off: the switch plate inside hangs over the hollow under it by less than 1 mm.")
             lines.append(f"- Layer height: **{pr['layer_height_cases']} mm**. One filament for the whole plate, any color; "
                          "assign it to every part.")
             lines.append("- Pieces: " + ", ".join(f"{c.name} ({c.size()[0]:.0f} x {c.size()[1]:.0f} mm, "
@@ -85,10 +91,12 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append("")
             continue
         layer = pr["layer_height_charms"]
-        if figs:
-            lines.append(f"- Layer height: **{layer} mm** for the whole plate. Supports: **on** for the round-back figurines "
-                         f"({', '.join(figs)}): **Support** tab, tick **Enable support**, **Type** **tree(auto)**. "
-                         "The other pieces have nothing to hold up, so they get none.")
+        why = ([f"the round-back figurines ({', '.join(figs)})"] if figs else []) + \
+              [f"the ring tab on {c.name}" for c in cases if c.attachment.get("needs_supports")]
+        if why:
+            lines.append(f"- Layer height: **{layer} mm** for the whole plate. Supports: **on**, for {' and '.join(why)}: "
+                         "**Support** tab, tick **Enable support**, **Type** **tree(auto)**. The other pieces have "
+                         "nothing to hold up, so they get none.")
         else:
             lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
         if cases:
