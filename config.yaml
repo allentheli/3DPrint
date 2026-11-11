@@ -89,13 +89,13 @@ process:
 # plate, in piece-number order. `python -m charm_maker fit-results` writes them.
 fit:
   clip_pocket_diameter:
-    value: 11.5
-    tested: false
+    value: 11.2
+    tested: true   # 2026-11-11
     candidates: [11.2, 11.5, 11.8]
     note: round pocket on the back of a hair clip charm for the clip's 11 mm pad
   keyring_hole_diameter:
-    value: 5.0
-    tested: false
+    value: 4.5
+    tested: true   # 2026-11-11
     candidates: [4.5, 5.0, 5.5]
     note: hole in a keychain's ring tab for a 25 mm split ring
   earring_hole_diameter:
@@ -115,7 +115,7 @@ fit:
     note: added to each arm width of the keycap's cross socket for the MX stem
   necklace_hole_diameter:
     value: 3.5
-    tested: false
+    tested: true   # 2026-11-11
     candidates: [3.0, 3.5, 4.0]
     note: sideways hole (left to right) in the pendant's top loop; the chain goes straight through
 
