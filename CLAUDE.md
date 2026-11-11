@@ -28,9 +28,14 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   jump-ring hole only (pieces 7-9 changed on 2026-11-11; Allen tests with Madison's real
   earrings instead, 1.5 mm = piece 8: if the jump ring goes on and closes, record 8). Until
   then earrings say so in a `check:` line.
-- **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
-  style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
-  container lid (thread clearance untested).
+- **Prints to try (as of 2026-11-11):** Madison's one-plate batch (cup-style clicker with the
+  short ring tab on tree supports: check the keycap moves freely in the 0.6 mm gap; both
+  earring pairs with the jump-ring test; the bubble tea clip with each color its own part),
+  Alison's pendant (the 0.5 mm yellow straw strip), the shark and bird in the 3D shapes, and
+  one poop container lid (thread clearance untested).
+- **Open questions for Allen:** his switch's length from the plate ledge to the pin tips (to
+  trim the clicker by about 1.5 mm); whether "every drawn color its own part, never merged"
+  should be the default (he recolors in Bambu Studio anyway).
 - **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
