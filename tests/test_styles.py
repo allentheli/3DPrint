@@ -136,7 +136,7 @@ def test_puffy_clip_keeps_its_pocket_on_the_back(cfg):
     assert hole.bounds[2] - hole.bounds[0] == pytest.approx(p.attachment["diameter"], abs=0.1)
 
 
-@pytest.mark.parametrize("product,kind", [("pendant", "necklace"), ("earrings", "earring")])
+@pytest.mark.parametrize("product,kind", [("pendant", "necklace")])
 def test_puffy_loops_still_run_left_to_right(cfg, product, kind):
     p = _build(cfg, product, "puffy-outlined")
     att = p.attachment

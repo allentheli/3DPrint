@@ -10,9 +10,9 @@ from .plates import Plate
 FINISHING = {
     "hair_clip": "Hair clips: scuff the clip pad lightly, then glue the charm's pocket onto the pad with gel super glue or E6000. Let it cure fully before handing it out.",
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
-    "clicker": "Clickers: press the switch into the case's square hole from the top until it clicks (it only fits one way up, any of four turns), push the keycap's post onto the switch's cross stem, and thread a 25 mm split ring through the hole in the post at the top of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
+    "clicker": "Clickers: push the switch down into the cup until it clicks into the square hole at the bottom (it only fits one way up, any of four turns), then push the keycap's post onto the switch's cross stem: the keycap sits in the cup's opening, a little above the rim. Thread a 25 mm split ring through the hole in the post at the top of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
-    "earrings": "Earrings: push the hook straight through the loop, left to right, so the earring faces forward. Stud style: glue a post pad on the flat back.",
+    "earrings": "Earrings: twist a 4 mm jump ring open sideways (don't pull it apart), slip it through the small hole at the top, hang the hook on it and twist it shut. If an earring faces sideways, turn the jump ring a quarter turn. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
     "figurine": "Round-back figurines: let the plate cool, then peel the tree supports off the back with your fingers or flush cutters; sand any nubs. They have no ring, clip or loop: they are toys to stand up or hold.",
 }
@@ -33,6 +33,8 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
     products = set()
     for plate in plates:
         lines.append(f"## Plate {plate.number}: `plates/plate-{plate.number}.3mf`")
+        lines.append("")
+        lines.append(f"Who's who: `plates/plate-{plate.number}-map.png` shows each piece's name where it sits on the plate.")
         lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")
@@ -58,9 +60,14 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         lines.append("")
         products |= {"figurine" if pp.piece.supports else pp.piece.design.product for pp in plate.pieces}
         cases = [pp.piece for pp in plate.pieces if pp.piece.group == "cases"]
-        if cases:
-            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the lid with the switch hole "
-                         "on top. Supports off: the lid hangs over the hollow by less than 1 mm.")
+        n_slots = cfg["printer"]["ams_slots"]
+        if len(plate.filaments) > n_slots:
+            lines.append(f"- **{len(plate.filaments)} colors, {n_slots} AMS slots:** before slicing, set some parts to the same "
+                         "filament in Bambu Studio so the plate uses at most "
+                         f"{n_slots}. The slot numbers above past {n_slots} are only labels.")
+        if cases and len(cases) == len(plate.pieces):
+            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) print upright, the open cup on top. "
+                         "Supports off: the switch plate inside hangs over the hollow under it by less than 1 mm.")
             lines.append(f"- Layer height: **{pr['layer_height_cases']} mm**. One filament for the whole plate, any color; "
                          "assign it to every part.")
             lines.append("- Pieces: " + ", ".join(f"{c.name} ({c.size()[0]:.0f} x {c.size()[1]:.0f} mm, "
@@ -68,7 +75,7 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append("")
             continue
         figs = [pp.piece.name for pp in plate.pieces if pp.piece.supports]
-        if figs:
+        if figs and len(figs) == len(plate.pieces):
             lines.append(f"- Figurines ({', '.join(figs)}): they lie on their backs with the front up. Turn supports **on**: "
                          "in the Process panel open the **Support** tab, tick **Enable support**, set **Type** to **tree(auto)**.")
             lines.append(f"- Layer height: **{cfg['figurine']['layer_height']} mm**. Plate: either PEI plate; "
@@ -78,9 +85,19 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append("")
             continue
         layer = pr["layer_height_charms"]
-        lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
-        up = [pp.piece.name for pp in plate.pieces if pp.piece.face_up]
-        down = [pp.piece.name for pp in plate.pieces if not pp.piece.face_up]
+        if figs:
+            lines.append(f"- Layer height: **{layer} mm** for the whole plate. Supports: **on** for the round-back figurines "
+                         f"({', '.join(figs)}): **Support** tab, tick **Enable support**, **Type** **tree(auto)**. "
+                         "The other pieces have nothing to hold up, so they get none.")
+        else:
+            lines.append(f"- Layer height: **{layer} mm**. Supports: off.")
+        if cases:
+            lines.append(f"- Clicker cases ({', '.join(c.name for c in cases)}) stand upright on this plate, the open cup "
+                         f"on top. At {layer} mm they just take longer than on their own plate "
+                         f"({pr['layer_height_cases']} mm). Set each case to any one filament.")
+        charms = [pp for pp in plate.pieces if pp.piece.group != "cases" and not pp.piece.supports]
+        up = [pp.piece.name for pp in charms if pp.piece.face_up]
+        down = [pp.piece.name for pp in charms if not pp.piece.face_up]
         if down:
             lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
         if up:

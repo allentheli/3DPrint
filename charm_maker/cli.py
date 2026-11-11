@@ -13,7 +13,7 @@ def cmd_fit_test(args: argparse.Namespace) -> int:
     from .fittest import build_fit_plate, write_fit_test
 
     cfg = load_config(args.config)
-    plate = build_fit_plate(cfg)
+    plate = build_fit_plate(cfg, only=args.only)
     paths = write_fit_test(cfg, plate, Path(args.out))
     print("Fit-test plate written:")
     for k, p in paths.items():
@@ -128,6 +128,30 @@ def cmd_chips(args: argparse.Namespace) -> int:
     return 0
 
 
+def _names(specs) -> dict[str, str]:
+    """["key-01=Jack", "clip-02=Mia Lee"] -> {"key-01": "Jack", "clip-02": "Mia Lee"}."""
+    out = {}
+    for spec in specs or []:
+        card, sep, kid = spec.partition("=")
+        if not sep:
+            raise SystemExit(f"--names needs card=name, like key-01=Jack (got {spec!r})")
+        out[card.strip()] = kid.strip()
+    return out
+
+
+def cmd_names(args: argparse.Namespace) -> int:
+    from .pipeline import read_names
+
+    cfg = load_config(args.config)
+    rows, sheet, problems = read_names(cfg, [Path(p) for p in args.inputs], Path(args.out), product_hint=args.product)
+    for card, label in rows:
+        print(f"{card}: {label}")
+    for pr in problems:
+        print(f"problem: {pr}")
+    print(f"names sheet: {sheet}")
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     from .pipeline import run_batch
 
@@ -146,7 +170,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                        off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
-                       tidy=set(args.tidy or ()))
+                       tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate)
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -215,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("fit-test", help="build the milestone 0 fit-test plate")
     p.add_argument("--out", default="output/fit-test", help="output folder")
+    p.add_argument("--only", default=None, metavar="GROUP",
+                   help="just one group's coupons, e.g. earring_hole_diameter (to reprint after a change)")
     p.set_defaults(func=cmd_fit_test)
 
     p = sub.add_parser("fit-results", help="record which fit-test pieces fit, e.g. 2 5 8 11 14 17")
@@ -245,6 +271,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", default="output/chips")
     p.set_defaults(func=cmd_chips)
 
+    p = sub.add_parser("names", help="quick first step: every card's handwritten name on one sheet (names.png)")
+    p.add_argument("inputs", nargs="+", help="photo files, PDFs or a folder")
+    p.add_argument("--out", default="output/batch", help="output folder")
+    p.add_argument("--product", default=None, help="product for photos without card markers")
+    p.set_defaults(func=cmd_names)
+
     p = sub.add_parser("run", help="turn photos of design cards into plates")
     p.add_argument("inputs", nargs="+", help="photo files, PDFs or a folder")
     p.add_argument("--out", default="output/batch", help="output folder")
@@ -253,6 +285,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
+    p.add_argument("--one-plate", action="store_true",
+                   help="everything on one plate in one 3MF (clicker cases and figurines too, any number of colors)")
+    p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",
+                   help="name pieces after the kid, e.g. key-01=Jack clip-02=Mia (from the names sheet)")
     p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",
                    help="colors that don't match a loaded spool: nearest spool (default), or own plate with a swap")
     p.add_argument("--style", action="append",

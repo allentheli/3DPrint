@@ -31,6 +31,7 @@ class InkResult:
     layers: list[InkLayer]
     paper_rgb: tuple[int, int, int]
     notes: list[str] = field(default_factory=list)
+    fixes: list[str] = field(default_factory=list)
 
 
 def flatten_lighting(bgr: np.ndarray) -> np.ndarray:
@@ -331,7 +332,95 @@ def separate_colors(cfg: dict, bgr: np.ndarray, *, px_per_mm: float, max_colors:
         used[word] = used.get(word, 0) + 1
         name = word if used[word] == 1 else f"{word} {used[word]}"
         layers.append(InkLayer(name, rep, mask, None, int(sel.size)))
-    return InkResult(layers, paper_rgb, notes)
+    fixes = rejoin_faint_color(cfg, rgb, layers, px_per_mm)
+    return InkResult(layers, paper_rgb, notes, fixes)
+
+
+def rejoin_faint_color(cfg: dict, rgb: np.ndarray, layers: list[InkLayer], px_per_mm: float) -> list[str]:
+    """A color laid down in one go (a straw colored in yellow) can thin out to a faint,
+    dark-tinted streak where it squeezes past a black line. The reader sees that streak
+    as black, so the color breaks in two. Where a faint trace of the same hue joins two
+    pieces of one color within a short distance, join them along it in that color, wide
+    enough to print, taking the room from the darkest ink (the line) beside it. Paper is
+    never colored in, and nothing is joined without the trace. Changes `layers` in place."""
+    from skimage.graph import MCP_Geometric
+
+    from .filaments import _srgb_to_lab
+
+    pr = cfg["process"]
+    if len(layers) < 2:
+        return []
+    lab = _srgb_to_lab(np.clip(rgb, 0.0, 1.0) * 255.0)
+    max_len = pr["rejoin_max_length"] * px_per_mm
+    half_w = pr["rejoin_width"] * px_per_mm / 2.0
+    min_piece = 0.05 * px_per_mm ** 2
+    line = layers[0].mask                              # darkest first: the line color
+    ink = np.zeros(line.shape, bool)
+    for layer in layers:
+        ink |= layer.mask
+    fixes = []
+    for layer in layers[1:]:
+        m = layer.mask
+        ref = _srgb_to_lab(np.asarray(layer.rgb, float))
+        chroma = float(np.hypot(ref[1], ref[2]))
+        if chroma < 20.0:
+            continue                                   # only clear colors leave a visible trace
+        u = ref[1:] / chroma
+        along = lab[..., 1] * u[0] + lab[..., 2] * u[1]
+        across = np.abs(-lab[..., 1] * u[1] + lab[..., 2] * u[0])
+        reach = cv2.distanceTransform(_u8(~m), cv2.DIST_L2, 5) <= max_len / 2.0
+        trace = (along >= max(10.0, 0.15 * chroma)) & (across <= 0.6 * along) & (lab[..., 0] >= 40.0) & ~m & reach & ink
+        n, lbl, stats, _ = cv2.connectedComponentsWithStats(_u8(m), connectivity=8)
+        pieces = [i for i in range(1, n) if stats[i, cv2.CC_STAT_AREA] >= min_piece]
+        if len(pieces) < 2 or not trace.any():
+            continue
+        jn, jl = cv2.connectedComponents(_u8(m | trace), connectivity=8)
+        added = np.zeros(m.shape, bool)
+        joins = 0
+        for j in range(1, jn):
+            inside = [i for i in pieces if (jl[lbl == i] == j).any()]
+            if len(inside) < 2:
+                continue
+            ys, xs = np.nonzero(jl == j)
+            y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+            region = jl[y0:y1, x0:x1] == j
+            cost = np.where(region, 1.0, np.inf)
+            sub = lbl[y0:y1, x0:x1]
+            dist = {}
+            for i in inside:
+                mcp = MCP_Geometric(cost)
+                dist[i], _ = mcp.find_costs(list(zip(*np.nonzero(sub == i))))
+            for a_i, a in enumerate(inside):
+                for b in inside[a_i + 1:]:
+                    gap = float(dist[a][sub == b].min())
+                    if not np.isfinite(gap) or gap > max_len:
+                        continue
+                    path = (dist[a] + dist[b] <= gap + 1.5) & region & (sub == 0)
+                    if not path.any():
+                        continue
+                    joins += 1
+                    full = np.zeros(m.shape, bool)
+                    full[y0:y1, x0:x1] = path
+                    added |= cv2.dilate(_u8(full), _disk(half_w)).astype(bool)
+        if joins:
+            # The join takes room from the line only, never from paper or another color.
+            added &= (line | trace | m) & ink
+            for other in layers[1:]:
+                if other is not layer:
+                    added &= ~other.mask
+            layer.mask |= added
+            line &= ~added
+            fixes.append(f"{layer.name}: {joins} piece(s) joined along a faint trace where the color thinned out past a line")
+    return fixes
+
+
+def _disk(radius_px: float) -> np.ndarray:
+    r = max(1, int(round(radius_px)))
+    return cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+
+
+def _u8(mask: np.ndarray) -> np.ndarray:
+    return mask.astype(np.uint8)
 
 
 def _clearly_new_seeds(lab, keys, inverse, counts, seeds, min_px, far, lw, cw) -> list[np.ndarray]:

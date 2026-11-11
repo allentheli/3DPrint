@@ -108,6 +108,30 @@ def _loop_coupon(cfg: dict, n: int, kind: str, d: float) -> Coupon:
                   body, info["center"], d, Polygon(design.outline.exterior), {"loop_height": info["height"]})
 
 
+def _earring_tab_coupon(cfg: dict, n: int, d: float) -> Coupon:
+    """A small tag with the same top tab and jump-ring hole an earring gets."""
+    import copy
+
+    from shapely.geometry import Polygon
+
+    from .products import _add_ring_tab
+    from .shape import Design
+
+    ft, hw = cfg["fit_test"], cfg["hardware"]
+    w, length, t = ft["earring_tab_coupon"]
+    outline = rounded_rect(w, length, ft["coupon_corner_radius"], w / 2, length / 2)
+    c2 = copy.deepcopy(cfg)
+    c2["fit"]["earring_hole_diameter"]["value"] = d
+    design = Design(f"fit-{n:02d}", "earrings", outline, [])
+    info = _add_ring_tab(c2, design, "top", fit_key="earring_hole_diameter", wall=hw["earring_tab_wall"], balance=True)
+    body = extrude(design.outline.difference(info["hole"]), t)
+    label = label_shape(str(n), ft["label_height"], ft["label_stroke"], w / 2, length / 2)
+    body = body + extrude(label, ft["label_raise"], t)
+    return Coupon(n, "earring_hole_diameter", d,
+                  f"earring tab, {d} mm hole front to back for a {hw['jump_ring_diameter']:g} mm jump ring",
+                  body, info["hole_center"], d, Polygon(design.outline.exterior), {"wall": info["wall"]})
+
+
 def build_coupons(cfg: dict) -> list[Coupon]:
     fit = cfg["fit"]
     hw = cfg["hardware"]
@@ -132,10 +156,10 @@ def build_coupons(cfg: dict) -> list[Coupon]:
         coupons.append(Coupon(n, "keyring_hole_diameter", d, f"split-ring hole {d} mm",
                               body, (cx, cy), d, outline))
 
-    # 3. Earring loops: the real side loop with the hole running left to right.
+    # 3. Earring tabs: the real small tab with a front-to-back hole for a jump ring.
     for d in fit["earring_hole_diameter"]["candidates"]:
         n += 1
-        coupons.append(_loop_coupon(cfg, n, "earring", d))
+        coupons.append(_earring_tab_coupon(cfg, n, d))
 
     # 4. MX switch housings: built like the clicker case, so the test covers the snap fit,
     #    the room under the switch (body and pins) and the lid printed over the hollow.
@@ -172,9 +196,15 @@ def build_coupons(cfg: dict) -> list[Coupon]:
     return coupons
 
 
-def build_fit_plate(cfg: dict) -> FitPlate:
+def build_fit_plate(cfg: dict, only: str | None = None) -> FitPlate:
+    """The whole fit test, or with `only` (a `fit:` group) just that group's coupons,
+    to reprint one group after a change. The numbers stay the full plate's numbers."""
     coupons = build_coupons(cfg)
-    stand = build_stand(cfg)
+    if only:
+        coupons = [c for c in coupons if c.group == only]
+        if not coupons:
+            raise ValueError(f"no fit-test group {only!r}; use one of {', '.join(cfg['fit'])}")
+    stand = None if only else build_stand(cfg)
     gap = cfg["fit_test"]["gap"]
 
     placed: dict[str, m3d.Manifold] = {}
@@ -198,6 +228,8 @@ def build_fit_plate(cfg: dict) -> FitPlate:
         x += w + gap
         row_h = max(row_h, h)
         max_x = max(max_x, x)
+    if stand is None:
+        return FitPlate(coupons, None, placed, positions, (max_x - gap, y + row_h))
     # Stand goes to the right of the rows.
     sx = max_x + gap
     placed["stand"] = move_to(stand, sx, 0.0)
@@ -215,7 +247,7 @@ def build_fit_plate(cfg: dict) -> FitPlate:
 GROUP_TITLES = {
     "clip_pocket_diameter": ("Hair clip pad pocket", "Press the clip's round pad into each pocket. Best = snug, pad fully seated, no rocking."),
     "keyring_hole_diameter": ("Split-ring hole", "Thread a 25 mm split key ring through each hole. Best = goes on without forcing and turns freely."),
-    "earring_hole_diameter": ("Earring loop", "Push an earring hook through each loop, left to right. Best = the hook goes through easily and the piece hangs facing forward; the smallest that does."),
+    "earring_hole_diameter": ("Earring jump-ring hole", "Put a 4 mm jump ring through each small hole and twist it shut. Best = the ring goes through and closes easily around the tab without bending it open; the smallest hole that does."),
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
@@ -224,17 +256,22 @@ GROUP_TITLES = {
 
 def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
     hw = cfg["hardware"]
+    whole = plate.stand is not None
+    intro = (["Print this plate once, try the real hardware on every numbered piece, and tell",
+              "Claude which number fits best in each group. There are 18 numbered coupons and one",
+              "figure stand."] if whole else
+             ["A small plate to retest one group after a change: "
+              + ", ".join(str(c.number) for c in plate.coupons) + ". The numbers are the same as on the",
+              "full fit-test plate, so report them the same way."])
     lines = [
-        "# Fit test (milestone 0)",
+        "# Fit test (milestone 0)" if whole else "# Fit test: one group again",
         "",
-        "Print this plate once, try the real hardware on every numbered piece, and tell",
-        "Claude which number fits best in each group. There are 18 numbered coupons and one",
-        "figure stand.",
+        *intro,
         "",
         "## 1. Print it",
         "",
         "1. Open Bambu Studio.",
-        "2. Click **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...** and pick `fit-test.3mf`.",
+        "2. Click **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...** and pick `fit-test.3mf` from this folder.",
         "   If Bambu Studio asks whether to load it as a project or geometry, choose **Load geometry only**.",
         "3. Leave every piece where it lands. If any piece is off the plate, click **Arrange** (the A key).",
         "4. In the **Process** panel set **Layer height** to **0.12 mm**. Supports stay **off**.",
@@ -260,16 +297,19 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
         lines.append(how)
         lines.append("")
         step += 1
+    if whole:
+        lines += [
+            f"### {step}. Stand and washer",
+            "",
+            "1. Put a 1 inch zinc-plated steel fender washer into the round recess on the back of the stand's upright.",
+            "   It should drop in and sit flush or just below the surface. Glue it with gel super glue.",
+            f"2. Glue a magnet flat onto the back of any coupon, about {hw['magnet_height_above_bottom']:.0f} mm above its bottom edge, with gel super glue. Let it cure.",
+            "3. Stick that piece on the fridge. It should hold its own weight.",
+            "4. Stand the same piece on the stand, magnet side toward the upright, bottom edge in the slot behind the lip.",
+            "   It should snap gently to the upright and stay standing.",
+            "",
+        ]
     lines += [
-        f"### {step}. Stand and washer",
-        "",
-        "1. Put a 1 inch zinc-plated steel fender washer into the round recess on the back of the stand's upright.",
-        "   It should drop in and sit flush or just below the surface. Glue it with gel super glue.",
-        f"2. Glue a magnet flat onto the back of any coupon, about {hw['magnet_height_above_bottom']:.0f} mm above its bottom edge, with gel super glue. Let it cure.",
-        "3. Stick that piece on the fridge. It should hold its own weight.",
-        "4. Stand the same piece on the stand, magnet side toward the upright, bottom edge in the slot behind the lip.",
-        "   It should snap gently to the upright and stay standing.",
-        "",
         "## 3. Report",
         "",
         "Tell Claude one number per group, for example:",
@@ -365,10 +405,11 @@ def write_fit_test(cfg: dict, plate: "FitPlate", out_dir) -> dict:
     paths = write_plate(plate.placed, out_dir, "fit-test")
     paths["plan"] = render_plan(plate, out_dir / "fit-test-plan.png", title="Charm Maker fit-test plate (top view)")
     paths["preview"] = render_shaded(plate.placed, out_dir / "fit-test-preview.png")
-    paths["stand-front"] = render_shaded({"stand": plate.placed["stand"]}, out_dir / "stand-front.png",
-                                         view=(20.0, 20.0), px_per_mm=10, labels=False)
-    paths["stand-back"] = render_shaded({"stand": plate.placed["stand"]}, out_dir / "stand-back.png",
-                                        view=(20.0, 200.0), px_per_mm=10, labels=False)
+    if "stand" in plate.placed:
+        paths["stand-front"] = render_shaded({"stand": plate.placed["stand"]}, out_dir / "stand-front.png",
+                                             view=(20.0, 20.0), px_per_mm=10, labels=False)
+        paths["stand-back"] = render_shaded({"stand": plate.placed["stand"]}, out_dir / "stand-back.png",
+                                            view=(20.0, 200.0), px_per_mm=10, labels=False)
     guide = fit_guide_markdown(cfg, plate)
     md = out_dir / "fit-test-guide.md"
     md.write_text(guide, encoding="utf-8")

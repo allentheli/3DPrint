@@ -258,6 +258,10 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
     pdf.drawCentredString(pw / 2 * mm, (ph - c["margin"] - 12) * mm, prod["label"])
     pdf.setFont("Helvetica", 12)
     pdf.drawCentredString(pw / 2 * mm, (ph - c["margin"] - 18) * mm, f"Card {lay.number:02d}")
+    if int(prod.get("copies", 1)) == 2:                     # earrings: one drawing makes the pair
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawCentredString(pw / 2 * mm, (ph - c["margin"] - 26) * mm,
+                              "Draw just ONE earring. We print a mirror-image pair.")
 
     # Drawing box and guides (guide color only).
     bx, by, bw, bh = lay.box
@@ -315,8 +319,8 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
     pdf.setStrokeColorRGB(0, 0, 0)
     pdf.setFillColorRGB(0, 0, 0)
     pdf.setLineWidth(0.3 * mm)
-    pdf.setFont("Helvetica", 11)
-    pdf.drawString((nx - 16) * mm, (ny + 3) * mm, "Name:")
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawRightString((nx - 2) * mm, (ny + 3) * mm, "Your name:")
     pdf.line(nx * mm, ny * mm, (nx + nw) * mm, ny * mm)
 
     # Picture rules (a small strip under the title) and the kid's choices (tick boxes).

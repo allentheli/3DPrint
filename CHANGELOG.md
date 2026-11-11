@@ -1,5 +1,28 @@
 # Changelog
 
+## Clicker case is a cup (2026-11-11)
+
+- After the first printed clicker (switch top showing, keycap floating over a gap), the case is now a cup: the switch sits inside it, the keycap sits in its drawing-shaped opening with 0.6 mm to spare and its face 1.5 mm above the rim, and presses down into it. Nothing of the switch or the gap shows. Same overall height (about 25 mm plus the keycap), now one solid shape.
+- Clicker keycaps are filled out behind the drawing to the switch's 15.6 mm square, so they cover it.
+- The assembled preview shows the keycap in the cup. Print notes and assembly steps updated. 1 new test, 2 updated.
+
+## Pieces named after the kid (2026-11-10)
+
+- New quick first step, `names`: every card's handwritten name line on one sheet. Claude reads it and runs with `--names key-01=Jack`, and every file, Bambu Studio part, preview and print note says `keychain-jack` instead of `key-01` (a second one is `keychain-jack-2`). The card number stays in the preview and still works for every flag. A blank name keeps the card number.
+- Each plate gets a who's-who map (`plate-N-map.png`): the plate from above with each kid's name on their piece.
+- The card's name label is now a bold "Your name:".
+- The earring card says "Draw just ONE earring. We print a mirror-image pair." under the title (the title "Earrings (a pair)" read like "draw two").
+- Earring pairs are now mirror images by default (Allen's call): the second one is flipped left to right.
+- The name picture now starts where the line starts, so it shows only the handwriting (it caught the end of the bigger "Your name:" label).
+- First real scan with the new card (a pendant): the handwritten name and the Figurine tick were both read correctly.
+- A thin strip of color between two lines (a straw colored in yellow) is kept: the lines thicken on the paper side instead of over it, plain and with neat lines. 2 new tests (fail on the old code).
+- A color that thins out to a faint streak past a line is joined back into one piece along that streak, 0.5 mm wide so it prints (her straw is now one continuous yellow strip). A plain dark bar between two patches is never bridged. 2 new tests.
+- Clicker fit results recorded: switch hole 13.9 mm, keycap socket 0.10 mm (tested 2026-11-11).
+- Clip pocket 11.2 mm, keyring hole 4.5 mm and necklace loop 3.5 mm recorded from the fit test (2026-11-11). Only the earring hole is left.
+- `run --one-plate` puts everything (clicker cases and figurines too) on one plate in one 3MF, with print notes for the mixed plate. Plate-map labels no longer overlap on small pieces. 1 new test.
+- Earrings hang from a 4 mm jump ring (Allen's call): a small tab above the balance point with a 1.5 mm hole front to back and 1 mm of plastic around it, instead of the sideways loop a jump ring could not get around. Fit pieces 7-9 are the new tabs; `fit-test --only earring_hole_diameter` prints just those three. 3 new tests, 3 updated.
+- 2 new tests.
+
 ## Kids pick the shape on the card (2026-11-10)
 
 - Every card (except clicker) now shows the five shapes under the name line, each with a small 3D picture the tool renders itself from a sample heart: Flat, Puffy, Raised lines, Puffy + lines, Figurine. The kid ticks one; no tick means flat. A "neat lines" box beside the name turns on tidy.

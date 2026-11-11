@@ -136,14 +136,14 @@ def render_plan(plate, path: Path, *, dpi: int = 300, title: str = "") -> Path:
         draw.text((X(ox + w_mm / 2), Y(oy + w_mm + (l_mm - w_mm) / 2)), str(c.number),
                   fill=(0, 0, 0), font=font, anchor="mm")
         draw.text((X(ox + w_mm / 2), Y(oy - 0.5)), f"{c.candidate}", fill=(90, 90, 90), font=small, anchor="ma")
-    # Stand footprint.
-    sx, sy = plate.positions["stand"]
-    from .geom import bounds
+    # Stand footprint (not on a plate that reprints one group).
+    if "stand" in plate.placed:
+        from .geom import bounds
 
-    lo, hi = bounds(plate.placed["stand"])
-    draw.rectangle([X(lo[0]), Y(hi[1]), X(hi[0]), Y(lo[1])], outline=(0, 0, 0), width=max(1, int(0.25 * px)))
-    draw.text((X((lo[0] + hi[0]) / 2), Y((lo[1] + hi[1]) / 2)), "stand\n(seen from above)",
-              fill=(0, 0, 0), font=small, anchor="mm", align="center")
+        lo, hi = bounds(plate.placed["stand"])
+        draw.rectangle([X(lo[0]), Y(hi[1]), X(hi[0]), Y(lo[1])], outline=(0, 0, 0), width=max(1, int(0.25 * px)))
+        draw.text((X((lo[0] + hi[0]) / 2), Y((lo[1] + hi[1]) / 2)), "stand\n(seen from above)",
+                  fill=(0, 0, 0), font=small, anchor="mm", align="center")
     # Title and 50 mm check ruler.
     draw.text((X(0), int(2 * px)), title or "Charm Maker fit-test plate", fill=(0, 0, 0), font=font, anchor="la")
     ry = int(7 * px)
@@ -152,6 +152,57 @@ def render_plan(plate, path: Path, *, dpi: int = 300, title: str = "") -> Path:
         draw.line([X(t), ry - int(1.5 * px), X(t), ry + int(1.5 * px)], fill=(0, 0, 0), width=max(1, int(0.3 * px)))
     draw.text((X(52), ry), f"50 mm check ruler (print at 100%, {dpi} dpi)", fill=(0, 0, 0), font=small, anchor="lm")
     img.save(path, dpi=(dpi, dpi))
+    return path
+
+
+def render_plate_map(cfg: dict, plate, path: Path, *, px_per_mm: float = 4.0) -> Path:
+    """Who's who: the plate from above with each piece's name on it, so pieces can be
+    handed out straight off the bed. The front of the printer is at the bottom."""
+    W, H = cfg["printer"]["bed_size"]
+    pad, top = 30, 70
+    img = Image.new("RGB", (int(W * px_per_mm) + 2 * pad, int(H * px_per_mm) + 2 * pad + top), "white")
+    draw = ImageDraw.Draw(img)
+
+    def P(x, y):
+        return (pad + x * px_per_mm, top + pad + (H - y) * px_per_mm)
+
+    draw.rectangle([P(0, H), P(W, 0)], outline=(150, 150, 150), width=2)
+    draw.text((pad, 18), f"Plate {plate.number} from above: who's who (front of the printer at the bottom)",
+              fill=(0, 0, 0), font=_font(26))
+    font = _font(max(14, int(px_per_mm * 4.5)))
+    taken: list[tuple[float, float, float, float]] = []
+
+    def free(b):
+        return not any(b[0] < t[2] and t[0] < b[2] and b[1] < t[3] and t[1] < b[3] for t in taken)
+
+    for pp in plate.pieces:
+        u = None
+        for solid in pp.solids().values():
+            u = solid if u is None else u + solid
+        for ring in u.project().to_polygons():
+            r = np.asarray(ring, dtype=np.float64)
+            if len(r) < 3 or abs(np.dot(r[:, 0], np.roll(r[:, 1], 1)) - np.dot(r[:, 1], np.roll(r[:, 0], 1))) < 4.0:
+                continue                                   # specks from inside the solid, not an edge
+            draw.polygon([P(x, y) for x, y in r], outline=(60, 60, 60), width=2)
+        x0, y0, _, x1, y1, _ = (float(v) for v in u.bounding_box())
+        cx, _ = P((x0 + x1) / 2, 0)
+        _, y_mid = P(0, (y0 + y1) / 2)
+        _, y_top = P(0, y1)
+        _, y_bot = P(0, y0)
+        # On the piece if there's room, else just above it, else just below, stepping
+        # further out until the label is clear of the others.
+        spots = [y_mid] + [v for k in range(4) for v in (y_top - 14 - 30 * k, y_bot + 14 + 30 * k)]
+        for cy in spots:
+            box = draw.textbbox((cx, cy), pp.piece.name, font=font, anchor="mm")
+            box = (box[0] - 4, box[1] - 3, box[2] + 4, box[3] + 3)
+            if free(box):
+                break
+        taken.append(box)
+        if cy != y_mid:
+            draw.line([cx, cy, cx, y_mid], fill=(150, 150, 150), width=1)
+        draw.rectangle(list(box), fill=(255, 255, 255), outline=(200, 200, 200))
+        draw.text((cx, cy), pp.piece.name, fill=(0, 0, 0), font=font, anchor="mm")
+    img.save(path)
     return path
 
 
@@ -269,7 +320,7 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
                   "case": "clicker case, prints upright"}.get(getattr(piece, "style", "flat"), "")
     if getattr(piece, "supports", False):
         style_word = f"round figurine, back {piece.attachment.get('back')}, prints lying on its back with supports"
-    lines = [f"{d.name}: {cfg['products'][d.product]['label']}",
+    lines = [f"{d.name}: {cfg['products'][d.product]['label']}" + (f" (card {d.card})" if d.card else ""),
              f"size {piece.size()[0]:.1f} x {piece.size()[1]:.1f} mm, {piece.thickness} mm thick",
              f"style: {style_word}", ""]
     lines.append("Colors:")
@@ -285,7 +336,9 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
     if att.get("kind") == "clip_pocket":
         lines_att = [f"Clip pad pocket {att['diameter']} mm (dashed), {att['wall']:.1f} mm wall"]
     elif att.get("kind") == "ring_tab":
-        lines_att = [f"Ring tab at the {att['position']}, {att['hole_diameter']} mm hole"]
+        lines_att = ([f"Small tab on top: {att['hole_diameter']} mm hole front to back for a jump ring, "
+                      f"{att['wall']:g} mm of plastic around it"] if att.get("ring") == "jump ring"
+                     else [f"Ring tab at the {att['position']}, {att['hole_diameter']} mm hole"])
     elif att.get("kind") == "side_loop":
         lines_att = [f"Loop on top: {att['hole_diameter']} mm hole running left to right (dashed), "
                      f"{att['height']:.1f} mm tall on the back"]

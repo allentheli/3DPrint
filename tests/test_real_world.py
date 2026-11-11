@@ -360,3 +360,64 @@ def test_eyes_next_to_a_mouth_stay_eyes(cfg, tidy):
     d = fix_design(cfg, layers, ppm, border_on=True, name="t", product="hair_clip", tidy=tidy)
     ink = next(i for i in d.inks if i.name == "black").geometry
     assert len(ink.geoms) >= 3, f"two eyes and a mouth, not {len(ink.geoms)} blob(s)"
+
+
+@pytest.mark.parametrize("tidy", [False, True])
+def test_a_thin_colored_in_straw_keeps_its_color(cfg, tidy):
+    """Alison's pendant: a straw drawn as two thin black lines with yellow colored in
+    between, only 1.4 mm wide in all. Thickening the lines to 1 mm grew them over the
+    yellow, leaving a black straw with yellow specks. Lines now thicken over the paper
+    side of a thin strip of color, so the strip stays; the lines still get thicker."""
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    h, w = 300, 200
+    yy, xx = np.mgrid[0:h, 0:w]
+    rows = (yy > 60) & (yy < 240)
+    left, strip, right = (xx >= 89) & (xx < 96), (xx >= 96) & (xx < 107), (xx >= 107) & (xx < 114)
+    cap = (yy > 53) & (yy <= 60) & (xx >= 89) & (xx < 114)
+    black = (rows & (left | right)) | cap              # one 0.4 mm line around it, closed at the top
+    yellow = rows & strip                              # 0.6 mm of yellow inside
+    layers = [InkLayer("black", (25, 25, 30), black), InkLayer("yellow", (250, 200, 60), yellow)]
+    d = fix_design(cfg, layers, ppm, border_on=True, name="t", product="pendant", tidy=tidy)
+    inks = {i.name: i.geometry for i in d.inks}
+    length = 180 / ppm
+    assert "yellow" in inks and inks["yellow"].area > 0.6 * (11 / ppm) * length, "the yellow strip stays"
+    assert inks["black"].area > 1.4 * 2 * (7 / ppm) * length, "the lines still got thicker, on the outside"
+
+
+@pytest.mark.parametrize("streak, joined", [((150, 145, 95), True), ((120, 120, 120), False)])
+def test_a_color_that_thins_out_past_a_line_stays_one_piece(cfg, streak, joined):
+    """Alison's straw again: where it bends, her yellow squeezed past a black line as a
+    faint, dark-tinted streak about 0.1 mm wide. The reader saw black there, so the straw
+    came out as two yellow pieces with black between them. A faint trace of the same hue
+    now joins them at a printable width. A plain dark bar between two yellow patches (a
+    window's bars) has no yellow in it and is never bridged."""
+    import cv2
+
+    from charm_maker.inks import InkLayer, rejoin_faint_color
+
+    ppm = 18.0
+    BLACK_RGB, YELLOW_RGB = (53, 58, 54), (254, 234, 11)
+    img = np.ones((130, 70, 3))
+    black = np.zeros((130, 70), bool)
+    yellow = np.zeros((130, 70), bool)
+    black[10:120, 18:52] = True                          # walls and the neck all start as black
+    yellow[12:55, 28:42] = True                          # the straw's yellow, in two pieces...
+    yellow[67:118, 28:42] = True
+    black &= ~yellow
+    img[black] = np.array(BLACK_RGB) / 255.0
+    img[yellow] = np.array(YELLOW_RGB) / 255.0
+    img[55:67, 34:36] = np.array(streak) / 255.0         # ...with a 0.1 mm streak between them
+    layers = [InkLayer("black", BLACK_RGB, black.copy()), InkLayer("yellow", YELLOW_RGB, yellow.copy())]
+    fixes = rejoin_faint_color(cfg, img, layers, ppm)
+    pieces = cv2.connectedComponents(layers[1].mask.astype(np.uint8))[0] - 1
+    if joined:
+        assert pieces == 1 and fixes, "one yellow straw"
+        neck = layers[1].mask[58:64].sum(axis=1)
+        assert neck.min() >= 0.4 * ppm, "the join is wide enough to print"
+        assert not (layers[0].mask & layers[1].mask).any()
+        assert (layers[1].mask & ~(black | yellow)).sum() == 0, "no paper colored in"
+    else:
+        assert pieces == 2 and not fixes

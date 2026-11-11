@@ -68,6 +68,9 @@ process:
   border_default: true            # on for everyone; --no-border turns it off for a run
   min_ink_width: 1.0              # thinner ink gets thickened to this
   min_gap: 0.4                    # ...but separate marks (eyes next to a mouth) never grow closer than this
+  thin_strip_min_area: 0.3        # mm²: a separate thin strip of color this big (a straw colored in) is kept; lines thicken around it
+  rejoin_max_length: 2.0          # mm: a faint trace of a color joins two pieces of it this far apart at most
+  rejoin_width: 0.5               # mm: how wide the join is made, so it prints
   min_speck_area_mm2: 1.0         # smaller specks are removed...
   speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
   coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
@@ -86,33 +89,33 @@ process:
 # plate, in piece-number order. `python -m charm_maker fit-results` writes them.
 fit:
   clip_pocket_diameter:
-    value: 11.5
-    tested: false
+    value: 11.2
+    tested: true   # 2026-11-11
     candidates: [11.2, 11.5, 11.8]
     note: round pocket on the back of a hair clip charm for the clip's 11 mm pad
   keyring_hole_diameter:
-    value: 5.0
-    tested: false
+    value: 4.5
+    tested: true   # 2026-11-11
     candidates: [4.5, 5.0, 5.5]
     note: hole in a keychain's ring tab for a 25 mm split ring
   earring_hole_diameter:
-    value: 2.0
+    value: 1.5
     tested: false
-    candidates: [1.8, 2.0, 2.3]
-    note: sideways hole (left to right) in the earring's top loop; the hook goes straight through
+    candidates: [1.3, 1.5, 1.8]
+    note: front-to-back hole in the earring's small top tab; a 4 mm jump ring goes through it (Allen, 2026-11-11)
   switch_cutout:
-    value: 14.0
-    tested: false
+    value: 13.9
+    tested: true   # 2026-11-11
     candidates: [13.9, 14.0, 14.1]
     note: square cutout in the 1.5 mm clicker top plate for an MX-style switch
   stem_socket_clearance:
-    value: 0.15
-    tested: false
+    value: 0.1
+    tested: true   # 2026-11-11
     candidates: [0.10, 0.15, 0.20]     # centered on the common printed-clicker default (0.15, 0.05 steps)
     note: added to each arm width of the keycap's cross socket for the MX stem
   necklace_hole_diameter:
     value: 3.5
-    tested: false
+    tested: true   # 2026-11-11
     candidates: [3.0, 3.5, 4.0]
     note: sideways hole (left to right) in the pendant's top loop; the chain goes straight through
 
@@ -130,7 +133,8 @@ hardware:
   # Side loops for pendants and earrings: a loop on top with a hole running left to
   # right, so the piece hangs facing forward. The loop sits flush with the front face
   # and stands taller than the charm on the back.
-  earring_loop: {wall: 1.0, length: 4.5}
+  jump_ring_diameter: 4.0         # Allen's earring jump rings (outside); about 2.5 mm inside
+  earring_tab_wall: 1.0           # plastic around the earring's hole: thin, so the jump ring closes around it
   necklace_loop: {wall: 1.2, length: 7.0}
   loop_overlap: 2.0               # how far the loop reaches into the charm
   loop_gap: 0.8                   # plastic between the hole and the charm's top edge
@@ -153,6 +157,7 @@ hardware:
 products:
   hair_clip:
     label: Hair clip charm
+    file_word: clip
     size_min: 14
     size_max: 25
     default_size: 22
@@ -162,6 +167,7 @@ products:
     card: hair_clip
   keychain:
     label: Keychain
+    file_word: keychain              # files are named keychain-jack after the kid
     size_min: 35
     size_max: 55
     default_size: 45
@@ -172,6 +178,7 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
+    file_word: clicker
     size_min: 16                  # the keycap covers the switch at least
     size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch
     default_size: 19
@@ -184,7 +191,8 @@ products:
     case_wall: 1.6
     case_floor: 1.2
     case_corner_radius: 3.0
-    case_margin: 1.0              # the case is the drawing's outline, this much bigger all round
+    case_keycap_clearance: 0.6    # the keycap sits in the case's opening with this much room all round
+    case_keycap_proud: 1.5        # the keycap's face stands this far above the case's rim at rest
     case_smooth: 1.5              # notches and thin bits narrower than about twice this are smoothed over
     case_pushout_hole: 6.0        # a pen through the floor pushes the switch back out
     ring_post_length: 6.0         # the ring post at the top: the hole runs left to right through it,
@@ -193,6 +201,7 @@ products:
     card: clicker
   magnet_figure:
     label: Magnet figure
+    file_word: magnet
     size_min: 30
     size_max: 55
     default_size: 45
@@ -202,19 +211,20 @@ products:
     card: magnet_figure
   earrings:
     label: Earrings (a pair)
+    file_word: earrings
     adults_only: true
     size_min: 15
     size_max: 35
     default_size: 25
     thickness: 1.8
-    attachment: side_loop
-    loop: earring                 # hardware.earring_loop, fit.earring_hole_diameter
-    style: hook                   # hook (side loop) or stud (flat back, no loop)
-    pair_mode: identical          # identical or mirrored
+    attachment: jump_ring_tab     # Allen: a 4 mm jump ring through a small hole near the top, the hook on the ring
+    style: hook                   # hook (jump ring tab) or stud (flat back, no tab)
+    pair_mode: mirrored           # Allen: the second earring is the mirror image (or identical)
     copies: 2
     card: earrings
   pendant:
     label: Necklace pendant
+    file_word: necklace
     size_min: 25
     size_max: 45
     default_size: 35
@@ -336,7 +346,7 @@ fit_test:
   switch_housing_floor: 1.2       # the switch housings are closed boxes like the clicker case...
   switch_pushout_hole: 6.0        # ...with a hole in the floor to push the switch back out
   stem_coupon: [16, 26, 2.4]
-  earring_loop_coupon: [10, 16, 1.8]
+  earring_tab_coupon: [10, 12, 1.8]
   necklace_loop_coupon: [12, 18, 2.6]
   stem_boss_height: 4.5
   stem_span_clearance: 0.1         # added to the cross length (the arm widths get the tested clearance)

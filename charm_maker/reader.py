@@ -150,7 +150,8 @@ def read_card(cfg: dict, image: np.ndarray, product_hint: str | None = None) -> 
         if product != "calibration":
             nx, ny, nw, nh = lay.name_box
             nyt = int((lay.page[1] - (ny + nh)) * ppm)
-            name_img = page[nyt:int((lay.page[1] - ny + 2) * ppm), int((nx - 18) * ppm):int((nx + nw + 2) * ppm)].copy()
+            # From where the line starts: the "Your name:" label sits just left of it.
+            name_img = page[nyt:int((lay.page[1] - ny + 2) * ppm), int((nx - 1) * ppm):int((nx + nw + 2) * ppm)].copy()
         reads.append(CardRead(lay, page, box_img, (bx - m, by + bh + m), ppm, name_img, len(markers), notes))
     if reads:
         return reads

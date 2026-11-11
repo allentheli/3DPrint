@@ -59,6 +59,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
                                guide_zone=_guide_zone(cfg, read))
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy)
+        design.fixes[:0] = inks.fixes
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
         design.name_image = read.name_image
@@ -88,6 +89,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy)
+    design.fixes[:0] = inks.fixes
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
     design.fixes.append(f"scaled so the longest side is {size_mm} mm (no card markers)")
@@ -167,7 +169,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               batch_name: str | None = None, off_palette: str | None = "nearest",
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
-              figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None) -> BatchResult:
+              figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
+              names: dict[str, str] | None = None, one_plate: bool = False) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -209,17 +212,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     calibration_lines: list[str] = []
 
     # Pass 1: read every image.
-    reads: list[tuple[str, Path, CardRead]] = []
-    for path in collect_inputs(inputs):
-        pages = pdf_page_count(path) if path.suffix.lower() == ".pdf" else 1
-        for page in range(pages):
-            label = f"{path.name}" + (f" page {page + 1}" if pages > 1 else "")
-            try:
-                image = load_image(path, page)
-                for read in read_card(cfg, image, product_hint):
-                    reads.append((label, path, read))
-            except Exception as e:  # noqa: BLE001
-                problems.append(f"{label}: {e}")
+    reads = _read_inputs(cfg, inputs, product_hint, problems)
 
     # Calibration cards first, so the drawings in the same batch use them.
     drawings = []
@@ -242,15 +235,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     # Pass 2: drawings to pieces.
     pieces: list[Piece] = []
-    used_names: dict[str, int] = {}
-    for label, path, read in drawings:
-        base_name = read.layout.stem if read.layout else _safe_stem(path.stem)
-        name = base_name
-        if name in used_names:
-            used_names[name] += 1
-            name = f"{base_name}-{chr(ord('a') + used_names[base_name] - 1)}"
-        else:
-            used_names[name] = 1
+    names = dict(names or {})
+    kid_names: dict[str, int] = {}
+    for (label, path, read), (name, base_name) in zip(drawings, _card_names(drawings)):
         try:
             from .options import read_options
 
@@ -260,7 +247,12 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             design.source = label
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
-            if name != base_name:
+            kid = kid_file_name(cfg, design.product, names.get(name, ""))
+            if kid:
+                # Named after the kid who drew it (keychain-jack); the card number stays as a note.
+                kid_names[kid] = kid_names.get(kid, 0) + 1
+                design.card, design.name = name, kid if kid_names[kid] == 1 else f"{kid}-{kid_names[kid]}"
+            elif name != base_name:
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
@@ -313,11 +305,16 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
     else:
         try:
-            plates = pack_plates(cfg, pieces, palette, assignments)
+            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate)
         except ValueError as e:
             problems.append(str(e))
         if plates:
             files["plates"] = write_plates(cfg, plates, out_dir / "plates")
+            from .preview import render_plate_map
+
+            for plate in plates:
+                files["plates"][plate.number]["map"] = render_plate_map(
+                    cfg, plate, out_dir / "plates" / f"plate-{plate.number}-map.png")
             for plate in plates:
                 slots = plate.slots()
                 for pp in plate.pieces:
@@ -350,6 +347,80 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     if plates:
         files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems)
     return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
+
+
+def _read_inputs(cfg: dict, inputs: list[Path], product_hint: str | None, problems: list[str]) -> list:
+    """Every card in every photo, PDF page or folder: [(label, path, CardRead)]."""
+    reads = []
+    for path in collect_inputs(inputs):
+        pages = pdf_page_count(path) if path.suffix.lower() == ".pdf" else 1
+        for page in range(pages):
+            label = f"{path.name}" + (f" page {page + 1}" if pages > 1 else "")
+            try:
+                image = load_image(path, page)
+                for read in read_card(cfg, image, product_hint):
+                    reads.append((label, path, read))
+            except Exception as e:  # noqa: BLE001
+                problems.append(f"{label}: {e}")
+    return reads
+
+
+def _card_names(drawings: list) -> list[tuple[str, str]]:
+    """(name, card) for each drawing, in order: the card (key-03), and key-03-b, key-03-c
+    for more cards with the same number in one batch."""
+    used: dict[str, int] = {}
+    out = []
+    for _, path, read in drawings:
+        base = read.layout.stem if read.layout else _safe_stem(path.stem)
+        used[base] = used.get(base, 0) + 1
+        out.append((base if used[base] == 1 else f"{base}-{chr(ord('a') + used[base] - 1)}", base))
+    return out
+
+
+def kid_file_name(cfg: dict, product: str, kid: str) -> str:
+    """keychain-jack from "Jack": the product's word and the name in plain letters.
+    Empty when there is no usable name."""
+    import re
+    import unicodedata
+
+    plain = unicodedata.normalize("NFKD", kid or "").encode("ascii", "ignore").decode().lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", plain).strip("-")[:20].strip("-")
+    if not slug:
+        return ""
+    return f"{cfg['products'][product].get('file_word', product)}-{slug}"
+
+
+def read_names(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str | None = None):
+    """The quick first step: every card's name line on one sheet (names.png), to read the
+    names from before the real run. Returns ([(card, label)], sheet path, problems)."""
+    from PIL import Image, ImageDraw
+
+    from .preview import _font
+
+    problems: list[str] = []
+    reads = _read_inputs(cfg, inputs, product_hint, problems)
+    drawings = [r for r in reads if not (r[2].layout is not None and r[2].layout.product == "calibration")]
+    rows = []
+    for (label, path, read), (name, _) in zip(drawings, _card_names(drawings)):
+        crop = read.name_image
+        img = Image.fromarray(crop[:, :, ::-1]) if crop is not None and crop.size else Image.new("RGB", (600, 80), "white")
+        img = img.resize((900, max(1, int(img.height * 900 / img.width))), Image.LANCZOS)
+        rows.append((name, label, img))
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    font = _font(30)
+    h = 20 + sum(r[2].height + 30 for r in rows)
+    sheet = Image.new("RGB", (1260, max(h, 60)), "white")
+    d = ImageDraw.Draw(sheet)
+    y = 20
+    for name, label, img in rows:
+        d.text((20, y + img.height // 2), name, fill=(0, 0, 0), font=font, anchor="lm")
+        sheet.paste(img, (240, y))
+        d.rectangle([240, y, 240 + img.width - 1, y + img.height - 1], outline=(200, 200, 200))
+        y += img.height + 30
+    path = out_dir / "names.png"
+    sheet.save(path)
+    return [(name, label) for name, label, _ in rows], path, problems
 
 
 def _copies(cfg: dict, design: Design) -> list[Design]:
@@ -436,7 +507,7 @@ def _assembled_clicker(cfg: dict, case: Piece, keycap: Piece, keycap_colors: dic
     import manifold3d as m3d
 
     hw = cfg["hardware"]
-    top = case.attachment["height"]                     # the case's lid is the switch plate
+    top = case.attachment["plate_z"]                    # the switch plate, at the bottom of the cup
     housing = m3d.Manifold.cube([hw["mx_cavity_size"], hw["mx_cavity_size"], hw["mx_housing_above_plate"]], True)
     housing = housing.translate([0.0, 0.0, top + hw["mx_housing_above_plate"] / 2])
     stem_h = hw["mx_stem_top_above_plate"] - hw["mx_housing_above_plate"]
@@ -475,6 +546,7 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
     w, h = piece.size()
     return {
         "name": d.name,
+        "card": d.card or d.name,
         "product": d.product,
         "source": d.source,
         "size_mm": [round(w, 2), round(h, 2), piece.thickness],
@@ -483,7 +555,7 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
         "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
         "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
         "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()
-                       if k not in ("hole", "solid", "hole_solid")},
+                       if k not in ("hole", "solid", "hole_solid", "opening")},
         "fixes": d.fixes,
         "warnings": d.warnings,
     }
