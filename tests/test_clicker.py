@@ -6,6 +6,7 @@ import json
 
 import pytest
 from shapely.geometry import Point, Polygon, box
+from shapely.ops import unary_union
 
 from charm_maker.geom import count_bodies, to_trimesh
 from charm_maker.pipeline import run_batch
@@ -96,9 +97,23 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     assert a["tab_height"] < height / 2 and a["tab_bottom"] > 3.0
     assert a["tab_bottom"] + a["tab_height"] / 2 == pytest.approx(height / 2, abs=0.01)
     hx, hy = a["hole_center"]
-    for z in (a["tab_bottom"] / 2, a["tab_bottom"] + a["tab_height"] + 2.0):
-        assert not any(Polygon(q).contains(Point(hx, hy)) for q in body.slice(z).to_polygons()), f"no tab at z={z:.1f}"
-    assert a["needs_supports"], "its flat underside prints on tree supports"
+    z_above = a["tab_bottom"] + a["tab_height"] + 2.0
+    assert not any(Polygon(q).contains(Point(hx, hy)) for q in body.slice(z_above).to_polygons()), "no tab above it"
+    # Allen: no supports (Bambu Studio also put them inside the case). Under the tab the
+    # plastic slopes back to the wall at 45 degrees or steeper, so nothing hangs in the air.
+    assert not a["needs_supports"]
+    from shapely.geometry import LineString
+
+    reach_line = LineString([(hx, a["post_from_y"]), (hx, hy + 20.0)])
+    top_reach = None
+    for z in [a["tab_bottom"] - 0.3 - 0.5 * i for i in range(12)]:
+        if z <= 0.3:
+            break
+        cut = reach_line.intersection(unary_union([Polygon(q) for q in body.slice(z).to_polygons()]))
+        reach = cut.bounds[3] if not cut.is_empty else a["post_from_y"]
+        if top_reach is not None:
+            assert top_reach - reach <= 0.5 + 0.05, f"steeper than 45 degrees under the tab at z={z:.1f}"
+        top_reach = reach
     # The tunnel stays in the post: at half height the only enclosed hole is the hollow (the
     # post's outer wall shows as a separate piece there; above and below it is joined).
     outer, *rest = _slice(body, a["hole_z"])

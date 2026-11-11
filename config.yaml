@@ -197,7 +197,7 @@ products:
     case_pushout_hole: 6.0        # a pen through the floor pushes the switch back out
     ring_post_length: 6.0         # the ring tab at the top: the hole runs left to right through it
     ring_post_gap: 0.8            # plastic between the hole and the case
-    ring_tab_supports: true       # Allen: a short tab halfway up the side (supports under it); false = 45-degree underside, no supports
+    ring_tab_supports: false      # Allen: no supports (Bambu Studio put them inside the case too); true = flat underside on tree supports
     copies: 1
     card: clicker
   magnet_figure:
