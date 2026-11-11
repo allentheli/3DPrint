@@ -25,6 +25,10 @@ def circle_pts(r, cx=0.0, cy=0.0, n=60, a0=0.0, a1=2 * np.pi):
 
 @pytest.fixture(scope="module")
 def run(cfg, tmp_path_factory):
+    import copy
+
+    cfg = copy.deepcopy(cfg)
+    cfg["process"]["max_ink_colors"] = 3          # these cards were made for the old 3-color limit
     d = tmp_path_factory.mktemp("realworld")
     cards = [
         # A faint thin pink pen pig body: only a 0.5 mm card line (0.17 mm real).
@@ -421,3 +425,24 @@ def test_a_color_that_thins_out_past_a_line_stays_one_piece(cfg, streak, joined)
         assert (layers[1].mask & ~(black | yellow)).sum() == 0, "no paper colored in"
     else:
         assert pieces == 2 and not fixes
+
+
+def test_every_drawn_color_is_its_own_part_and_too_many_are_flagged(cfg, tmp_path):
+    """Madison's bubble tea: black outline, purple, orange, a green straw and a yellow handle.
+    With the old 3-color limit the straw merged into the black and the handle into the
+    orange, so Allen could not recolor them. Allen: keep every color its own part, but tell
+    him when a drawing has more colors than the AMS has slots."""
+    GREEN, PURPLE = (20, 140, 90), (110, 60, 200)
+    card = draw_strokes_card(cfg, tmp_path, "keychain", 7, [
+        ("crayon", [(-40, -40), (0, -40), (0, 20), (-40, 20)], ORANGE, 0.0),
+        ("crayon", [(0, -40), (40, -40), (40, 20), (0, 20)], PURPLE, 0.0),
+        ("line", [(10, 20), (10, 50), (30, 60)], GREEN, 6.0),
+        ("line", [(-40, 0), (-55, 0), (-55, -25), (-40, -25)], YELLOW, 5.0),
+        ("line", [(-40, -40), (40, -40), (40, 20), (-40, 20), (-40, -40)], (25, 25, 30), 4.0),
+    ], "tea.jpg")
+    r = run_batch(cfg, [card], tmp_path / "out")
+    p = r.pieces[0]
+    inks = {i.name for i in p.design.inks}
+    assert len(inks) == 5, inks
+    assert not any("most alike" in w for w in p.design.warnings), "nothing merged"
+    assert any("more than the 4 AMS slots" in w for w in p.design.warnings)

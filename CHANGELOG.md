@@ -1,5 +1,13 @@
 # Changelog
 
+## Figurine clickers, every color its own part (2026-11-11)
+
+- Clicker keycaps can be puffy, raised lines or figurine (the kids' favorite). A shaped keycap prints face-up, so its post is a separate small piece glued into a dent in the keycap's back; the print notes say so. The clicker card now has the shape tick boxes.
+- Every drawn color stays its own part (up to 8); a drawing with more colors than the 4 AMS slots gets a check line, and Claude asks Allen which share a spool.
+- Earring hole 1.8 mm (was 1.5), same 1 mm to the edge.
+- Allen's prints: the cup clicker and Alison's pendant came out well.
+- 4 new tests, 2 updated.
+
 ## Clicker case is a cup (2026-11-11)
 
 - After the first printed clicker (switch top showing, keycap floating over a gap), the case is now a cup: the switch sits inside it, the keycap sits in its drawing-shaped opening with 0.6 mm to spare and its face 1.5 mm above the rim, and presses down into it. Nothing of the switch or the gap shows. Same overall height (about 25 mm plus the keycap), now one solid shape.

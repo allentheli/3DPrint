@@ -11,6 +11,7 @@ FINISHING = {
     "hair_clip": "Hair clips: scuff the clip pad lightly, then glue the charm's pocket onto the pad with gel super glue or E6000. Let it cure fully before handing it out.",
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
     "clicker": "Clickers: push the switch down into the cup until it clicks into the square hole at the bottom (it only fits one way up, any of four turns), then push the keycap's post onto the switch's cross stem: the keycap sits in the cup's opening, a little above the rim. Thread a 25 mm split ring through the hole in the post at the top of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
+    "clicker_post": "Puffy and figurine clicker keycaps come with their post as a separate small piece: glue its flat end into the round dent in the middle of the keycap's back with gel super glue (socket end out), and let it cure before pushing it onto the switch.",
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: twist a 4 mm jump ring open sideways (don't pull it apart), slip it through the small hole at the top, hang the hook on it and twist it shut. If an earring faces sideways, turn the jump ring a quarter turn. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
@@ -59,6 +60,7 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
             lines.append(f"| {slots[f]} | {f.name} ({f.hex}) | {', '.join(users)} |")
         lines.append("")
         products |= {"figurine" if pp.piece.supports else pp.piece.design.product for pp in plate.pieces}
+        products |= {"clicker_post" for pp in plate.pieces if pp.piece.attachment.get("kind") == "keycap_post"}
         cases = [pp.piece for pp in plate.pieces if pp.piece.group == "cases"]
         n_slots = cfg["printer"]["ams_slots"]
         if len(plate.filaments) > n_slots:

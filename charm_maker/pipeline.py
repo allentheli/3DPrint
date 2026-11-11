@@ -247,6 +247,10 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             design.source = label
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
+            slots = cfg["printer"]["ams_slots"]
+            if len(design.inks) + 1 > slots:
+                design.warnings.append(f"{len(design.inks)} drawn colors plus the base: more than the {slots} AMS slots, "
+                                       "so some must share a spool (every color is still its own part)")
             kid = kid_file_name(cfg, design.product, names.get(name, ""))
             if kid:
                 # Named after the kid who drew it (keychain-jack); the card number stays as a note.
@@ -264,13 +268,16 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 _set_base_slot(cfg, piece, palette)
                 new.append(piece)
                 if piece.attachment.get("kind") == "stem_socket":       # a clicker: its case too
-                    from .products import build_clicker_case
+                    from .products import build_clicker_case, build_keycap_post
 
-                    case = build_clicker_case(cfg, piece)
-                    _check_piece(case)
-                    _map_to_palette(cfg, case, palette)
-                    _set_base_slot(cfg, case, palette)
-                    new.append(case)
+                    extra = [build_clicker_case(cfg, piece)]
+                    if piece.attachment.get("separate_post"):          # a shaped keycap: its post apart
+                        extra.insert(0, build_keycap_post(cfg, piece))
+                    for more in extra:
+                        _check_piece(more)
+                        _map_to_palette(cfg, more, palette)
+                        _set_base_slot(cfg, more, palette)
+                        new.append(more)
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -520,6 +527,17 @@ def _assembled_clicker(cfg: dict, case: Piece, keycap: Piece, keycap_colors: dic
     colors = {f"{case.name} switch": (205, 205, 210), f"{case.name} stem": (60, 120, 220)}
     for n, s in case.parts.items():
         parts[n], colors[n] = s, case_colors[n]
+    if keycap.face_up:
+        # A shaped keycap is built face-up; its separate post (here a plain stand-in) is glued
+        # into the dent in its back.
+        back = rest + att["post_height"]
+        post = m3d.Manifold.cylinder(att["post_height"], att["post_diameter"] / 2, att["post_diameter"] / 2, 48)
+        parts[f"{keycap.name} post"] = post.translate([0.0, 0.0, rest])
+        colors[f"{keycap.name} post"] = (235, 235, 235)
+        for n, s in keycap.parts.items():
+            parts[n] = s.translate([-cx, -cy, back])
+            colors[n] = keycap_colors[n].rgb
+        return parts, colors
     for n, s in keycap.parts.items():
         parts[n] = s.rotate([0.0, 180.0, 0.0]).translate([-cx, -cy, lift])   # turned over, face up
         colors[n] = keycap_colors[n].rgb

@@ -122,10 +122,35 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     assert (hw["mx_cavity_size"] - fit["switch_cutout"]["value"]) / 2 < 1.0
 
 
-def test_clicker_keycaps_stay_flat(cfg):
-    k = build_piece(cfg, _keycap_design(), style="puffy")
-    assert k.style == "flat" and k.attachment["kind"] == "stem_socket"
-    assert any("clicker keycaps are flat" in w for w in k.design.warnings)
+@pytest.mark.parametrize("style", ["figurine", "puffy"])
+def test_shaped_keycaps_get_a_separate_post(cfg, style):
+    """Allen: the kids love the figurine, so clickers can be figurines too. A shaped keycap
+    prints face-up, so its post is a separate small piece glued into a round dent in the
+    keycap's back; the post prints with its socket open at the top, as on a flat keycap."""
+    from charm_maker.products import build_keycap_post
+
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    k = build_piece(cfg, _keycap_design(), style=style)
+    att = k.attachment
+    assert k.style == style and k.face_up and att["kind"] == "stem_socket" and att["separate_post"]
+    cx, cy = att["center"]
+    dent_d = att["post_diameter"] + 2 * prod["post_glue_clearance"]
+    for z in (0.2, prod["post_glue_depth"] - 0.2):              # the dent, from the bed side up
+        holes = [q for n, s in k.parts.items() for q in _slice(s, z)[1:]] + \
+                [Polygon(q) for q in k.parts[k.base_part].slice(z).to_polygons()]
+        dent = [q for q in holes if q.contains(Point(cx, cy)) and q.area < 40]
+        assert dent and max(q.bounds[2] - q.bounds[0] for q in dent) == pytest.approx(dent_d, abs=0.1)
+    post = build_keycap_post(cfg, k)
+    body = post.parts[post.base_part]
+    assert to_trimesh(body).is_watertight and count_bodies(body) == 1
+    assert post.thickness == pytest.approx(att["post_height"] + prod["post_glue_depth"], abs=0.01)
+    _, *socket = _slice(body, post.thickness - 0.5)
+    cross = max(socket, key=lambda q: q.area)
+    assert cross.bounds[2] - cross.bounds[0] == pytest.approx(att["span"], abs=0.05), "the tested socket fit"
+    assert not _slice(body, 0.3)[1:], "a flat solid end to glue"
+    case = build_clicker_case(cfg, k)
+    assert case.attachment["rim"] < case.attachment["rim"] + case.attachment["proud"] <= \
+        hw["mx_stem_top_above_plate"] - min(att["socket_depth"], hw["mx_stem_height"]) + att["post_height"] + att["edge_thickness"] + 0.01
 
 
 def test_glue_on_fallback_is_a_plain_charm(cfg):
@@ -268,3 +293,15 @@ def test_one_plate_puts_the_case_with_the_charms(cfg, tmp_path):
     notes = r.files["notes"].read_text()
     assert "stand upright on this plate" in notes and f"**{cfg['printer']['layer_height_charms']} mm**" in notes
     assert "Shaped pieces (click-05-case" not in notes
+
+
+def test_a_figurine_clicker_run_gives_keycap_post_and_case(cfg, tmp_path):
+    a = draw_blob_card(cfg, tmp_path, "clicker", 8, BLACK, PINK)
+    r = run_batch(cfg, [a], tmp_path / "out", styles={"click-08": "figurine"})
+    assert r.problems == []
+    names = {p.name: p for p in r.pieces}
+    assert set(names) == {"click-08", "click-08-post", "click-08-case"}
+    assert names["click-08"].style == "figurine"
+    notes = r.files["notes"].read_text()
+    assert "glue its flat end into the round dent" in notes
+    assert (tmp_path / "out" / "designs" / "click-08-case-front.png").exists()

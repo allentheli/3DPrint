@@ -53,9 +53,9 @@ TAB_ANGLES = {"top": 0.0, "top-left": 45.0, "top-right": -45.0, "left": 90.0, "r
 def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, style: str = "flat",
                 figurine_back: str | None = None, figurine_base: str | None = None) -> Piece:
     prod0 = cfg["products"][design.product]
-    if prod0.get("attachment") == "stem_socket" and not prod0.get("glue_on_fallback") and style != "flat":
-        design.warnings.append(f"clicker keycaps are flat: the stem post is on the back ({style} not used)")
-        style = "flat"
+    # Clicker keycaps may be shaped too (Allen: the kids love the figurine). A shaped keycap
+    # prints face-up, so its post can't: the post is then its own small piece, glued into a
+    # round dent in the keycap's back (build_keycap_post).
     if style == "figurine":
         back = figurine_back or cfg["figurine"]["back"]
         if back != "flat":
@@ -122,8 +122,13 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
             name = f"{design.name} {ink.name}"
             colors[name] = ink.rgb
             slots[name] = ink.slot
-        info = {k: v for k, v in info.items() if k not in ("solid", "hole_solid", "hole")} | (
+        info = {k: v for k, v in info.items() if k not in ("solid", "hole_solid", "hole", "post", "socket")} | (
             {"hole": info["hole"]} if "hole" in info else {})
+        if attachment == "stem_socket":
+            # The post is its own piece, glued into the round dent relief cut in the back.
+            info |= {"separate_post": True, "edge_thickness": cfg["relief"]["products"][design.product]["base"]}
+            design.fixes.append("shaped keycap: the post is a separate small piece, glued into the round dent "
+                                "in the middle of the keycap's back")
         return Piece(design, round(height, 2), parts, colors, base_name, info, part_slots=slots,
                      part_off_palette=off, style=style, face_up=True)
 
@@ -141,6 +146,7 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
         base = base - cylinder(info["diameter"], info["depth"] + 1.0, cx, cy, t - info["depth"])
     if attachment == "stem_socket":
         base = base + info.pop("post") - info.pop("socket")
+        info["edge_thickness"] = t
     base_name = f"{design.name} base"
     parts[base_name] = base
     colors[base_name] = design.paper_rgb if cfg["process"]["base_color"] == "white" else design.inks[-1].rgb
@@ -227,7 +233,33 @@ def _place_stem_post(cfg: dict, design: Design) -> dict:
     if design.outline.area - before > 0.5:
         design.fixes.append(f"keycap filled out to a {cav} mm square behind the drawing, so it covers the switch")
     return {"kind": "stem_socket", "center": center, "post": post, "socket": socket, "post_diameter": d,
+            "span": span, "arm_x": hw["mx_stem_arm_x"] + c, "arm_y": hw["mx_stem_arm_y"] + c,
             "post_height": h, "socket_depth": depth, "clearance": c, "travel_clearance": round(travel_clear, 2)}
+
+
+def build_keycap_post(cfg: dict, keycap: "Piece") -> "Piece":
+    """For a shaped (face-up) clicker keycap: the post as its own small piece. It prints
+    standing on its flat end with the cross socket open at the top, the same way up as on
+    a flat keycap (where the socket fit was tested). Its flat end is glued into the round
+    dent in the keycap's back, so the same length stands below the keycap."""
+    prod = cfg["products"]["clicker"]
+    att = keycap.attachment
+    d, h, depth = att["post_diameter"], att["post_height"], att["socket_depth"]
+    dent = prod["post_glue_depth"]
+    length = h + dent
+    name = f"{keycap.name}-post"
+    body = cylinder(d, length, 0.0, 0.0, 0.0)
+    body = body - extrude(plus(att["span"], att["arm_x"], att["arm_y"], 0.0, 0.0), depth + 1.0, length - depth)
+    design = Design(name, "clicker", circle(d, 0.0, 0.0), [], [], [])
+    design.fixes.append(f"keycap post {d} mm, {length:.1f} mm long: glue its flat end into the dent in the keycap's back "
+                        f"(the cross socket end goes on the switch)")
+    design.paper_rgb = keycap.design.paper_rgb
+    design.source = keycap.design.source
+    base_name = f"{name} base"
+    info = {"kind": "keycap_post", "post_diameter": d, "length": round(length, 2), "socket_depth": depth,
+            "glue_depth": dent, "keycap": keycap.name}
+    return Piece(design, round(length, 2), {base_name: body}, {base_name: design.paper_rgb}, base_name, info,
+                 part_slots={base_name: None}, style="post", group="charms", face_up=True)
 
 
 def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
@@ -249,8 +281,9 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
     att = keycap.attachment
     # Where the keycap rests, above the switch plate: the post's end on the stem's cross.
     back_rest = hw["mx_stem_top_above_plate"] - min(att["socket_depth"], hw["mx_stem_height"]) + att["post_height"]
-    proud = min(prod["case_keycap_proud"], keycap.thickness - 0.5)     # the rim always hides the gap under the keycap
-    rim = back_rest + keycap.thickness - proud
+    edge = float(att.get("edge_thickness", keycap.thickness))          # a shaped keycap's dome rises above this
+    proud = min(prod["case_keycap_proud"], edge - 0.5)                 # the rim always hides the gap under the keycap
+    rim = back_rest + edge - proud
     plate_z = floor + depth + lid                        # top of the plate the switch clips into
     height = plate_z + rim
     clr = prod["case_keycap_clearance"]
