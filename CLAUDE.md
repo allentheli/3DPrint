@@ -100,12 +100,15 @@ mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm ju
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
 pieces. The keycap `click-NN` is the drawing as a flat charm (always flat) with a 5.5 mm post
-and cross socket on the back, printed face-down with the charms. The case `click-NN-case` is
-the drawing's outline 1 mm bigger all round (never smaller than the switch box), with the
-switch snapping into its lid under the keycap's post, a hollow for the switch, a floor with a
-push-out hole, and a ring post at the top whose hole runs left to right at half height (so the
-clicker sits flat on a table); printed upright on its own plate at 0.2 mm in one filament, no
-supports. The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
+and cross socket on the back, filled out behind to at least the switch's 15.6 mm square, printed
+face-down with the charms. The case `click-NN-case` is a cup (Allen, after the first print on
+2026-11-11: the switch showed and the keycap floated over a gap): the switch snaps into a plate
+at the bottom of an opening shaped like the keycap, the keycap sits in that opening (0.6 mm
+clearance, face 1.5 mm above the rim) and presses down into it, so nothing of the switch shows.
+Below the plate a hollow for the switch body and pins and a floor with a push-out hole; a ring
+post at the top whose hole runs left to right at half height (so the clicker sits flat on a
+table). About 25 mm tall plus the keycap (the switch needs that height); printed upright on its
+own plate at 0.2 mm in one filament, no supports. The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
 (Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm (never past
 40 mm) with a note. Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
 (their drawing box is smaller). The keycap post sits at the drawing's

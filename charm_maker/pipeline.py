@@ -507,7 +507,7 @@ def _assembled_clicker(cfg: dict, case: Piece, keycap: Piece, keycap_colors: dic
     import manifold3d as m3d
 
     hw = cfg["hardware"]
-    top = case.attachment["height"]                     # the case's lid is the switch plate
+    top = case.attachment["plate_z"]                    # the switch plate, at the bottom of the cup
     housing = m3d.Manifold.cube([hw["mx_cavity_size"], hw["mx_cavity_size"], hw["mx_housing_above_plate"]], True)
     housing = housing.translate([0.0, 0.0, top + hw["mx_housing_above_plate"] / 2])
     stem_h = hw["mx_stem_top_above_plate"] - hw["mx_housing_above_plate"]
@@ -555,7 +555,7 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
         "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
         "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
         "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()
-                       if k not in ("hole", "solid", "hole_solid")},
+                       if k not in ("hole", "solid", "hole_solid", "opening")},
         "fixes": d.fixes,
         "warnings": d.warnings,
     }

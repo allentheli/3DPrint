@@ -219,17 +219,26 @@ def _place_stem_post(cfg: dict, design: Design) -> dict:
     if travel_clear < 0.5:
         design.warnings.append(f"keycap clears the switch by only {travel_clear:.1f} mm when pressed")
     design.fixes.append(f"keycap post {d} mm with a cross socket on the back, under the drawing's middle")
+    # The keycap sits in the case's opening and must hide the switch's square top under it.
+    cav = hw["mx_cavity_size"]
+    before = design.outline.area
+    square_back = rounded_rect(cav, cav, 1.0, cx, cy)
+    design.outline = Polygon(max(_as_multi(unary_union([design.outline, square_back])).geoms, key=lambda g: g.area).exterior)
+    if design.outline.area - before > 0.5:
+        design.fixes.append(f"keycap filled out to a {cav} mm square behind the drawing, so it covers the switch")
     return {"kind": "stem_socket", "center": center, "post": post, "socket": socket, "post_diameter": d,
             "post_height": h, "socket_depth": depth, "clearance": c, "travel_clearance": round(travel_clear, 2)}
 
 
 def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
-    """The case the switch snaps into, shaped like the drawing: the keycap's outline grown
-    by `case_margin`, smoothed, and never smaller than the box the switch needs. It has a
-    1.5 mm lid holding the switch hole (under the keycap's post), a hollow for the switch
-    body and pins, a floor with a push-out hole, and a ring post at the top with the hole at
-    half height, so the clicker sits flat on a table. Prints upright, one filament, no
-    supports."""
+    """The case is a cup shaped like the drawing (Allen, after the first print: the switch
+    showed and the keycap floated high above the case). The switch snaps into a plate at
+    the bottom of an opening shaped like the keycap; the keycap sits in that opening,
+    `case_keycap_clearance` all round, its face `case_keycap_proud` above the rim, and
+    presses down into it. Nothing of the switch shows. Below the plate: a hollow for the
+    switch body and pins, and a floor with a push-out hole. A ring post at the top, the
+    hole at half height, so the clicker sits flat on a table. Prints upright, one filament,
+    no supports."""
     hw, prod = cfg["hardware"], cfg["products"]["clicker"]
     cut_fit = cfg["fit"]["switch_cutout"]
     cut = float(cut_fit["value"])
@@ -237,12 +246,19 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
     cav, depth, lid = hw["mx_cavity_size"], hw["mx_cavity_depth"], hw["mx_plate_thickness"]
     floor, wall, r = prod["case_floor"], prod["case_wall"], prod["case_corner_radius"]
     cx, cy = keycap.attachment["center"]                 # the post: the switch sits right under it
-    shape = affinity.translate(keycap.design.outline, -cx, -cy).buffer(prod["case_margin"], join_style="round")
-    shape = unary_union([shape, rounded_rect(cav + 2 * wall, cav + 2 * wall, r, 0.0, 0.0)])
+    att = keycap.attachment
+    # Where the keycap rests, above the switch plate: the post's end on the stem's cross.
+    back_rest = hw["mx_stem_top_above_plate"] - min(att["socket_depth"], hw["mx_stem_height"]) + att["post_height"]
+    proud = min(prod["case_keycap_proud"], keycap.thickness - 0.5)     # the rim always hides the gap under the keycap
+    rim = back_rest + keycap.thickness - proud
+    plate_z = floor + depth + lid                        # top of the plate the switch clips into
+    height = plate_z + rim
+    clr = prod["case_keycap_clearance"]
+    opening = affinity.translate(keycap.design.outline, -cx, -cy).buffer(clr, join_style="round")
+    shape = unary_union([opening.buffer(wall, join_style="round"), rounded_rect(cav + 2 * wall, cav + 2 * wall, r, 0.0, 0.0)])
     smooth = prod["case_smooth"]
     shape = shape.buffer(smooth, join_style="round").buffer(-smooth, join_style="round")
     shape = Polygon(max(_as_multi(shape).geoms, key=lambda g: g.area).exterior)
-    height = floor + depth + lid
     design = Design(name, "clicker", shape, [], [], [])
     if not cut_fit["tested"]:
         design.warnings.append(f"switch hole {cut} mm is not from a fit test yet")
@@ -269,20 +285,24 @@ def build_clicker_case(cfg: dict, keycap: "Piece") -> "Piece":
     body = extrude(design.outline, height) - _xsection_along_x(drop, length + 4.0, hx - length / 2 - 2.0)
     design.fixes.append(f"ring post at the top: a {hole_d} mm hole running left to right at half height, "
                         "so the clicker sits flat on a table")
-    body = body - extrude(square(cav), depth, floor)                         # the hollow
-    body = body - extrude(square(cut), lid + 2.0, height - lid - 1.0)        # the switch hole
+    body = body - extrude(opening, rim + 1.0, plate_z)                       # the cup the keycap sits in
+    body = body - extrude(square(cav), depth, floor)                         # the hollow under the plate
+    body = body - extrude(square(cut), lid + 2.0, plate_z - lid - 1.0)       # the switch hole
     body = body - cylinder(prod["case_pushout_hole"], floor + 2.0, 0.0, 0.0, -1.0)
     minx, miny, maxx, maxy = shape.bounds
-    design.fixes.insert(0, f"case shaped like the drawing, {prod['case_margin']} mm bigger all round "
-                           f"({maxx - minx:.1f} x {maxy - miny:.1f} mm, {height:.1f} mm tall): switch hole {cut} mm "
-                           f"in a {lid} mm lid, room for the switch below, push-out hole in the floor")
+    design.fixes.insert(0, f"case is a cup shaped like the drawing ({maxx - minx:.1f} x {maxy - miny:.1f} mm, "
+                           f"{height:.1f} mm tall): the keycap sits in its opening with {clr} mm to spare and "
+                           f"stands {proud:.1f} mm above the rim, so the switch and the gap under the keycap are "
+                           f"hidden; switch hole {cut} mm in a {lid} mm plate, room for the switch below, "
+                           "push-out hole in the floor")
     design.paper_rgb = keycap.design.paper_rgb
     design.source = keycap.design.source
     base_name = f"{name} base"
     info = {"kind": "clicker_case", "switch_hole": cut, "hole_diameter": hole_d, "height": round(height, 2),
-            "lid": lid, "cavity": cav, "cavity_depth": depth, "floor": floor,
+            "lid": lid, "cavity": cav, "cavity_depth": depth, "floor": floor, "plate_z": round(plate_z, 2),
+            "rim": round(rim, 2), "proud": round(proud, 2), "clearance": clr, "opening": opening,
             "hole_center": (round(hx, 2), round(hy, 2)), "hole_z": round(hz, 2), "post_length": length,
-            "post_from_y": round(y_attach - 2.0, 2), "margin": prod["case_margin"]}
+            "post_from_y": round(y_attach - 2.0, 2)}
     return Piece(design, round(height, 2), {base_name: body}, {base_name: design.paper_rgb}, base_name, info,
                  part_slots={base_name: None}, style="case", group="cases", face_up=True)
 

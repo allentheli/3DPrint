@@ -70,10 +70,12 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     assert to_trimesh(body).is_watertight and count_bodies(body) == 1
     assert case.group == "cases" and case.face_up and not case.supports
     a = case.attachment
-    height = prod["case_floor"] + hw["mx_cavity_depth"] + hw["mx_plate_thickness"]
+    plate_z = prod["case_floor"] + hw["mx_cavity_depth"] + hw["mx_plate_thickness"]
+    assert a["plate_z"] == pytest.approx(plate_z, abs=0.01)
+    height = a["height"]
     assert body.bounding_box()[5] == pytest.approx(height, abs=0.01)
-    # The lid: the switch hole at the tested size.
-    _, *holes = _slice(body, height - hw["mx_plate_thickness"] / 2)
+    # The plate: the switch hole at the tested size, at the bottom of the cup.
+    _, *holes = _slice(body, plate_z - hw["mx_plate_thickness"] / 2)
     sq = max(holes, key=lambda p: p.area)
     assert sq.bounds[2] - sq.bounds[0] == pytest.approx(fit["switch_cutout"]["value"], abs=0.03)
     # The hollow: room for the switch body and pins.
@@ -140,6 +142,40 @@ def test_a_clicker_card_gives_a_keycap_plate_and_a_case_plate(cfg, tmp_path):
     assert any("switch hole" in w for w in case["warnings"]), "untested fit values are flagged"
 
 
+def test_the_cup_hides_the_switch_and_the_gap(cfg):
+    """Allen, after printing the first clicker: the switch showed and the keycap floated high
+    above the case. The case is now a cup: the switch sits inside it, the keycap sits in its
+    opening a little proud of the rim, and pressed all the way it touches nothing."""
+    from shapely import affinity
+
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    k = build_piece(cfg, _keycap_design())
+    case = build_clicker_case(cfg, k)
+    body, a = case.parts[case.base_part], case.attachment
+    plate_z, rim, clr = a["plate_z"], a["rim"], prod["case_keycap_clearance"]
+    # The rim stands above the whole switch, stem included: nothing of it shows from the side.
+    assert rim > hw["mx_stem_top_above_plate"]
+    # Where the keycap rests (its back), and pressed all the way.
+    back_rest = hw["mx_stem_top_above_plate"] - min(k.attachment["socket_depth"], hw["mx_stem_height"]) + k.attachment["post_height"]
+    assert back_rest < rim < back_rest + k.thickness, "the keycap's edge is inside the cup, its face above the rim"
+    assert rim + a["proud"] == pytest.approx(back_rest + k.thickness, abs=0.01)
+    assert back_rest - hw["mx_full_travel"] > hw["mx_housing_above_plate"] + 0.5, "pressed, it clears the switch"
+    # The opening is the keycap's outline plus the clearance, at every height above the plate.
+    cx, cy = k.attachment["center"]
+    keycap = affinity.translate(k.design.outline, -cx, -cy)
+    for z in (plate_z + 0.5, plate_z + rim / 2, plate_z + rim - 0.3):
+        outer, *holes = _slice(body, z)
+        opening = max(holes, key=lambda q: q.area)
+        assert opening.buffer(0.05).contains(keycap.buffer(clr - 0.1)), f"the keycap fits at z={z:.1f}"
+        assert keycap.buffer(clr + 0.15).contains(opening), f"no wide gap around the keycap at z={z:.1f}"
+        assert outer.buffer(0.05).contains(opening.buffer(prod["case_wall"] - 0.1)), "a full wall all round"
+    # The switch goes in through the opening, and the keycap covers its square top (but for
+    # the corners' rounding), so nothing shows past the keycap's edge either.
+    sq = box(-hw["mx_cavity_size"] / 2, -hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2)
+    assert keycap.buffer(clr).contains(sq), "the switch fits through the opening"
+    assert keycap.buffer(0.05).contains(sq.buffer(-0.3)), "the keycap covers the switch"
+
+
 def test_case_follows_the_drawing_a_little_bigger(cfg):
     """Allen: the case should be the shape of the drawing's outline, a little bigger. It
     still always has room for the switch, centered under the keycap's post."""
@@ -156,9 +192,10 @@ def test_case_follows_the_drawing_a_little_bigger(cfg):
     above = box(-100, case.attachment["post_from_y"], 100, 100)              # leave out the ring post
     footprint = whole.difference(above)
     cx, cy = k.attachment["center"]
-    drawing = affinity.translate(k.design.outline, -cx, -cy).difference(above.buffer(prod["case_margin"]))
-    assert footprint.buffer(0.05).contains(drawing.buffer(prod["case_margin"] - 0.1)), "drawing-shaped, a bit bigger"
-    assert footprint.area < drawing.buffer(prod["case_margin"] + 1.0).area * 1.15, "not a big box"
+    margin = prod["case_keycap_clearance"] + prod["case_wall"]
+    drawing = affinity.translate(k.design.outline, -cx, -cy).difference(above.buffer(margin))
+    assert footprint.buffer(0.05).contains(drawing.buffer(margin - 0.1)), "drawing-shaped, a bit bigger"
+    assert footprint.area < drawing.buffer(margin + 1.0).area * 1.15, "not a big box"
     hollow = box(-hw["mx_cavity_size"] / 2, -hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2, hw["mx_cavity_size"] / 2)
     assert whole.buffer(0.05).contains(hollow.buffer(1.0)), "room for the switch, with at least 1 mm of wall"
     b = footprint.bounds

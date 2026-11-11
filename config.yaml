@@ -191,7 +191,8 @@ products:
     case_wall: 1.6
     case_floor: 1.2
     case_corner_radius: 3.0
-    case_margin: 1.0              # the case is the drawing's outline, this much bigger all round
+    case_keycap_clearance: 0.6    # the keycap sits in the case's opening with this much room all round
+    case_keycap_proud: 1.5        # the keycap's face stands this far above the case's rim at rest
     case_smooth: 1.5              # notches and thin bits narrower than about twice this are smoothed over
     case_pushout_hole: 6.0        # a pen through the floor pushes the switch back out
     ring_post_length: 6.0         # the ring post at the top: the hole runs left to right through it,

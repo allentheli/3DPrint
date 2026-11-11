@@ -99,12 +99,12 @@ Every product can be flat (the default) or shaped. All shapes come straight from
 ### Clicker keychain
 
 - Allen has blue clicky keyboard switches: MX-style (photo, 2026-11-10: plus-shaped stem, plate-mount clips, clear top and white bottom housing). Built to the standard MX numbers that popular printed clickers also use.
-- **Case:** a rounded box. The switch snaps in from the top.
-  - Top plate 1.5 mm thick (the MX spec is 1.5 ± 0.1 mm) with a 14 × 14 mm square cutout (fit test: 13.9, 14.0, 14.1 mm).
+- **Case:** a cup shaped like the drawing (Allen's call after the first print, 2026-11-11: a flat case left the switch showing and the keycap floating over a gap). The switch snaps into a plate at the bottom of an opening shaped like the keycap; the keycap sits in the opening (0.6 mm clearance, face 1.5 mm above the rim) and presses down into it, so the switch is hidden.
+  - Switch plate 1.5 mm thick (the MX spec is 1.5 ± 0.1 mm) with a square cutout (fit test: 13.9, 14.0, 14.1 mm; 13.9 tested).
   - A closed cavity under the plate, at least 15.6 mm square and about 9 mm deep. That covers the 5 mm of switch housing below the plate plus the pins.
   - Print upright with the top plate bridging the cavity. If the bridge prints poorly, switch to a two-piece case and record it in `DECISIONS.md`.
   - A ring tab on one side. The case prints in one filament, chosen per order.
-- **Keycap:** a flat charm-shaped top made from the kid's design, with a cross-shaped socket underneath for the MX stem (fit test: three tolerances). Print it face-down with the socket pointing up, so the design face comes out smooth. Check that the keycap clears the switch housing and the case at full travel (about 4 mm).
+- **Keycap:** a flat charm-shaped top made from the kid's design, filled out behind to at least the switch's 15.6 mm square so it covers it, with a cross-shaped socket underneath for the MX stem (fit test: three tolerances). Print it face-down with the socket pointing up, so the design face comes out smooth. Check that the keycap clears the switch housing and the case at full travel (about 4 mm).
 - **Fallback setting:** if printed sockets turn out unreliable, make the design as a flat charm to glue onto a store-bought blank flat-top MX keycap.
 
 ### Magnet figure
