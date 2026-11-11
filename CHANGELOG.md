@@ -7,6 +7,8 @@
 - The card's name label is now a bold "Your name:".
 - The earring card says "Draw just ONE earring. We print a mirror-image pair." under the title (the title "Earrings (a pair)" read like "draw two").
 - Earring pairs are now mirror images by default (Allen's call): the second one is flipped left to right.
+- The name picture now starts where the line starts, so it shows only the handwriting (it caught the end of the bigger "Your name:" label).
+- First real scan with the new card (a pendant): the handwritten name and the Figurine tick were both read correctly.
 - 2 new tests.
 
 ## Kids pick the shape on the card (2026-11-10)
