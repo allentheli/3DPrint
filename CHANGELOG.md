@@ -7,7 +7,9 @@
 - A pair of eyes gets the same shape and size, each where it was drawn.
 - Kept dots are circled in blue on the preview. A pencil speck looks just like a dot, so `--no-dots <card>` removes them for that drawing (test drive 4's rainbow).
 - Clicker assembly note: the ring goes through the tab halfway up the side.
-- Checked against every real scan so far (pen, marker and pencil). 3 new tests.
+- `--scale fig-01=1.5` makes one piece bigger (or smaller) than drawn, before the print fixes. The butterfly at 1.5 times keeps its two eyes and J-shaped smile.
+- Ring eyes and little closed shapes keep the white inside them (the bird's ring-in-a-ring eyes, its outlined beak and heart cheeks, the ice cream's oval sprinkles), widened to a printable 0.4 mm where she drew a hairline.
+- Checked against every real scan so far (pen, marker and pencil). 6 new tests.
 
 ## Figurine clickers, every color its own part (2026-11-11)
 

@@ -171,7 +171,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
-                       no_dots=set(args.no_dots or ()))
+                       no_dots=set(args.no_dots or ()), sizes=per_card(args.scale))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -305,6 +305,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
                    help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
                         "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
+    p.add_argument("--scale", action="append", metavar="[CARD=]FACTOR",
+                   help="make a piece bigger or smaller than drawn, before the print fixes: "
+                        "'--scale fig-01=1.5' for one card (repeat for more), '--scale 1.5' for every card")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)

@@ -47,9 +47,12 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None, tidy: bool = False,
-                     keep_dots: bool = True) -> Design:
+                     keep_dots: bool = True, size: float = 1.0) -> Design:
+    """`size` makes the piece that many times the drawn size (Allen, 2026-11-12: a bigger
+    butterfly so its tiny face keeps its shape). It is applied before the print fixes, so
+    her lines and the gaps between them grow too and the 1 mm minimum has room."""
     pr = cfg["process"]
-    scale = pr["card_scale"]
+    scale = pr["card_scale"] / size
     if border is None:
         border = pr["border_default"]
     if read.layout is not None:
@@ -65,6 +68,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
         design.name_image = read.name_image
+        if size != 1.0:
+            design.fixes.append(f"made {size:g} times the drawn size (asked for)")
         return design
 
     # Fallback: no markers. Use the whole image, scale the ink to the default size.
@@ -83,7 +88,7 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         raise ValueError("no ink found in the image")
     ys, xs = np.nonzero(union)
     longest_px = max(xs.max() - xs.min(), ys.max() - ys.min()) + 1
-    size_mm = cfg["products"][product]["default_size"]
+    size_mm = cfg["products"][product]["default_size"] * size
     target_ppm = cfg["reader"]["px_per_card_mm"] * scale
     resize = target_ppm * size_mm / longest_px
     pad = 10
@@ -174,7 +179,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
               names: dict[str, str] | None = None, one_plate: bool = False,
-              no_dots: set[str] | None = None) -> BatchResult:
+              no_dots: set[str] | None = None, sizes: dict[str, float] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -208,6 +213,10 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     tidy = set(tidy or ())
     no_dots = set(no_dots or ())
+    sizes = {k: float(v) for k, v in (sizes or {}).items()}
+    for key, k in sizes.items():
+        if not 0.25 <= k <= 4.0:
+            raise ValueError(f"--scale {key}={k:g}: use a factor between 0.25 and 4")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
@@ -249,7 +258,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             opts = read_options(cfg, read)                 # boxes the kid ticked on the card
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
                                       tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
-                                      keep_dots=not (no_dots & {name, base_name, "*"}))
+                                      keep_dots=not (no_dots & {name, base_name, "*"}),
+                                      size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0))
             design.source = label
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])

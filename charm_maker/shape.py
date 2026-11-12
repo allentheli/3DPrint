@@ -74,7 +74,10 @@ def remove_specks(mask: np.ndarray, min_area_px: float, min_extent_px: float = 0
     return keep[labels], removed
 
 
-def fill_small_holes(mask: np.ndarray, max_area_px: float) -> tuple[np.ndarray, int]:
+def fill_small_holes(mask: np.ndarray, max_area_px: float,
+                     keep: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+    """Fill paper holes smaller than `max_area_px` (pinholes in colored-in areas), except
+    the ones in `keep` (the inside of a ring eye)."""
     inv = ~mask
     n, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(inv), connectivity=4)
     h, w = mask.shape
@@ -84,9 +87,66 @@ def fill_small_holes(mask: np.ndarray, max_area_px: float) -> tuple[np.ndarray, 
         x, y, bw, bh, area = stats[i]
         touches = x == 0 or y == 0 or x + bw >= w or y + bh >= h
         if not touches and area <= max_area_px:
-            filled[labels == i] = True
+            hole = labels[y:y + bh, x:x + bw] == i
+            if keep is not None and keep[y:y + bh, x:x + bw][hole].any():
+                continue
+            filled[y:y + bh, x:x + bw] |= hole
             count += 1
     return filled, count
+
+
+def small_mark_holes(mask: np.ndarray, max_hole_px: float, min_width_px: float,
+                     max_mark_px: float, min_sliver_px: float = np.inf) -> np.ndarray:
+    """The paper inside small closed marks: the white ring of a ring eye, the inside of a
+    little heart (Allen, 2026-11-12: the bird's ring eyes came out as black blobs). A hole
+    counts when the mark around it is small (its outline encloses at most `max_mark_px`)
+    and the hole is at least `min_width_px` wide, so it prints. A thinner sliver at least
+    `min_sliver_px` long (the hairline white between the bird's inner and outer eye
+    rings, 0.3 mm wide) is widened to `min_width_px` along its middle, like marks drawn
+    almost touching. Pinholes in colored-in areas (inside a big mark, or tiny) are not
+    kept."""
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(~mask), connectivity=4)
+    keep = np.zeros_like(mask)
+    if n <= 2:
+        return keep
+    _, comp, cstats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
+    h, w = mask.shape
+    hull_area: dict[int, float] = {}
+    for i in range(1, n):
+        x, y, bw, bh, area = stats[i]
+        if x == 0 or y == 0 or x + bw >= w or y + bh >= h or area > max_hole_px:
+            continue
+        hole = labels[y:y + bh, x:x + bw] == i
+        inner = cv2.distanceTransform(np.pad(_u8(hole), 1), cv2.DIST_L2, 5).max()
+        sliver = 2.0 * inner < min_width_px
+        if sliver and skeletonize(hole).sum() < min_sliver_px:
+            continue
+        y0, y1, x0, x1 = max(0, y - 1), min(h, y + bh + 1), max(0, x - 1), min(w, x + bw + 1)
+        around = cv2.dilate(_u8(labels[y0:y1, x0:x1] == i), np.ones((3, 3), np.uint8)).astype(bool)
+        marks = comp[y0:y1, x0:x1][around & mask[y0:y1, x0:x1]]
+        if not len(marks):
+            continue
+        c = int(np.bincount(marks).argmax())
+        if c not in hull_area:
+            cx, cy, cw, ch = cstats[c, :4]
+            if cw * ch > 4 * max_mark_px:
+                hull_area[c] = np.inf
+            else:
+                pts = np.column_stack(np.nonzero(comp[cy:cy + ch, cx:cx + cw] == c))[:, ::-1].astype(np.int32)
+                hull_area[c] = cv2.contourArea(cv2.convexHull(pts))
+        if hull_area[c] > max_mark_px:
+            continue
+        # Widen the gap along its whole middle to `min_width_px`, taking the room only from
+        # ink that keeps at least that much on its other side: an outer ring gives way (it
+        # grows outward later), an inner ring between two gaps keeps its thickness.
+        r = int(np.ceil(min_width_px)) + 2
+        wy0, wy1, wx0, wx1 = max(0, y - r), min(h, y + bh + r), max(0, x - r), min(w, x + bw + r)
+        here = labels[wy0:wy1, wx0:wx1] == i
+        wide = cv2.dilate(_u8(skeletonize(here)), _disk(min_width_px / 2.0)).astype(bool)
+        other_paper = (~mask[wy0:wy1, wx0:wx1] | keep[wy0:wy1, wx0:wx1]) & ~here
+        room = cv2.distanceTransform(_u8(~other_paper), cv2.DIST_L2, 5) >= min_width_px
+        keep[wy0:wy1, wx0:wx1] |= here | (wide & (comp[wy0:wy1, wx0:wx1] == c) & room)
+    return keep
 
 
 def fill_all_holes(mask: np.ndarray) -> np.ndarray:
@@ -649,9 +709,17 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         kept_dots.append(((cx + 0.5) / px_per_mm, (hh - (cy + 0.5)) / px_per_mm))
     if kept_dots:
         fixes.append(f"{len(kept_dots)} small dot(s) kept, circled in blue (eyes or dots in the drawing)")
-    filled, holes = fill_small_holes(union, speck_px)
+    # The inside of a ring eye or a little heart stays paper (and nothing grows into it).
+    ring_px = pr["ring_mark_max_area"] * px_per_mm ** 2
+    eye_holes = small_mark_holes(union, ring_px, pr["min_gap"] * px_per_mm, ring_px,
+                                 pr["sliver_min_length"] * px_per_mm)
+    union &= ~eye_holes                 # widened slivers: that ink becomes paper
+    filled, holes = fill_small_holes(union, speck_px, keep=eye_holes)
     if holes:
         fixes.append(f"{holes} tiny hole(s) filled")
+    if eye_holes.any():
+        fixes.append(f"{cv2.connectedComponents(_u8(eye_holes), connectivity=4)[0] - 1} small hole(s) inside "
+                     "little closed marks kept (ring eyes, small hearts)")
     label_map[~union] = 0
     new_px = filled & ~union
     if new_px.any():
@@ -671,7 +739,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
     for i in range(1, len(layers) + 1):
         m = label_map == i
         closed = cv2.morphologyEx(_u8(m), cv2.MORPH_CLOSE, disk).astype(bool)
-        fill = closed & (label_map == 0)
+        fill = closed & (label_map == 0) & ~eye_holes
         fill &= ~small_mark_bridges(m, fill, small_px)
         label_map[fill] = i
         gap_px += int(fill.sum())
@@ -696,7 +764,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
             fixes.append(f"{layer.name}: {pulled} place(s) where separate marks almost touched "
                          f"opened to a {pr['min_gap']} mm gap, so they print apart")
         m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm,
-                                    blocked=thin & (label_map > 0) & (label_map != i), fixed=dots)
+                                    blocked=(thin & (label_map > 0) & (label_map != i)) | eye_holes, fixed=dots)
         if added > 0.5 * px_per_mm ** 2:
             fixes.append(f"{layer.name}: thin lines thickened to {pr['min_ink_width']} mm "
                          f"({added / px_per_mm ** 2:.1f} mm² added)")

@@ -184,7 +184,7 @@ def test_a_clicker_card_gives_a_keycap_plate_and_a_case_plate(cfg, tmp_path):
     assert keycap_inks == {"black", "pink"}, f"the printed guide square is not ink: {keycap_inks}"
     notes = r.files["notes"].read_text()
     assert f"**{cfg['printer']['layer_height_cases']} mm**" in notes and "Clicker cases" in notes
-    assert "split ring through the hole in the post" in notes
+    assert "split ring through the hole in the tab halfway up the side" in notes
     out = tmp_path / "out" / "designs"
     assert (out / "click-03-case-front.png").exists(), "the assembled view"
     case = json.loads((out / "click-03-case.json").read_text())
