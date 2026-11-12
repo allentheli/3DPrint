@@ -7,6 +7,7 @@
 - Earring hole 1.8 mm (was 1.5), same 1 mm to the edge.
 - A clicker drawing smaller than 16 mm is scaled up by default (Allen's call); a setting keeps its size and grows the border instead.
 - Poop container heads (duck, bear, heart) and screw-top heads stop facing front when screwed shut (they could turn about 45 degrees past front). 2 new tests.
+- The name picture reaches up to the drawing box, so tall handwriting is no longer cut off at the top.
 - Allen's prints: the cup clicker and Alison's pendant came out well.
 - 4 new tests, 2 updated.
 

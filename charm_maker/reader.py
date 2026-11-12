@@ -149,7 +149,10 @@ def read_card(cfg: dict, image: np.ndarray, product_hint: str | None = None) -> 
         name_img = None
         if product != "calibration":
             nx, ny, nw, nh = lay.name_box
-            nyt = int((lay.page[1] - (ny + nh)) * ppm)
+            # Kids write big: up to the drawing box's bottom edge, not just the name box
+            # (the tops of tall letters were cut off).
+            top = max(ny + nh, lay.box[1] - 0.8)
+            nyt = int((lay.page[1] - top) * ppm)
             # From where the line starts: the "Your name:" label sits just left of it.
             name_img = page[nyt:int((lay.page[1] - ny + 2) * ppm), int((nx - 1) * ppm):int((nx + nw + 2) * ppm)].copy()
         reads.append(CardRead(lay, page, box_img, (bx - m, by + bh + m), ppm, name_img, len(markers), notes))
