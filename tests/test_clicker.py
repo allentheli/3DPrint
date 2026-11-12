@@ -268,10 +268,14 @@ def test_clicker_card_asks_for_a_drawing_big_enough_for_the_switch(cfg, tmp_path
 
 
 @pytest.mark.parametrize("shape", [Point(0, 0).buffer(4.0), box(-10, -1, 10, 1)])
-def test_small_drawings_get_more_border_not_scaled(cfg, shape):
-    """Allen: a drawing too small for the clicker keeps its size and gets more border (or
-    background) instead. The keycap still covers the switch, and a thin drawing has room
+def test_small_drawings_can_get_more_border_instead(cfg, shape):
+    """The border setting: a drawing too small for the clicker keeps its size and gets more
+    border (background). The keycap still covers the switch, and a thin drawing has room
     for the post."""
+    import copy
+
+    cfg = copy.deepcopy(cfg)
+    cfg["products"]["clicker"]["small_drawing"] = "border"
     hw, prod = cfg["hardware"], cfg["products"]["clicker"]
     ink = _as_multi(shape.buffer(-0.8))
     d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), ink)])
@@ -312,12 +316,10 @@ def test_a_figurine_clicker_run_gives_keycap_post_and_case(cfg, tmp_path):
     assert (tmp_path / "out" / "designs" / "click-08-case-front.png").exists()
 
 
-def test_small_drawings_can_be_scaled_up_instead(cfg):
-    """Allen: scaling up is ok too (setting small_drawing: scale)."""
-    import copy
-
-    c2 = copy.deepcopy(cfg)
-    c2["products"]["clicker"]["small_drawing"] = "scale"
+def test_small_drawings_are_scaled_up_by_default(cfg):
+    """Allen: scale up by default; kids don't think in sizes (hair clips shrink anyway)."""
+    c2 = cfg
+    assert c2["products"]["clicker"]["small_drawing"] == "scale"
     shape = Point(0, 0).buffer(4.0)
     d = Design("click-06", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
     k = build_piece(c2, d)

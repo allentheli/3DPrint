@@ -124,9 +124,9 @@ the keycap (the switch needs that height); printed upright on its own plate at 0
 filament, no supports: the tab's underside slopes back to the wall at 45 degrees (Allen: with
 tree supports on, Bambu Studio also filled the hollow inside the case; `ring_tab_supports: true`
 gives the tab a flat underside on supports instead). The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
-(Allen: a minimum, but a large maximum); a smaller drawing keeps its size and gets more border
-until it is 16 mm across (never past 40 mm), with a note. Allen is fine with scaling up too:
-"scale it up" means `products.clicker.small_drawing: scale` for that batch (a config copy). Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
+(Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm across (never
+past 40 mm), with a note (Allen, 2026-11-12: kids don't think in sizes, hair clips shrink
+anyway). "Keep its size, more border" is `products.clicker.small_drawing: border` (a config copy). Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
 (their drawing box is smaller). The keycap post sits at the drawing's
 balance point, or as near it as fits. Both use
 the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
