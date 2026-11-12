@@ -144,7 +144,7 @@ for every card in a run, or per card with `--style clip-03=puffy`; repeat the fl
 cards. Order: a style named for that card, then the card's tick, then a style for every card,
 then flat. "Make card 3 puffy with a raised outline" is `--style clip-03=puffy-outlined`.
 A second copy of a card number in one batch is named `-b` (`clip-01-b`); per-card flags
-(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`, `--names`, `--map`) take that exact
+(`--style`, `--tidy`, `--figurine-back`, `--figurine-base`, `--names`, `--map`, `--no-dots`, `--scale`) take that exact
 card name too, even when the piece is named after the kid. To let
 Allen try the styles on one print, give each charm a different style (two per style).
 Flat pieces are built mirrored on purpose (they print face-down); shaped ones are not.
@@ -159,6 +159,9 @@ and a pair of eyes is made the same shape and size; they are circled in blue on 
 listed in the fixes. A pencil speck looks exactly like a dot, so if a drawing gets dots it does not
 have (test drive 4's rainbow has no face), run again with `--no-dots <card>` (repeat for more, or
 `--no-dots` for all). Decided by shape and position only, never by how dark the ink is.
+A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
+1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
+gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.
 
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
@@ -186,6 +189,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
+| One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
