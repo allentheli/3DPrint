@@ -75,6 +75,8 @@ process:
   speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
   min_dot_area_mm2: 0.15          # ...or a round solid dot at least this big (eyes); smaller is dust
   coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
+  ring_mark_max_area: 25.0        # mm²: a closed mark this small (a ring eye, a little heart) keeps the paper inside if it is at least min_gap wide...
+  sliver_min_length: 0.6          # mm: ...and a thinner white sliver inside it this long is widened to min_gap (the bird's ring eyes)
   small_mark_area: 3.0            # mm²: a mark smaller than this is a face mark (an eye, a smile): never glued to the one line beside it; round ones stay round
   min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
   corner_round: 0.5

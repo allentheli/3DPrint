@@ -162,6 +162,9 @@ have (test drive 4's rainbow has no face), run again with `--no-dots <card>` (re
 A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
 1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
 gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.
+Ring eyes and little closed shapes (a beak, a small heart) keep the white inside them, widened
+to 0.4 mm where she drew a hairline (the bird hair clip, 2026-11-12), so they no longer print as
+black blobs; the fixes say "small hole(s) inside little closed marks kept".
 
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the

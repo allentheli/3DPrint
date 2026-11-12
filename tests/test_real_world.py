@@ -532,3 +532,35 @@ def test_dust_is_still_removed_and_dashes_still_join(cfg):
     ink = next(i for i in d.inks if i.name == "black").geometry
     assert len(ink.geoms) == 1, f"one line, not {len(ink.geoms)} pieces"
     assert not d.dots, "the dust and the short dash are gone"
+
+
+def test_a_ring_eye_keeps_its_rings(cfg):
+    """Clicker 2's bird (2026-11-12): each eye is a ring with a smaller ring inside, drawn
+    with a 0.45 mm pen, about 2.5 mm across, with only a hairline of paper (0.2 to 0.35 mm)
+    between the rings. Hole filling and the 1 mm thickening made both eyes black blobs.
+    The paper inside a small closed mark is now kept, widened to the printable 0.4 mm,
+    and nothing grows into it. A pinhole in a colored-in blob is still filled."""
+    import cv2
+
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    mm = lambda v: int(round(v * ppm))                                              # noqa: E731
+    m = np.zeros((mm(14), mm(14)), np.uint8)
+    c = (mm(4.5), mm(5.0))
+    cv2.ellipse(m, c, (mm(1.15), mm(1.35)), 0, 0, 360, 1, mm(0.45))                 # outer ring
+    cv2.ellipse(m, c, (mm(0.5), mm(0.65)), 0, 0, 360, 1, mm(0.45))                  # inner ring, 0.2 mm inside it
+    cv2.line(m, (mm(4.5 + 0.5), mm(5.0)), (mm(4.5 + 1.0), mm(5.0)), 1, mm(0.45))   # where the pen touched both
+    cv2.circle(m, (mm(10.0), mm(9.0)), mm(2.0), 1, -1)                              # a colored-in blob...
+    cv2.circle(m, (mm(10.0), mm(9.0)), mm(0.06), 0, -1)                             # ...with a pinhole
+    d = fix_design(cfg, [InkLayer("black", (25, 25, 30), m.astype(bool))], ppm, border_on=True,
+                   name="eye", product="hair_clip")
+    ink = next(i for i in d.inks if i.name == "black").geometry
+    eye = [g for g in ink.geoms if g.centroid.x < 7.5]
+    blob = [g for g in ink.geoms if g.centroid.x >= 7.5]
+    assert sum(len(g.interiors) for g in eye) >= 2, "paper between the rings and in the middle stays"
+    gaps = [type(g)(hole) for g in eye for hole in g.interiors]
+    assert all(h.buffer(-0.17).area > 0 for h in gaps), "every gap is at least about 0.35 mm wide, so it prints"
+    assert blob and all(not g.interiors for g in blob), "the pinhole in the blob is filled"
+    assert any("little closed marks kept" in f for f in d.fixes)
