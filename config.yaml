@@ -73,7 +73,9 @@ process:
   rejoin_width: 0.5               # mm: how wide the join is made, so it prints
   min_speck_area_mm2: 1.0         # smaller specks are removed...
   speck_max_extent: 1.5           # ...unless they are this long (a thin smile is not a speck)
+  min_dot_area_mm2: 0.15          # ...or a round solid dot at least this big (eyes); smaller is dust
   coloring_gap: 0.5               # paper gaps narrower than this inside a color get filled
+  small_mark_area: 3.0            # mm²: a mark smaller than this is a face mark (an eye, a smile): never glued to the one line beside it; round ones stay round
   min_outer_feature: 2.0          # outer bits thinner than this are smoothed into the border
   corner_round: 0.5
   base_color: white               # "white" or "kid_color"

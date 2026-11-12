@@ -154,6 +154,12 @@ or "make them all tidy" means this. It redraws the outline color's strokes at on
 thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
 only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.
 
+Eyes and small dots (Allen, 2026-11-12): small round dots are kept (eyes, wing dots), stay round,
+and a pair of eyes is made the same shape and size; they are circled in blue on the preview and
+listed in the fixes. A pencil speck looks exactly like a dot, so if a drawing gets dots it does not
+have (test drive 4's rainbow has no face), run again with `--no-dots <card>` (repeat for more, or
+`--no-dots` for all). Decided by shape and position only, never by how dark the ink is.
+
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
 card's product at the card's size (clip pad, glued magnet, ring tab, loop all work) and it prints

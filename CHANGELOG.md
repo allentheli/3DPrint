@@ -1,5 +1,14 @@
 # Changelog
 
+## Eyes are kept, round and matching (2026-11-12)
+
+- Small round dots (eyes, dots on a wing, boba pearls) are no longer removed as specks: the cat and the butterfly have their eyes back.
+- Eyes stay round and apart: a line next to an eye gives way, and the gap-filling for crayon coloring no longer glues an eye, smile or nose to the line beside it. Marks drawn closer than 0.4 mm get a 0.4 mm gap so they print as two.
+- A pair of eyes gets the same shape and size, each where it was drawn.
+- Kept dots are circled in blue on the preview. A pencil speck looks just like a dot, so `--no-dots <card>` removes them for that drawing (test drive 4's rainbow).
+- Clicker assembly note: the ring goes through the tab halfway up the side.
+- Checked against every real scan so far (pen, marker and pencil). 3 new tests.
+
 ## Figurine clickers, every color its own part (2026-11-11)
 
 - Clicker keycaps can be puffy, raised lines or figurine (the kids' favorite). A shaped keycap prints face-up, so its post is a separate small piece glued into a dent in the keycap's back; the print notes say so. The clicker card now has the shape tick boxes.
