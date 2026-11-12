@@ -273,6 +273,7 @@ poop_jar:
   thread_lead: 10.0               # one full turn closes the lid
   thread_amplitude: 0.7           # ridge stands 2x this proud of the neck
   thread_clearance: 0.4           # fit-critical: try the first lid before printing a batch
+  lid_seat_gap: 0.1               # head lids: the collar sits this far above the body when facing front, so the body stops it there
   lid_wall: 2.0
   lid_top: 2.0
   lid_ribs: 30

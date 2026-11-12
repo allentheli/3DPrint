@@ -31,9 +31,10 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
-- **Prints to try (as of 2026-11-11):** the earrings with the 1.8 mm hole, a figurine clicker
-  (separate glued post, new), the short sloped ring tab, and one poop container lid (thread
-  clearance untested).
+- **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
+  (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
+  facing front (his first printed duck closed fine but the head ended up turned; the thread
+  clearance itself worked).
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
 - **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
@@ -241,7 +242,11 @@ fix (and add a regression test in `tests/test_real_world.py`).
 ## Poop containers (party favors)
 
 See-through containers kids fill with printer poop and twist shut. Everything prints with
-no supports and the lid closes in one turn (right-hand thread: clockwise to close).
+no supports and the lid closes in one turn (right-hand thread: clockwise to close). Head lids
+(duck, bear, heart) stop facing front: a sloped crown on the jar's rim meets the lid's ceiling
+there, and the collar sits just above the body (Allen's first duck turned about 45 degrees past
+front, 2026-11-12). The downloaded-model screw top stops the same way: the head sits 0.1 mm over
+the flat cut.
 
 ```bash
 python -m charm_maker poop-containers --kinds jar-round bear heart --sizes medium

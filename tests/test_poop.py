@@ -47,6 +47,24 @@ def test_lid_unscrews_counterclockwise_and_not_clockwise(cfg, container):
     assert unscrew_overlap(cfg, container, direction=-1) > 1.0
 
 
+def _stop_angle(lid, body, cx, cy, lead):
+    """How far past its built (facing front) pose a lid turns, tightening, before it touches."""
+    for i in range(0, 80):
+        dz = 0.025 * i
+        moved = lid.translate([-cx, -cy, 0.0]).rotate([0.0, 0.0, -360.0 * dz / lead]).translate([cx, cy, -dz])
+        if (body ^ moved).volume() > 0.001:
+            return 360.0 * dz / lead
+    return 360.0 * 2.0 / lead
+
+
+def test_heads_stop_facing_front(cfg, container):
+    """Allen's printed duck: screwed shut, the head did not face front. It could turn about
+    45 degrees past front before anything stopped it. Now the body stops every lid within
+    a few degrees of the way it was built (head and beak forward)."""
+    angle = _stop_angle(container.lid, container.jar, container.body.cx, 0.0, cfg["poop_jar"]["thread_lead"])
+    assert angle <= 6.0, f"{container.name} turns {angle:.0f} degrees past front"
+
+
 def test_no_supports_needed(cfg, container):
     assert overhang_area(container.jar) < 1.0
     cap = _union([s for s, _ in container.cap_for_printing().values()])
@@ -85,6 +103,7 @@ def test_screw_top_on_a_downloaded_model(cfg, tmp_path):
     assert count_bodies(st.body) == 1 and count_bodies(st.lid) == 1
     assert (st.body ^ st.lid).volume() < 0.01
     assert unscrew_check(st, cfg["poop_jar"]["thread_lead"]) < 0.01
+    assert _stop_angle(st.lid, st.body, *st.axis, cfg["poop_jar"]["thread_lead"]) <= 6.0, "the head stops facing front"
     assert st.info["opening_mm"] >= 18.0
     # The head prints on its cut face; the socket adds nothing that needs support.
     assert overhang_area(st.lid_for_printing()) < 5.0

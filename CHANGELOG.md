@@ -6,6 +6,7 @@
 - Every drawn color stays its own part (up to 8); a drawing with more colors than the 4 AMS slots gets a check line, and Claude asks Allen which share a spool.
 - Earring hole 1.8 mm (was 1.5), same 1 mm to the edge.
 - A clicker drawing smaller than 16 mm keeps its size and gets more border instead of being scaled up (Allen's call).
+- Poop container heads (duck, bear, heart) and screw-top heads stop facing front when screwed shut (they could turn about 45 degrees past front). 2 new tests.
 - Allen's prints: the cup clicker and Alison's pendant came out well.
 - 4 new tests, 2 updated.
 
