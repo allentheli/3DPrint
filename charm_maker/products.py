@@ -173,19 +173,21 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
 
 def _keycap_min_size(design: Design, prod: dict) -> None:
     """A keycap must cover the switch under it. A drawing smaller than the card's square
-    is scaled up (only its size changes) so its short side is size_min, without letting
-    its long side pass size_max."""
-    from .shape import scale_design
-
+    keeps its own size (Allen: give it more border rather than blowing it up): the border
+    around it grows, following its shape, until its short side is size_min, without letting
+    the long side pass size_max. The keycap is also filled out to the switch's square behind
+    the drawing (_place_stem_post), so even a thin drawing covers the switch."""
     minx, miny, maxx, maxy = design.outline.bounds
     short, long_ = min(maxx - minx, maxy - miny), max(maxx - minx, maxy - miny)
     if short >= prod["size_min"] - 0.05:
         return
-    k = min(prod["size_min"] / short, prod["size_max"] / long_)
-    if k > 1.0:
-        scale_design(design, k)
-        design.fixes.append(f"drawing scaled up {k:.2f}x so the keycap covers the switch "
-                            f"(at least {prod['size_min']} mm, at most {prod['size_max']} mm)")
+    grow = min((prod["size_min"] - short) / 2.0, max(0.0, (prod["size_max"] - long_) / 2.0))
+    if grow <= 0.05:
+        return
+    grown = design.outline.buffer(grow, join_style="round")
+    design.outline = Polygon(max(_as_multi(grown).geoms, key=lambda g: g.area).exterior)
+    design.fixes.append(f"border grown {grow:.1f} mm around the drawing (the drawing keeps its size) so the keycap "
+                        f"covers the switch: at least {prod['size_min']} mm across")
 
 
 def _place_stem_post(cfg: dict, design: Design) -> dict:

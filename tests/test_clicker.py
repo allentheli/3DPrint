@@ -54,8 +54,10 @@ def test_keycap_has_a_real_size_post_with_the_tested_socket(cfg):
 
 
 def test_a_thin_drawing_gets_a_backer_disc_for_the_post(cfg):
-    thin = _as_multi(box(-12, -1.5, 12, 1.5))
-    d = Design("click-02", "clicker", Polygon(box(-12.5, -2, 12.5, 2).exterior), [InkRegion("black", (20, 20, 20), thin)])
+    """Already as long as a keycap may be (40 mm), so its border can't grow: a disc behind
+    it carries the post."""
+    thin = _as_multi(box(-19, -1.5, 19, 1.5))
+    d = Design("click-02", "clicker", Polygon(box(-19.5, -2, 19.5, 2).exterior), [InkRegion("black", (20, 20, 20), thin)])
     k = build_piece(cfg, d)
     assert any("backer disc" in f for f in k.design.fixes)
     r = cfg["hardware"]["mx_keycap_post_diameter"] / 2 + cfg["products"]["clicker"]["post_margin"]
@@ -265,22 +267,25 @@ def test_clicker_card_asks_for_a_drawing_big_enough_for_the_switch(cfg, tmp_path
     assert "cover the square" in pymupdf.open(str(pdf))[0].get_text()
 
 
-@pytest.mark.parametrize("shape,expect_short,expect_long", [
-    (Point(0, 0).buffer(4.0), 16.0, None),             # drawn too small: scaled up to cover the switch
-    (box(-10, -1, 10, 1), None, 40.0),                  # long and thin: grows only until 40 mm long
-])
-def test_small_drawings_are_scaled_up_to_cover_the_switch(cfg, shape, expect_short, expect_long):
-    d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
+@pytest.mark.parametrize("shape", [Point(0, 0).buffer(4.0), box(-10, -1, 10, 1)])
+def test_small_drawings_get_more_border_not_scaled(cfg, shape):
+    """Allen: a drawing too small for the clicker keeps its size and gets more border (or
+    background) instead. The keycap still covers the switch, and a thin drawing has room
+    for the post."""
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    ink = _as_multi(shape.buffer(-0.8))
+    d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), ink)])
     k = build_piece(cfg, d)
     minx, miny, maxx, maxy = k.design.outline.bounds
-    w, h = maxx - minx, maxy - miny
-    if expect_short:
-        assert min(w, h) == pytest.approx(expect_short, abs=0.1)
-        assert any("scaled up" in f for f in k.design.fixes)
-    if expect_long:
-        assert max(w, h) == pytest.approx(expect_long, abs=0.1), "grown, but never past the largest keycap"
-        assert any("backer disc" in f for f in k.design.fixes), "still too thin for the post: a disc behind it"
-
+    assert min(maxx - minx, maxy - miny) >= prod["size_min"] - 0.1, "covers the card's square"
+    assert max(maxx - minx, maxy - miny) <= prod["size_max"] + 0.1
+    assert k.design.inks[0].geometry.area == pytest.approx(ink.area, rel=0.15), "the drawing keeps its size"
+    assert not any("scaled up" in f for f in k.design.fixes)
+    assert any("border grown" in f for f in k.design.fixes)
+    cx, cy = k.attachment["center"]
+    sq = box(cx - hw["mx_cavity_size"] / 2 + 0.3, cy - hw["mx_cavity_size"] / 2 + 0.3,
+             cx + hw["mx_cavity_size"] / 2 - 0.3, cy + hw["mx_cavity_size"] / 2 - 0.3)
+    assert k.design.outline.buffer(0.05).contains(sq), "it covers the switch"
 
 
 def test_one_plate_puts_the_case_with_the_charms(cfg, tmp_path):

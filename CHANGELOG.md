@@ -5,6 +5,7 @@
 - Clicker keycaps can be puffy, raised lines or figurine (the kids' favorite). A shaped keycap prints face-up, so its post is a separate small piece glued into a dent in the keycap's back; the print notes say so. The clicker card now has the shape tick boxes.
 - Every drawn color stays its own part (up to 8); a drawing with more colors than the 4 AMS slots gets a check line, and Claude asks Allen which share a spool.
 - Earring hole 1.8 mm (was 1.5), same 1 mm to the edge.
+- A clicker drawing smaller than 16 mm keeps its size and gets more border instead of being scaled up (Allen's call).
 - Allen's prints: the cup clicker and Alison's pendant came out well.
 - 4 new tests, 2 updated.
 
