@@ -181,6 +181,7 @@ products:
     file_word: clicker
     size_min: 16                  # the keycap covers the switch at least
     size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch
+    small_drawing: border         # smaller than size_min: border (keep its size, grow the border) or scale (Allen: both fine)
     default_size: 19
     thickness: 2.4                # keycap top plate; the socket boss sits behind it
     attachment: stem_socket

@@ -310,3 +310,17 @@ def test_a_figurine_clicker_run_gives_keycap_post_and_case(cfg, tmp_path):
     notes = r.files["notes"].read_text()
     assert "glue its flat end into the round dent" in notes
     assert (tmp_path / "out" / "designs" / "click-08-case-front.png").exists()
+
+
+def test_small_drawings_can_be_scaled_up_instead(cfg):
+    """Allen: scaling up is ok too (setting small_drawing: scale)."""
+    import copy
+
+    c2 = copy.deepcopy(cfg)
+    c2["products"]["clicker"]["small_drawing"] = "scale"
+    shape = Point(0, 0).buffer(4.0)
+    d = Design("click-06", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
+    k = build_piece(c2, d)
+    minx, miny, maxx, maxy = k.design.outline.bounds
+    assert min(maxx - minx, maxy - miny) == pytest.approx(c2["products"]["clicker"]["size_min"], abs=0.1)
+    assert any("scaled up" in f for f in k.design.fixes)

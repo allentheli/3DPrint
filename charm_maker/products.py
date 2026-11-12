@@ -181,6 +181,16 @@ def _keycap_min_size(design: Design, prod: dict) -> None:
     short, long_ = min(maxx - minx, maxy - miny), max(maxx - minx, maxy - miny)
     if short >= prod["size_min"] - 0.05:
         return
+    if prod.get("small_drawing", "border") == "scale":
+        # Allen: scaling up is fine too. Only the size changes.
+        from .shape import scale_design
+
+        k = min(prod["size_min"] / short, prod["size_max"] / long_)
+        if k > 1.0:
+            scale_design(design, k)
+            design.fixes.append(f"drawing scaled up {k:.2f}x so the keycap covers the switch "
+                                f"(at least {prod['size_min']} mm, at most {prod['size_max']} mm)")
+        return
     grow = min((prod["size_min"] - short) / 2.0, max(0.0, (prod["size_max"] - long_) / 2.0))
     if grow <= 0.05:
         return
