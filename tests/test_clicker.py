@@ -6,6 +6,7 @@ import json
 
 import pytest
 from shapely.geometry import Point, Polygon, box
+from shapely.ops import unary_union
 
 from charm_maker.geom import count_bodies, to_trimesh
 from charm_maker.pipeline import run_batch
@@ -53,8 +54,10 @@ def test_keycap_has_a_real_size_post_with_the_tested_socket(cfg):
 
 
 def test_a_thin_drawing_gets_a_backer_disc_for_the_post(cfg):
-    thin = _as_multi(box(-12, -1.5, 12, 1.5))
-    d = Design("click-02", "clicker", Polygon(box(-12.5, -2, 12.5, 2).exterior), [InkRegion("black", (20, 20, 20), thin)])
+    """Already as long as a keycap may be (40 mm), so its border can't grow: a disc behind
+    it carries the post."""
+    thin = _as_multi(box(-19, -1.5, 19, 1.5))
+    d = Design("click-02", "clicker", Polygon(box(-19.5, -2, 19.5, 2).exterior), [InkRegion("black", (20, 20, 20), thin)])
     k = build_piece(cfg, d)
     assert any("backer disc" in f for f in k.design.fixes)
     r = cfg["hardware"]["mx_keycap_post_diameter"] / 2 + cfg["products"]["clicker"]["post_margin"]
@@ -96,9 +99,23 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     assert a["tab_height"] < height / 2 and a["tab_bottom"] > 3.0
     assert a["tab_bottom"] + a["tab_height"] / 2 == pytest.approx(height / 2, abs=0.01)
     hx, hy = a["hole_center"]
-    for z in (a["tab_bottom"] / 2, a["tab_bottom"] + a["tab_height"] + 2.0):
-        assert not any(Polygon(q).contains(Point(hx, hy)) for q in body.slice(z).to_polygons()), f"no tab at z={z:.1f}"
-    assert a["needs_supports"], "its flat underside prints on tree supports"
+    z_above = a["tab_bottom"] + a["tab_height"] + 2.0
+    assert not any(Polygon(q).contains(Point(hx, hy)) for q in body.slice(z_above).to_polygons()), "no tab above it"
+    # Allen: no supports (Bambu Studio also put them inside the case). Under the tab the
+    # plastic slopes back to the wall at 45 degrees or steeper, so nothing hangs in the air.
+    assert not a["needs_supports"]
+    from shapely.geometry import LineString
+
+    reach_line = LineString([(hx, a["post_from_y"]), (hx, hy + 20.0)])
+    top_reach = None
+    for z in [a["tab_bottom"] - 0.3 - 0.5 * i for i in range(12)]:
+        if z <= 0.3:
+            break
+        cut = reach_line.intersection(unary_union([Polygon(q) for q in body.slice(z).to_polygons()]))
+        reach = cut.bounds[3] if not cut.is_empty else a["post_from_y"]
+        if top_reach is not None:
+            assert top_reach - reach <= 0.5 + 0.05, f"steeper than 45 degrees under the tab at z={z:.1f}"
+        top_reach = reach
     # The tunnel stays in the post: at half height the only enclosed hole is the hollow (the
     # post's outer wall shows as a separate piece there; above and below it is joined).
     outer, *rest = _slice(body, a["hole_z"])
@@ -107,10 +124,35 @@ def test_case_holds_the_switch_like_the_fit_test(cfg):
     assert (hw["mx_cavity_size"] - fit["switch_cutout"]["value"]) / 2 < 1.0
 
 
-def test_clicker_keycaps_stay_flat(cfg):
-    k = build_piece(cfg, _keycap_design(), style="puffy")
-    assert k.style == "flat" and k.attachment["kind"] == "stem_socket"
-    assert any("clicker keycaps are flat" in w for w in k.design.warnings)
+@pytest.mark.parametrize("style", ["figurine", "puffy"])
+def test_shaped_keycaps_get_a_separate_post(cfg, style):
+    """Allen: the kids love the figurine, so clickers can be figurines too. A shaped keycap
+    prints face-up, so its post is a separate small piece glued into a round dent in the
+    keycap's back; the post prints with its socket open at the top, as on a flat keycap."""
+    from charm_maker.products import build_keycap_post
+
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    k = build_piece(cfg, _keycap_design(), style=style)
+    att = k.attachment
+    assert k.style == style and k.face_up and att["kind"] == "stem_socket" and att["separate_post"]
+    cx, cy = att["center"]
+    dent_d = att["post_diameter"] + 2 * prod["post_glue_clearance"]
+    for z in (0.2, prod["post_glue_depth"] - 0.2):              # the dent, from the bed side up
+        holes = [q for n, s in k.parts.items() for q in _slice(s, z)[1:]] + \
+                [Polygon(q) for q in k.parts[k.base_part].slice(z).to_polygons()]
+        dent = [q for q in holes if q.contains(Point(cx, cy)) and q.area < 40]
+        assert dent and max(q.bounds[2] - q.bounds[0] for q in dent) == pytest.approx(dent_d, abs=0.1)
+    post = build_keycap_post(cfg, k)
+    body = post.parts[post.base_part]
+    assert to_trimesh(body).is_watertight and count_bodies(body) == 1
+    assert post.thickness == pytest.approx(att["post_height"] + prod["post_glue_depth"], abs=0.01)
+    _, *socket = _slice(body, post.thickness - 0.5)
+    cross = max(socket, key=lambda q: q.area)
+    assert cross.bounds[2] - cross.bounds[0] == pytest.approx(att["span"], abs=0.05), "the tested socket fit"
+    assert not _slice(body, 0.3)[1:], "a flat solid end to glue"
+    case = build_clicker_case(cfg, k)
+    assert case.attachment["rim"] < case.attachment["rim"] + case.attachment["proud"] <= \
+        hw["mx_stem_top_above_plate"] - min(att["socket_depth"], hw["mx_stem_height"]) + att["post_height"] + att["edge_thickness"] + 0.01
 
 
 def test_glue_on_fallback_is_a_plain_charm(cfg):
@@ -225,22 +267,29 @@ def test_clicker_card_asks_for_a_drawing_big_enough_for_the_switch(cfg, tmp_path
     assert "cover the square" in pymupdf.open(str(pdf))[0].get_text()
 
 
-@pytest.mark.parametrize("shape,expect_short,expect_long", [
-    (Point(0, 0).buffer(4.0), 16.0, None),             # drawn too small: scaled up to cover the switch
-    (box(-10, -1, 10, 1), None, 40.0),                  # long and thin: grows only until 40 mm long
-])
-def test_small_drawings_are_scaled_up_to_cover_the_switch(cfg, shape, expect_short, expect_long):
-    d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
+@pytest.mark.parametrize("shape", [Point(0, 0).buffer(4.0), box(-10, -1, 10, 1)])
+def test_small_drawings_can_get_more_border_instead(cfg, shape):
+    """The border setting: a drawing too small for the clicker keeps its size and gets more
+    border (background). The keycap still covers the switch, and a thin drawing has room
+    for the post."""
+    import copy
+
+    cfg = copy.deepcopy(cfg)
+    cfg["products"]["clicker"]["small_drawing"] = "border"
+    hw, prod = cfg["hardware"], cfg["products"]["clicker"]
+    ink = _as_multi(shape.buffer(-0.8))
+    d = Design("click-04", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), ink)])
     k = build_piece(cfg, d)
     minx, miny, maxx, maxy = k.design.outline.bounds
-    w, h = maxx - minx, maxy - miny
-    if expect_short:
-        assert min(w, h) == pytest.approx(expect_short, abs=0.1)
-        assert any("scaled up" in f for f in k.design.fixes)
-    if expect_long:
-        assert max(w, h) == pytest.approx(expect_long, abs=0.1), "grown, but never past the largest keycap"
-        assert any("backer disc" in f for f in k.design.fixes), "still too thin for the post: a disc behind it"
-
+    assert min(maxx - minx, maxy - miny) >= prod["size_min"] - 0.1, "covers the card's square"
+    assert max(maxx - minx, maxy - miny) <= prod["size_max"] + 0.1
+    assert k.design.inks[0].geometry.area == pytest.approx(ink.area, rel=0.15), "the drawing keeps its size"
+    assert not any("scaled up" in f for f in k.design.fixes)
+    assert any("border grown" in f for f in k.design.fixes)
+    cx, cy = k.attachment["center"]
+    sq = box(cx - hw["mx_cavity_size"] / 2 + 0.3, cy - hw["mx_cavity_size"] / 2 + 0.3,
+             cx + hw["mx_cavity_size"] / 2 - 0.3, cy + hw["mx_cavity_size"] / 2 - 0.3)
+    assert k.design.outline.buffer(0.05).contains(sq), "it covers the switch"
 
 
 def test_one_plate_puts_the_case_with_the_charms(cfg, tmp_path):
@@ -253,3 +302,27 @@ def test_one_plate_puts_the_case_with_the_charms(cfg, tmp_path):
     notes = r.files["notes"].read_text()
     assert "stand upright on this plate" in notes and f"**{cfg['printer']['layer_height_charms']} mm**" in notes
     assert "Shaped pieces (click-05-case" not in notes
+
+
+def test_a_figurine_clicker_run_gives_keycap_post_and_case(cfg, tmp_path):
+    a = draw_blob_card(cfg, tmp_path, "clicker", 8, BLACK, PINK)
+    r = run_batch(cfg, [a], tmp_path / "out", styles={"click-08": "figurine"})
+    assert r.problems == []
+    names = {p.name: p for p in r.pieces}
+    assert set(names) == {"click-08", "click-08-post", "click-08-case"}
+    assert names["click-08"].style == "figurine"
+    notes = r.files["notes"].read_text()
+    assert "glue its flat end into the round dent" in notes
+    assert (tmp_path / "out" / "designs" / "click-08-case-front.png").exists()
+
+
+def test_small_drawings_are_scaled_up_by_default(cfg):
+    """Allen: scale up by default; kids don't think in sizes (hair clips shrink anyway)."""
+    c2 = cfg
+    assert c2["products"]["clicker"]["small_drawing"] == "scale"
+    shape = Point(0, 0).buffer(4.0)
+    d = Design("click-06", "clicker", Polygon(shape.exterior), [InkRegion("black", (20, 20, 20), _as_multi(shape.buffer(-0.8)))])
+    k = build_piece(c2, d)
+    minx, miny, maxx, maxy = k.design.outline.bounds
+    assert min(maxx - minx, maxy - miny) == pytest.approx(c2["products"]["clicker"]["size_min"], abs=0.1)
+    assert any("scaled up" in f for f in k.design.fixes)

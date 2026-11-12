@@ -184,7 +184,9 @@ def _socket(c: dict, Rn: float, band_z: float, H: float, cx: float = 0.0, cone_c
     their opening) a 45 degree cone ceiling."""
     amp, lead, clear = c["thread_amplitude"], c["thread_lead"], c["thread_clearance"]
     lid_bottom = band_z + 0.5
-    s = helix(Rn + amp + clear, amp, lead, band_z, lid_bottom - 1.0, H, cx) + _cyl(Rn + clear, lid_bottom - 1.0, H, cx=cx)
+    # The neck's room reaches below the thread band: a head lid's collar comes down to the
+    # body (its seat, see _seat_z), past where the thread starts.
+    s = helix(Rn + amp + clear, amp, lead, band_z, lid_bottom - 1.0, H, cx) + _cyl(Rn + clear, band_z - 4.0, H, cx=cx)
     if cone_ceiling:
         r = Rn + 2 * amp + clear
         s = s + _cone(r, 0.0, H - 0.01, H + r, cx)
@@ -363,12 +365,27 @@ def cap_plain(cfg: dict, b: Body) -> tuple[dict, bool]:
     return {"lid": (lid, (236, 72, 153))}, True
 
 
+def _seat_z(c: dict, b: Body) -> float:
+    """Where a head lid's bottom edge sits: just above the body under the lid's collar.
+    The thread and the head are built facing front; with the collar down on the body, the
+    body stops the head there when it is screwed shut (Allen's first duck kept turning
+    about 45 degrees past front: the collar floated 1.3 mm above the body)."""
+    clear = c["thread_clearance"]
+    RL = _lid_collar_radius(c, b.Rn)
+    ring = _cyl(RL + 0.5, b.band_z - 12.0, b.band_z, cx=b.cx) - _cyl(b.Rn + clear + 0.05, b.band_z - 13.0, b.band_z + 1.0, cx=b.cx)
+    under = b.solid ^ ring
+    if under.is_empty():
+        return b.band_z + 0.5
+    return float(np.asarray(under.bounding_box())[5]) + c["lid_seat_gap"]
+
+
 def _head_on_collar(c: dict, b: Body, R: float, rise: float = 0.0):
     """A head sphere sitting on the lid collar with a 45 degree underside (hull of the
     collar ring and the sphere), centered over the neck. Returns (solid, center)."""
     RL = _lid_collar_radius(c, b.Rn)
-    z0 = b.band_z + 0.5
-    zc = max(z0 + R * 0.6, z0 + math.sqrt(2) * R - RL + 2.0) + rise
+    z0 = _seat_z(c, b)
+    top0 = b.band_z + 0.5                      # the head's height is set as before the seat moved
+    zc = max(top0 + R * 0.6, top0 + math.sqrt(2) * R - RL + 2.0) + rise
     center = (b.cx, 0.0, zc)
     head = m3d.Manifold.batch_hull([_cyl(RL, z0, z0 + 2.0, cx=b.cx), _sphere(R, center)])
     # Flat bottom at the lid's edge: it sits on the bed when printing and clears the body.
@@ -437,7 +454,7 @@ def cap_heart(cfg: dict, b: Body) -> tuple[dict, bool]:
 
     c = cfg["poop_jar"]
     RL = _lid_collar_radius(c, b.Rn)
-    z0 = b.band_z + 0.5
+    z0 = _seat_z(c, b)
     W = RL * 2.5
     heart = outline_shape("heart")
     from shapely import affinity
@@ -504,6 +521,18 @@ def _union(solids):
     return u
 
 
+def _rim_stop(c: dict, b: Body) -> m3d.Manifold:
+    """A sloped crown on the jar's rim, just under a head lid's 45 degree ceiling when the
+    head faces front: screwing it shut, the ceiling comes down onto the crown there, so the
+    head always ends up facing front (Allen's first duck kept turning about 45 degrees past
+    front). The crown's top faces up and out, so it prints without supports."""
+    amp, clear, gap = c["thread_amplitude"], c["thread_clearance"], c["lid_seat_gap"]
+    r_c = b.Rn + 2 * amp + clear          # the lid's ceiling cone starts here at rim height
+    cone = _cone(r_c, 0.0, b.H - gap, b.H - gap + r_c, b.cx)
+    ring = _cyl(b.Rn, b.H - 0.01, b.H + r_c, cx=b.cx) - _cyl(b.Rn - c["wall"], b.H - 1.0, b.H + r_c + 1.0, cx=b.cx)
+    return cone ^ ring
+
+
 def build_container(cfg: dict, kind: str = "duck", size: str = "medium") -> Container:
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {KINDS}")
@@ -516,6 +545,8 @@ def build_container(cfg: dict, kind: str = "duck", size: str = "medium") -> Cont
     else:
         body, cap = body_round(cfg, size), {"jar-round": "plain", "bear": "bear"}[kind]
     parts, flip = CAPS[cap](cfg, body)
+    if cap != "plain":                     # head lids: the rim stops the head facing front
+        body.solid = body.solid + _rim_stop(cfg["poop_jar"], body)
     vol = body.cavity.trim_by_plane([0.0, 0.0, -1.0], -body.H).volume()
     bb = np.asarray(body.solid.bounding_box())
     info = {"holes": body.holes, "hole_size": cfg["poop_jar"]["hole"], "opening_mm": round(2 * (body.Rn - cfg["poop_jar"]["wall"]), 1),

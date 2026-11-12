@@ -170,7 +170,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        off_palette=None if args.ask_colors else args.off_palette, config_path=_config_path(args),
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
-                       tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate)
+                       tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
+                       no_dots=set(args.no_dots or ()))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -301,6 +302,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--tidy", action="append", nargs="?", const="*", metavar="CARD",
                    help="redraw every line at one even thickness with smooth edges: '--tidy' for every card, "
                         "'--tidy clip-03' for one (repeat for more)")
+    p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
+                   help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
+                        "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)

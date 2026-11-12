@@ -46,7 +46,8 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
-                     name: str, palette: Palette | None = None, tidy: bool = False) -> Design:
+                     name: str, palette: Palette | None = None, tidy: bool = False,
+                     keep_dots: bool = True) -> Design:
     pr = cfg["process"]
     scale = pr["card_scale"]
     if border is None:
@@ -58,7 +59,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         ignore = _box_edge_band(cfg, read)
         inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
                                guide_zone=_guide_zone(cfg, read))
-        design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy)
+        design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy,
+                            keep_dots=keep_dots)
         design.fixes[:0] = inks.fixes
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
@@ -88,7 +90,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
-    design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy)
+    design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy,
+                        keep_dots=keep_dots)
     design.fixes[:0] = inks.fixes
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
@@ -170,7 +173,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
-              names: dict[str, str] | None = None, one_plate: bool = False) -> BatchResult:
+              names: dict[str, str] | None = None, one_plate: bool = False,
+              no_dots: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -203,6 +207,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         return next((opts[c] for c in (*cards, "*") if c in opts), None)
 
     tidy = set(tidy or ())
+    no_dots = set(no_dots or ())
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     designs_dir = out_dir / "designs"
@@ -243,10 +248,15 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
             opts = read_options(cfg, read)                 # boxes the kid ticked on the card
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
-                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False))
+                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
+                                      keep_dots=not (no_dots & {name, base_name, "*"}))
             design.source = label
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
+            slots = cfg["printer"]["ams_slots"]
+            if len(design.inks) + 1 > slots:
+                design.warnings.append(f"{len(design.inks)} drawn colors plus the base: more than the {slots} AMS slots, "
+                                       "so some must share a spool (every color is still its own part)")
             kid = kid_file_name(cfg, design.product, names.get(name, ""))
             if kid:
                 # Named after the kid who drew it (keychain-jack); the card number stays as a note.
@@ -264,13 +274,16 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 _set_base_slot(cfg, piece, palette)
                 new.append(piece)
                 if piece.attachment.get("kind") == "stem_socket":       # a clicker: its case too
-                    from .products import build_clicker_case
+                    from .products import build_clicker_case, build_keycap_post
 
-                    case = build_clicker_case(cfg, piece)
-                    _check_piece(case)
-                    _map_to_palette(cfg, case, palette)
-                    _set_base_slot(cfg, case, palette)
-                    new.append(case)
+                    extra = [build_clicker_case(cfg, piece)]
+                    if piece.attachment.get("separate_post"):          # a shaped keycap: its post apart
+                        extra.insert(0, build_keycap_post(cfg, piece))
+                    for more in extra:
+                        _check_piece(more)
+                        _map_to_palette(cfg, more, palette)
+                        _set_base_slot(cfg, more, palette)
+                        new.append(more)
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -442,6 +455,7 @@ def _copies(cfg: dict, design: Design) -> list[Design]:
             d.outline = affinity.scale(d.outline, -1, 1, origin=(0, 0))
             for ink in d.inks:
                 ink.geometry = affinity.scale(ink.geometry, -1, 1, origin=(0, 0))
+            d.dots = [(-x, y) for x, y in d.dots]
             d.fixes.append("mirror image of the first one")
         out.append(d)
     out[0].fixes.append(f"made as a pair: {base}-1 and {base}-2")
@@ -520,6 +534,17 @@ def _assembled_clicker(cfg: dict, case: Piece, keycap: Piece, keycap_colors: dic
     colors = {f"{case.name} switch": (205, 205, 210), f"{case.name} stem": (60, 120, 220)}
     for n, s in case.parts.items():
         parts[n], colors[n] = s, case_colors[n]
+    if keycap.face_up:
+        # A shaped keycap is built face-up; its separate post (here a plain stand-in) is glued
+        # into the dent in its back.
+        back = rest + att["post_height"]
+        post = m3d.Manifold.cylinder(att["post_height"], att["post_diameter"] / 2, att["post_diameter"] / 2, 48)
+        parts[f"{keycap.name} post"] = post.translate([0.0, 0.0, rest])
+        colors[f"{keycap.name} post"] = (235, 235, 235)
+        for n, s in keycap.parts.items():
+            parts[n] = s.translate([-cx, -cy, back])
+            colors[n] = keycap_colors[n].rgb
+        return parts, colors
     for n, s in keycap.parts.items():
         parts[n] = s.rotate([0.0, 180.0, 0.0]).translate([-cx, -cy, lift])   # turned over, face up
         colors[n] = keycap_colors[n].rgb

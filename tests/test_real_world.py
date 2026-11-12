@@ -25,6 +25,10 @@ def circle_pts(r, cx=0.0, cy=0.0, n=60, a0=0.0, a1=2 * np.pi):
 
 @pytest.fixture(scope="module")
 def run(cfg, tmp_path_factory):
+    import copy
+
+    cfg = copy.deepcopy(cfg)
+    cfg["process"]["max_ink_colors"] = 3          # these cards were made for the old 3-color limit
     d = tmp_path_factory.mktemp("realworld")
     cards = [
         # A faint thin pink pen pig body: only a 0.5 mm card line (0.17 mm real).
@@ -421,3 +425,110 @@ def test_a_color_that_thins_out_past_a_line_stays_one_piece(cfg, streak, joined)
         assert (layers[1].mask & ~(black | yellow)).sum() == 0, "no paper colored in"
     else:
         assert pieces == 2 and not fixes
+
+
+def test_every_drawn_color_is_its_own_part_and_too_many_are_flagged(cfg, tmp_path):
+    """Madison's bubble tea: black outline, purple, orange, a green straw and a yellow handle.
+    With the old 3-color limit the straw merged into the black and the handle into the
+    orange, so Allen could not recolor them. Allen: keep every color its own part, but tell
+    him when a drawing has more colors than the AMS has slots."""
+    GREEN, PURPLE = (20, 140, 90), (110, 60, 200)
+    card = draw_strokes_card(cfg, tmp_path, "keychain", 7, [
+        ("crayon", [(-40, -40), (0, -40), (0, 20), (-40, 20)], ORANGE, 0.0),
+        ("crayon", [(0, -40), (40, -40), (40, 20), (0, 20)], PURPLE, 0.0),
+        ("line", [(10, 20), (10, 50), (30, 60)], GREEN, 6.0),
+        ("line", [(-40, 0), (-55, 0), (-55, -25), (-40, -25)], YELLOW, 5.0),
+        ("line", [(-40, -40), (40, -40), (40, 20), (-40, 20), (-40, -40)], (25, 25, 30), 4.0),
+    ], "tea.jpg")
+    r = run_batch(cfg, [card], tmp_path / "out")
+    p = r.pieces[0]
+    inks = {i.name for i in p.design.inks}
+    assert len(inks) == 5, inks
+    assert not any("most alike" in w for w in p.design.warnings), "nothing merged"
+    assert any("more than the 4 AMS slots" in w for w in p.design.warnings)
+
+
+def _cat_face(px_per_mm, eye_d=(0.9, 0.8)):
+    """Batch 5's cat face at hair clip size: a short cheek line (0.35 mm wide) with the
+    left eye 0.3 mm past its end, and the right eye 3.5 mm to the right. The two eyes
+    are drawn a little different in size."""
+    import cv2
+
+    mm = lambda v: int(round(v * px_per_mm))                                        # noqa: E731
+    black = np.zeros((mm(12), mm(14)), np.uint8)
+    cv2.line(black, (mm(2.0), mm(5.6)), (mm(4.0), mm(5.6)), 1, mm(0.35))           # cheek line
+    left = (4.0 + 0.175 + 0.3 + eye_d[0] / 2, 5.6)
+    cv2.circle(black, (mm(left[0]), mm(left[1])), mm(eye_d[0] / 2), 1, -1)
+    cv2.circle(black, (mm(left[0] + 3.5), mm(5.6)), mm(eye_d[1] / 2), 1, -1)
+    cv2.rectangle(black, (mm(1), mm(9)), (mm(13), mm(9.6)), 1, -1)                  # a body line below
+    return black.astype(bool)
+
+
+def _round(poly):
+    import shapely
+
+    r = shapely.minimum_bounding_radius(poly)
+    return poly.area / (np.pi * r * r)
+
+
+def test_small_round_eyes_stay_round_and_apart(cfg):
+    """Batch 5 and Clicker 2 (2026-11-12): the cat lost its eyes (0.55 and 0.66 mm²) and the
+    butterfly its eyes and wing dots (0.25 mm²): all smaller than the 1 mm² speck size.
+    Then the cat's left eye, 0.3 mm from her cheek line, was glued to it, and later cut
+    by it (Allen: a cut eye looks scary). Small round dots are now kept, stay round, grow
+    to the printable 1 mm with the line giving way, and a pair of eyes is made alike."""
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    d = fix_design(cfg, [InkLayer("black", (25, 25, 30), _cat_face(ppm))], ppm, border_on=True,
+                   name="cat", product="hair_clip")
+    ink = next(i for i in d.inks if i.name == "black").geometry
+    eyes = sorted((g for g in ink.geoms if g.area < 1.5), key=lambda g: g.centroid.x)
+    assert len(eyes) == 2, f"two eyes, separate from every line: {[round(g.area, 2) for g in ink.geoms]}"
+    for e in eyes:
+        assert _round(e) > 0.8, "an eye stays round"
+        assert 2 * np.sqrt(e.area / np.pi) >= 0.9, "grown to the printable size"
+    assert eyes[0].area == pytest.approx(eyes[1].area, rel=0.08), "both eyes the same size"
+    line = max((g for g in ink.geoms if g.area >= 1.5 and g.bounds[3] > eyes[0].bounds[1] - 1),
+               key=lambda g: -g.distance(eyes[0]))
+    assert eyes[0].distance(line) >= 0.35, "a gap that prints between the eye and the cheek line"
+    assert len(d.dots) == 2 and any("small dot(s) kept" in f for f in d.fixes)
+    assert any("side-by-side dots (eyes)" in f for f in d.fixes)
+
+
+def test_no_dots_drops_the_small_dots(cfg):
+    """A speck of pencil dust looks just like a small eye (test drive 4's rainbow), so the
+    kept dots are circled on the preview and --no-dots removes them for that card."""
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    d = fix_design(cfg, [InkLayer("black", (25, 25, 30), _cat_face(ppm))], ppm, border_on=True,
+                   name="cat", product="hair_clip", keep_dots=False)
+    ink = next(i for i in d.inks if i.name == "black").geometry
+    assert not [g for g in ink.geoms if g.area < 1.5] and not d.dots
+
+
+def test_dust_is_still_removed_and_dashes_still_join(cfg):
+    """Only round dots of at least 0.15 mm² are kept. Smaller ones are dust, and a short
+    dash is not a dot (it goes, as before). A sketchy line drawn as dashes with small
+    gaps (long marks, not dots) still joins into one line."""
+    import cv2
+
+    from charm_maker.inks import InkLayer
+    from charm_maker.shape import fix_design
+
+    ppm = 18.0
+    mm = lambda v: int(round(v * ppm))                                              # noqa: E731
+    m = np.zeros((mm(14), mm(24)), np.uint8)
+    for k in range(9):
+        x = 1.0 + 1.9 * k
+        cv2.rectangle(m, (mm(x), mm(4.8)), (mm(x + 1.6) - 1, mm(5.2)), 1, -1)    # 1.6 x 0.4 mm, 0.3 mm apart
+    cv2.circle(m, (mm(8.0), mm(9.0)), mm(0.15), 1, -1)                              # dust, 0.07 mm²
+    cv2.rectangle(m, (mm(12.0), mm(10.0)), (mm(13.0), mm(10.4)), 1, -1)            # a short dash, 0.4 mm²
+    d = fix_design(cfg, [InkLayer("black", (25, 25, 30), m.astype(bool))], ppm, border_on=True,
+                   name="dash", product="hair_clip")
+    ink = next(i for i in d.inks if i.name == "black").geometry
+    assert len(ink.geoms) == 1, f"one line, not {len(ink.geoms)} pieces"
+    assert not d.dots, "the dust and the short dash are gone"

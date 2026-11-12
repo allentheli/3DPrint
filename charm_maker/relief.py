@@ -170,6 +170,12 @@ def build_relief_parts(cfg: dict, design, attachment: str | None, info: dict, st
         cx, cy = info["center"]
         base = base - cylinder(info["diameter"], info["depth"] + 1.0, cx, cy, -1.0)
     parts = {f"{design.name} base": base, **parts}
+    if attachment == "stem_socket":
+        # A shaped clicker keycap: a round dent in the back where the separate post is glued.
+        cx, cy = info["center"]
+        pc = cfg["products"]["clicker"]
+        dent = cylinder(info["post_diameter"] + 2 * pc["post_glue_clearance"], pc["post_glue_depth"] + 1.0, cx, cy, -1.0)
+        parts = {n: s - dent for n, s in parts.items()}
     height = max(p.bounding_box()[5] for p in parts.values())
     label = {"puffy": "puffy", "outlined": "raised outline", "puffy-outlined": "puffy with a raised outline",
              "figurine": "figurine front, flat back"}[style]

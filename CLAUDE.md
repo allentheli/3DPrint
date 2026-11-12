@@ -25,12 +25,18 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   piece 1 = 11.2 mm, keyring hole piece 4 = 4.5 mm, switch hole piece 10 = 13.9 mm, keycap
   socket piece 13 = 0.10 mm (all four the tightest candidate, so if any feels loose in real
   pieces, add tighter candidates), necklace loop piece 17 = 3.5 mm. Still waiting on the earring
-  jump-ring hole only (pieces 7-9 changed on 2026-11-11; Allen tests with Madison's real
-  earrings instead, 1.5 mm = piece 8: if the jump ring goes on and closes, record 8). Until
-  then earrings say so in a `check:` line.
-- **First prints to try after the fit test:** the 3D sampler (her test-drive charms, two per
-  style), a clicker (sample from her bird drawing; she has blank clicker cards), one poop
-  container lid (thread clearance untested).
+  jump-ring hole only: Allen thought 1.5 mm looked small, so it is now 1.8 mm (piece 9's size),
+  same 1 mm of plastic to the edge; he tests it on real earrings. If the jump ring goes on and
+  closes, record 9. Until then earrings say so in a `check:` line.
+- **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
+  post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
+  rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
+- **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
+  (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
+  facing front (his first printed duck closed fine but the head ended up turned; the thread
+  clearance itself worked).
+- **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
+  trim the clicker by about 1.5 mm).
 - **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
@@ -80,13 +86,17 @@ python -m charm_maker run <folder or files> --out output/<batch-name> --names ke
 2. Show the contact sheet. In plain words, list the fixes and anything you were unsure of,
    including any name you could not read (the contact sheet shows the handwriting beside it).
 3. Ask only if a card is unreadable. Do not ask about colors: every distinct ink color is
-   its own named part in the 3MF, and Allen assigns spools in Bambu Studio. If loaded slots
-   are in config, parts start on the nearest loaded spool as a head start.
+   its own named part in the 3MF (never merged, up to `max_ink_colors` 8), and Allen assigns
+   spools in Bambu Studio. If loaded slots are in config, parts start on the nearest loaded
+   spool as a head start. One exception (Allen, 2026-11-11): when a drawing has more colors
+   than the AMS has slots (the `check:` line "more than the 4 AMS slots"), hand the rest over
+   and ask him which colors should share a spool for that piece.
 4. Hand over the plate files (as downloads in a cloud session) and say, for each plate,
    which filament goes in which AMS slot, the layer height and the plate type.
 5. Remind him of finishing steps only when they apply: glue (clip pads, stud posts, magnets
-   on the flat back of figures), split rings (keychains), a 4 mm jump ring then the hook (earrings), the chain straight through
-   the loop (pendants), switch insertion (clickers).
+   on the flat back of figures, the separate post into a shaped clicker keycap), split rings
+   (keychains), a 4 mm jump ring then the hook (earrings), the chain straight through the loop
+   (pendants), switch insertion (clickers).
 
 When Allen says he swapped a spool ("pink is in slot 3 now"): run
 `python -m charm_maker load 3 "Pink PLA"` (add `--color "#RRGGBB"` for a spool not in
@@ -99,9 +109,11 @@ mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm ju
 `--product`.
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
-pieces. The keycap `click-NN` is the drawing as a flat charm (always flat) with a 5.5 mm post
-and cross socket on the back, filled out behind to at least the switch's 15.6 mm square, printed
-face-down with the charms. The case `click-NN-case` is a cup (Allen, after the first print on
+pieces. The keycap `click-NN` is the drawing as a flat charm with a 5.5 mm post and cross socket
+on the back, filled out behind to at least the switch's 15.6 mm square, printed face-down with
+the charms. A shaped keycap (puffy, raised lines, figurine: ticked on the card or `--style`)
+prints face-up, so its post is a third piece `click-NN-post` (prints standing, socket up) that
+Allen glues into a round dent in the keycap's back. The case `click-NN-case` is a cup (Allen, after the first print on
 2026-11-11: the switch showed and the keycap floated over a gap): the switch snaps into a plate
 at the bottom of an opening shaped like the keycap, the keycap sits in that opening (0.6 mm
 clearance, face 1.5 mm above the rim) and presses down into it, so nothing of the switch shows.
@@ -109,17 +121,19 @@ Below the plate a hollow for the switch body and pins and a floor with a push-ou
 ring tab (about 9.5 mm tall, Allen: not the whole height) halfway up the side, its hole running
 left to right (the ring hangs beside the case, so it sits flat on a table). About 25 mm tall plus
 the keycap (the switch needs that height); printed upright on its own plate at 0.2 mm in one
-filament, tree supports on (only the tab's underside needs them; `ring_tab_supports: false`
-gives it a 45-degree underside and no supports). The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
-(Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm (never past
-40 mm) with a note. Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
+filament, no supports: the tab's underside slopes back to the wall at 45 degrees (Allen: with
+tree supports on, Bambu Studio also filled the hollow inside the case; `ring_tab_supports: true`
+gives the tab a flat underside on supports instead). The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
+(Allen: a minimum, but a large maximum); a smaller drawing is scaled up to 16 mm across (never
+past 40 mm), with a note (Allen, 2026-11-12: kids don't think in sizes, hair clips shrink
+anyway). "Keep its size, more border" is `products.clicker.small_drawing: border` (a config copy). Clicker cards printed before 2026-11-10's 40 mm box must be reprinted
 (their drawing box is smaller). The keycap post sits at the drawing's
 balance point, or as near it as fits. Both use
 the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
 case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
 makes a plain charm to glue onto a store-bought blank keycap instead.
 
-Card tick boxes: under the name line, every card (except clicker) shows the five shapes, each
+Card tick boxes: under the name line, every card (clicker too, since 2026-11-11) shows the five shapes, each
 with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
 Figurine. A "neat lines" box beside the name turns on tidy. The run reads the ticks itself and
 says so in the fixes ("shape ticked on the card: Puffy"); no tick means flat; two ticks use the
@@ -139,6 +153,12 @@ Tidy: the card's "neat lines" box, `--tidy` for every card, or `--tidy clip-03` 
 or "make them all tidy" means this. It redraws the outline color's strokes at one even
 thickness with smooth edges; dots, blobs and colored-in areas keep their shape, other colors
 only get smooth edges. Off by default; it works with any shape style. Never an AI redraw.
+
+Eyes and small dots (Allen, 2026-11-12): small round dots are kept (eyes, wing dots), stay round,
+and a pair of eyes is made the same shape and size; they are circled in blue on the preview and
+listed in the fixes. A pencil speck looks exactly like a dot, so if a drawing gets dots it does not
+have (test drive 4's rainbow has no face), run again with `--no-dots <card>` (repeat for more, or
+`--no-dots` for all). Decided by shape and position only, never by how dark the ink is.
 
 Figurines: `--style figurine` (or `--style fig-02=figurine`) rounds the drawing's front like a
 balloon, thick where the drawing is wide. By default the back stays **flat**, so it is still the
@@ -228,7 +248,11 @@ fix (and add a regression test in `tests/test_real_world.py`).
 ## Poop containers (party favors)
 
 See-through containers kids fill with printer poop and twist shut. Everything prints with
-no supports and the lid closes in one turn (right-hand thread: clockwise to close).
+no supports and the lid closes in one turn (right-hand thread: clockwise to close). Head lids
+(duck, bear, heart) stop facing front: a sloped crown on the jar's rim meets the lid's ceiling
+there, and the collar sits just above the body (Allen's first duck turned about 45 degrees past
+front, 2026-11-12). The downloaded-model screw top stops the same way: the head sits 0.1 mm over
+the flat cut.
 
 ```bash
 python -m charm_maker poop-containers --kinds jar-round bear heart --sizes medium

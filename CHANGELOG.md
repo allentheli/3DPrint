@@ -1,10 +1,30 @@
 # Changelog
 
+## Eyes are kept, round and matching (2026-11-12)
+
+- Small round dots (eyes, dots on a wing, boba pearls) are no longer removed as specks: the cat and the butterfly have their eyes back.
+- Eyes stay round and apart: a line next to an eye gives way, and the gap-filling for crayon coloring no longer glues an eye, smile or nose to the line beside it. Marks drawn closer than 0.4 mm get a 0.4 mm gap so they print as two.
+- A pair of eyes gets the same shape and size, each where it was drawn.
+- Kept dots are circled in blue on the preview. A pencil speck looks just like a dot, so `--no-dots <card>` removes them for that drawing (test drive 4's rainbow).
+- Clicker assembly note: the ring goes through the tab halfway up the side.
+- Checked against every real scan so far (pen, marker and pencil). 3 new tests.
+
+## Figurine clickers, every color its own part (2026-11-11)
+
+- Clicker keycaps can be puffy, raised lines or figurine (the kids' favorite). A shaped keycap prints face-up, so its post is a separate small piece glued into a dent in the keycap's back; the print notes say so. The clicker card now has the shape tick boxes.
+- Every drawn color stays its own part (up to 8); a drawing with more colors than the 4 AMS slots gets a check line, and Claude asks Allen which share a spool.
+- Earring hole 1.8 mm (was 1.5), same 1 mm to the edge.
+- A clicker drawing smaller than 16 mm is scaled up by default (Allen's call); a setting keeps its size and grows the border instead.
+- Poop container heads (duck, bear, heart) and screw-top heads stop facing front when screwed shut (they could turn about 45 degrees past front). 2 new tests.
+- The name picture reaches up to the drawing box, so tall handwriting is no longer cut off at the top.
+- Allen's prints: the cup clicker and Alison's pendant came out well.
+- 4 new tests, 2 updated.
+
 ## Clicker case is a cup (2026-11-11)
 
 - After the first printed clicker (switch top showing, keycap floating over a gap), the case is now a cup: the switch sits inside it, the keycap sits in its drawing-shaped opening with 0.6 mm to spare and its face 1.5 mm above the rim, and presses down into it. Nothing of the switch or the gap shows. Same overall height (about 25 mm plus the keycap), now one solid shape.
 - Clicker keycaps are filled out behind the drawing to the switch's 15.6 mm square, so they cover it.
-- The clicker's ring post is now a short tab halfway up the side (9.5 mm tall instead of the case's whole height), printed on tree supports; the print notes say to turn them on.
+- The clicker's ring post is now a short tab halfway up the side (9.5 mm tall instead of the case's whole height). Its underside slopes back to the wall at 45 degrees, so the case prints with no supports (Allen: supports also filled the inside of the case).
 - The assembled preview shows the keycap in the cup. Print notes and assembly steps updated. 1 new test, 2 updated.
 
 ## Pieces named after the kid (2026-11-10)

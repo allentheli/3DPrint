@@ -101,7 +101,9 @@ def add_screw_top(cfg: dict, model: m3d.Manifold, cut_z: float, *, min_opening: 
 
     # Body: everything below the cut, plus non-lid parts above it, minus what a turning head would hit.
     lid_raw = lid_part.trim_by_plane([0.0, 0.0, 1.0], cut_z)
-    sweep = _sweep(lid_raw, axis, cut_z - 0.6, clearance=1.0)
+    # Cleared from the cut plane up only: the body's flat top at the cut is where the head
+    # comes to rest, facing the way the model faces (see the lid's trim below).
+    sweep = _sweep(lid_raw, axis, cut_z, clearance=1.0)
     pieces = [p.trim_by_plane([0.0, 0.0, -1.0], -cut_z) for p in parts]
     pieces += [p.trim_by_plane([0.0, 0.0, 1.0], cut_z) for p in others]
     # The model's shells overlap (struts poke into the head): join them into one solid.
@@ -115,7 +117,7 @@ def add_screw_top(cfg: dict, model: m3d.Manifold, cut_z: float, *, min_opening: 
     body = (body + neck) - bore
     # Lid: the head above the cut, with a threaded socket and a 45 degree cone ceiling.
     lid = lid_raw - at_axis(_socket(c, Rn, band_z, H))
-    lid = lid.trim_by_plane([0.0, 0.0, 1.0], cut_z + 0.5)
+    lid = lid.trim_by_plane([0.0, 0.0, 1.0], cut_z + c["lid_seat_gap"])
     info = {"axis": [round(cx, 1), round(cy, 1)], "cut_z": cut_z, "neck_radius": round(Rn, 2),
             "opening_mm": round(opening, 1), "lid_collar_radius": round(RL, 2),
             "head_inscribed_radius": round(inscribed, 2), "cleared_mm3": round(cleared, 1)}

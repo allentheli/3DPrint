@@ -96,6 +96,7 @@ def scale_to_figurine(cfg: dict, design) -> float:
     design.outline = affinity.scale(design.outline, k, k, origin=(0, 0))
     for ink in design.inks:
         ink.geometry = affinity.scale(ink.geometry, k, k, origin=(0, 0))
+    design.dots = [(x * k, y * k) for x, y in getattr(design, "dots", [])]
     return k
 
 

@@ -385,10 +385,6 @@ def _draw_options(pdf, cfg: dict, lay: CardLayout):
             pdf.setFillColorRGB(0, 0, 0)
             pdf.setFont("Helvetica", 8.5)
             pdf.drawCentredString((x + s + 1.5 + pw / 2) * mm, (y - 6.0) * mm, WORDS[key])
-    elif lay.product == "clicker":
-        nx, ny = c["name_box"][0], c["name_box"][1]
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString((c["margin"] + 8) * mm, (ny - 14) * mm, "Clicker keys stay flat: the switch sits right under them.")
     x, y, s = lay.zones["tidy_box"]
     box(x, y, s)
     pdf.setFillColorRGB(0, 0, 0)

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
+from scipy import ndimage
 from shapely import affinity
 from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import nearest_points, unary_union
@@ -36,6 +37,7 @@ class Design:
     paper_rgb: tuple[int, int, int] = (250, 250, 250)
     card: str = ""                # the card it came from (key-03), when named after the kid
     extras: dict = field(default_factory=dict)   # attachment info filled by products
+    dots: list = field(default_factory=list)     # small dots kept (eyes), real mm, circled on the preview
 
 
 def _disk(radius_px: float) -> np.ndarray:
@@ -47,19 +49,27 @@ def _u8(mask: np.ndarray) -> np.ndarray:
     return mask.astype(np.uint8)
 
 
-def remove_specks(mask: np.ndarray, min_area_px: float, min_extent_px: float = 0.0) -> tuple[np.ndarray, int]:
+def remove_specks(mask: np.ndarray, min_area_px: float, min_extent_px: float = 0.0,
+                  min_dot_px: float | None = None) -> tuple[np.ndarray, int]:
     """Remove small dots. A mark is only a speck if it is both small in area and short:
     a thin smile, an eyelash or a whisker is small in area but long, and stays (it gets
-    thickened). Length is measured along the mark, so a slanted whisker counts in full."""
+    thickened). Length is measured along the mark, so a slanted whisker counts in full.
+    A small round, solid dot of at least `min_dot_px` is an eye (the cat's and the
+    butterfly's eyes were 0.25 to 0.6 mm² at real size) and stays too; it is thickened
+    to the printable size later. Only dust-sized marks are removed."""
     n, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
     keep = np.zeros(n, bool)
     keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= min_area_px
-    if min_extent_px > 0:
-        for i in np.flatnonzero(~keep[1:]) + 1:
-            x, y, w, h = stats[i, :4]
-            pts = np.column_stack(np.nonzero(labels[y:y + h, x:x + w] == i))[:, ::-1].astype(np.float32)
-            (_, _), (rw, rh), _ = cv2.minAreaRect(pts)
-            keep[i] = max(rw, rh) + 1.0 >= min_extent_px
+    for i in np.flatnonzero(~keep[1:]) + 1:
+        x, y, w, h = stats[i, :4]
+        one = labels[y:y + h, x:x + w] == i
+        pts = np.column_stack(np.nonzero(one))[:, ::-1].astype(np.float32)
+        (_, _), (rw, rh), _ = cv2.minAreaRect(pts)
+        long_side = max(rw, rh) + 1.0
+        if min_extent_px > 0 and long_side >= min_extent_px:
+            keep[i] = True
+        elif min_dot_px is not None and stats[i, cv2.CC_STAT_AREA] >= min_dot_px:
+            keep[i] = bool(round_dots(one, np.inf).any())       # round and solid: an eye
     removed = int((~keep[1:]).sum())
     return keep[labels], removed
 
@@ -103,18 +113,234 @@ def smooth_labels(label_map: np.ndarray, n_labels: int, radius_px: int) -> np.nd
     return out
 
 
-def _keep_apart(mask: np.ndarray, gap_px: float) -> np.ndarray:
-    """Where separate marks may not grow: a band around the line halfway between them, so
-    two marks thickened toward each other stop `gap_px` apart (or as far apart as they
-    were drawn, if closer). Eyes next to a mouth stay eyes."""
-    n = cv2.connectedComponents(_u8(mask), connectivity=8)[0]
+def _between_marks(mask: np.ndarray, gap_px: float) -> np.ndarray:
+    """A band `gap_px` wide along the line halfway between separate marks (8-connected,
+    so a stroke that only touches itself at a corner is still one mark)."""
+    n, comp = cv2.connectedComponents(_u8(mask), connectivity=8)
     if n <= 2 or gap_px <= 0:
         return np.zeros_like(mask)
-    _, near = cv2.distanceTransformWithLabels(_u8(~mask), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_CCOMP)
+    _, (iy, ix) = ndimage.distance_transform_edt(~mask, return_indices=True)
+    near = comp[iy, ix]
     edge = np.zeros_like(mask)
     edge[:, 1:] |= near[:, 1:] != near[:, :-1]
     edge[1:, :] |= near[1:, :] != near[:-1, :]
-    return cv2.dilate(_u8(edge), _disk(gap_px / 2.0)).astype(bool) & ~mask
+    return cv2.dilate(_u8(edge), _disk(gap_px / 2.0)).astype(bool)
+
+
+def _keep_apart(mask: np.ndarray, gap_px: float) -> np.ndarray:
+    """Where separate marks may not grow: a band around the line halfway between them, so
+    two marks thickened toward each other stop `gap_px` apart. Eyes next to a mouth stay
+    eyes."""
+    return _between_marks(mask, gap_px) & ~mask
+
+
+def round_dots(mask: np.ndarray, max_area_px: float) -> np.ndarray:
+    """Small round, solid marks (eyes, dots on a wing): not much longer than wide and
+    filling most of their box. These keep their round shape through every fix."""
+    n, comp, stats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
+    out = np.zeros_like(mask)
+    for i in range(1, n):
+        x, y, w, h, area = stats[i]
+        if area >= max_area_px:
+            continue
+        one = comp[y:y + h, x:x + w] == i
+        pts = np.column_stack(np.nonzero(one))[:, ::-1].astype(np.float32)
+        (_, _), (rw, rh), _ = cv2.minAreaRect(pts)
+        long_side, short_side = max(rw, rh) + 1.0, min(rw, rh) + 1.0
+        contours = cv2.findContours(_u8(one), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0]
+        hull = cv2.contourArea(cv2.convexHull(np.vstack(contours))) + cv2.arcLength(
+            cv2.convexHull(np.vstack(contours)), True) / 2.0 + 1.0    # pixel-area of the hull
+        if long_side <= 1.8 * short_side and area >= 0.8 * hull:
+            out[y:y + h, x:x + w] |= one
+    return out
+
+
+def _signed(m: np.ndarray) -> np.ndarray:
+    return (cv2.distanceTransform(_u8(m), cv2.DIST_L2, 5)
+            - cv2.distanceTransform(_u8(~m), cv2.DIST_L2, 5))
+
+
+def eye_pairs(dots: np.ndarray) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Pairs of round dots that look like a pair of eyes: about the same size, side by side
+    (within 35 degrees of level), and between 1.5 and 6 eye-widths apart. Each dot is in
+    one pair at most, closest pairs first. Returns the two dots' masks, left one first."""
+    n, comp, stats, cents = cv2.connectedComponentsWithStats(_u8(dots), connectivity=8)
+    cand = []
+    for a in range(1, n):
+        for b in range(a + 1, n):
+            aa, ab = stats[a, 4], stats[b, 4]
+            if max(aa, ab) > 2.5 * min(aa, ab):
+                continue
+            d = np.hypot(*(cents[a] - cents[b]))
+            size = np.sqrt(4.0 * (aa + ab) / 2.0 / np.pi)
+            dx, dy = abs(cents[a][0] - cents[b][0]), abs(cents[a][1] - cents[b][1])
+            if 1.5 * size <= d <= 6.0 * size and dy <= np.tan(np.radians(35)) * dx:
+                cand.append((d / size, a, b))
+    used: set[int] = set()
+    out = []
+    for _, a, b in sorted(cand):
+        if a in used or b in used:
+            continue
+        used |= {a, b}
+        if cents[a][0] > cents[b][0]:
+            a, b = b, a
+        out.append((comp == a, comp == b))
+    return out
+
+
+def symmetric_eyes(left: np.ndarray, right: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Give a pair of eyes the same shape and size (Allen: eyes symmetrical when they can
+    be): the average of the left eye and the mirrored right eye, mirrored back for the
+    right one. Each stays where it was drawn."""
+    def window(m):
+        ys, xs = np.nonzero(m)
+        return int(round(ys.mean())), int(round(xs.mean()))
+    r = int(max(np.ptp(np.nonzero(left)[0]), np.ptp(np.nonzero(left)[1]),
+                np.ptp(np.nonzero(right)[0]), np.ptp(np.nonzero(right)[1]))) + 4
+    pad = lambda m: np.pad(m, r)
+    (cy_l, cx_l), (cy_r, cx_r) = window(left), window(right)
+    lw = pad(left)[cy_l:cy_l + 2 * r + 1, cx_l:cx_l + 2 * r + 1]
+    rw = pad(right)[cy_r:cy_r + 2 * r + 1, cx_r:cx_r + 2 * r + 1]
+    mean = (_signed(lw) + _signed(np.fliplr(rw))) / 2.0 > 0
+    out_l, out_r = np.zeros_like(pad(left)), np.zeros_like(pad(right))
+    out_l[cy_l:cy_l + 2 * r + 1, cx_l:cx_l + 2 * r + 1] = mean
+    out_r[cy_r:cy_r + 2 * r + 1, cx_r:cx_r + 2 * r + 1] = np.fliplr(mean)
+    return out_l[r:-r, r:-r], out_r[r:-r, r:-r]
+
+
+def _count(mask: np.ndarray) -> int:
+    return cv2.connectedComponents(_u8(mask), connectivity=8)[0] - 1
+
+
+def _window(one: np.ndarray, pad: int) -> tuple[slice, slice]:
+    ys, xs = np.nonzero(one)
+    return (slice(max(0, ys.min() - pad), min(one.shape[0], ys.max() + 1 + pad)),
+            slice(max(0, xs.min() - pad), min(one.shape[1], xs.max() + 1 + pad)))
+
+
+def _grow(one: np.ndarray, add: float) -> np.ndarray:
+    return cv2.dilate(_u8(one), _disk(add)).astype(bool) if add >= 0.5 else one
+
+
+def _dot_fit(one: np.ndarray, lines: np.ndarray, other_dots: np.ndarray,
+             min_width_px: float, gap_px: float) -> float | None:
+    """How much this dot may grow toward the printable width: it stays `gap_px` from other
+    dots, and the lines nearby may give way but must not be cut in two. None when even the
+    dot as drawn would cut a line."""
+    want = max(0.0, min_width_px / 2.0 - float(cv2.distanceTransform(_u8(one), cv2.DIST_L2, 5).max()))
+    win = _window(one, int(np.ceil(want + 3 * gap_px)) + 2)
+    o, ln, od = one[win], lines[win], other_dots[win]
+    near_dot = cv2.distanceTransform(_u8(~od), cv2.DIST_L2, 5)[o].min() if od.any() else np.inf
+    top = min(want, max(0.0, float(near_dot) - gap_px))
+    pieces = _count(ln)
+    for add in sorted({top, *range(int(top), -1, -1)}, reverse=True):
+        trimmed = ln & (cv2.distanceTransform(_u8(~_grow(o, add)), cv2.DIST_L2, 5) > gap_px)
+        if _count(trimmed) <= pieces:
+            return float(add)
+    return None
+
+
+def _dot_place(one: np.ndarray, lines: np.ndarray, add: float | None,
+               gap_px: float) -> tuple[np.ndarray, np.ndarray, int]:
+    """Grow the dot by `add` and make the lines give way to it; with `add` None, split the
+    gap between the dot and the line instead. Returns (dot, lines, 1 if a line moved)."""
+    win = _window(one, int(np.ceil((add or 0.0) + 3 * gap_px)) + 2)
+    o, ln = one[win], lines[win]
+    if add is None:
+        band = _between_marks(ln | o, gap_px)
+        g, trimmed = o & ~band, ln & ~band
+    else:
+        g = _grow(o, add)
+        trimmed = ln & (cv2.distanceTransform(_u8(~g), cv2.DIST_L2, 5) > gap_px)
+    gave = int((trimmed != ln).any())
+    dot, lines = np.zeros_like(one), lines.copy()
+    dot[win] = g
+    lines[win] = trimmed
+    return dot, lines, gave
+
+
+def pull_apart(mask: np.ndarray, gap_px: float, min_width_px: float = 0.0,
+               small_px: float = 0.0) -> tuple[np.ndarray, np.ndarray, int, int]:
+    """Separate marks drawn closer than `gap_px` (an eye 0.3 mm from a cheek line) get
+    `gap_px` of paper between them, so they print as two marks instead of fusing.
+
+    A round dot (an eye) stays round (Allen: a cut eye looks scary): a dot thinner than
+    `min_width_px` grows evenly to that size as far as it can while staying `gap_px` from
+    everything else, and when it was drawn too close to a line, the line gives way (unless
+    that would cut the line in two; then both give way). Between two other marks, the bits
+    facing each other are trimmed. Returns (mask, the round dots, number of places, number
+    of eye pairs made alike)."""
+    dots = round_dots(mask, small_px) if small_px > 0 else np.zeros_like(mask)
+    others = mask & ~dots
+    places = 0
+    groups: list[list[np.ndarray]] = []
+    paired = np.zeros_like(mask)
+    drawn_pairs = np.zeros_like(mask)
+    for left, right in eye_pairs(dots):
+        new_l, new_r = symmetric_eyes(left, right)
+        new_l, new_r = new_l & ~others, new_r & ~others
+        if new_l.any() and new_r.any():
+            groups.append([new_l, new_r])
+            paired |= new_l | new_r
+            drawn_pairs |= left | right
+    single = dots & ~drawn_pairs
+    n, comp = cv2.connectedComponents(_u8(single), connectivity=8)
+    groups += [[comp == i] for i in range(1, n)]
+    all_dots = paired | single
+    grown = np.zeros_like(mask)
+    for group in groups:
+        # The same growth for both eyes of a pair, so they stay alike.
+        fits = [_dot_fit(one, others, (all_dots & ~one) | grown, min_width_px, gap_px) for one in group]
+        add = None if any(f is None for f in fits) else min(fits)
+        for one in group:
+            g, others, gave = _dot_place(one, others, add, gap_px)
+            places += gave
+            grown |= g
+    between = _between_marks(others, gap_px)
+    band = between & others
+    if band.any():
+        lbl = cv2.connectedComponents(_u8(between), connectivity=8)[1]
+        places += len(np.unique(lbl[band]))
+        others &= ~band
+    return others | grown, grown, places, sum(len(g) == 2 for g in groups)
+
+
+def small_mark_bridges(mask: np.ndarray, fill: np.ndarray, small_px: float) -> np.ndarray:
+    """The pixels of `fill` that would join a small face mark (an eye, a smile, a nose:
+    smaller than `small_px` and not a long dash) to the one mark beside it. Closing the
+    paper gaps in scribbled coloring must not glue a face together: the cat's eye sat
+    0.3 mm from her cheek line and became one blob. A long dash is a bit of a sketchy
+    line, and joins it. Judged by shape and position only, never by how dark the ink is
+    (Allen: that depends on the pen)."""
+    n, comp, stats, _ = cv2.connectedComponentsWithStats(_u8(mask), connectivity=8)
+    fn, flab = cv2.connectedComponents(_u8(fill), connectivity=8)
+    if n <= 2 or fn <= 1:
+        return np.zeros_like(mask)
+    is_dot = np.zeros(n, bool)
+    for i in np.flatnonzero(stats[1:, cv2.CC_STAT_AREA] < small_px) + 1:
+        x, y, w, h = stats[i, :4]
+        pts = np.column_stack(np.nonzero(comp[y:y + h, x:x + w] == i))[:, ::-1].astype(np.float32)
+        (_, _), (rw, rh), _ = cv2.minAreaRect(pts)
+        is_dot[i] = max(rw, rh) + 1.0 <= 2.5 * (min(rw, rh) + 1.0)
+    if not is_dot.any():
+        return np.zeros_like(mask)
+    h, w = mask.shape
+    padded = np.pad(flab, 1)
+    pairs = []
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy or dx:
+                nb = padded[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]
+                sel = (nb > 0) & (comp > 0)
+                pairs.append(np.column_stack([nb[sel], comp[sel]]))
+    pairs = np.unique(np.concatenate(pairs), axis=0)
+    if not len(pairs):
+        return np.zeros_like(mask)
+    face = np.bincount(pairs[:, 0], weights=is_dot[pairs[:, 1]], minlength=fn)
+    other = np.bincount(pairs[:, 0], weights=~is_dot[pairs[:, 1]], minlength=fn)
+    # A gap between a face mark and one other mark stays (an eye by a cheek line); a gap
+    # touching two other marks is a gap in a line, and closes.
+    return ((face >= 1) & (face + other >= 2) & (other <= 1))[flab] & fill
 
 
 def thin_strips(label_map: np.ndarray, n_labels: int, min_width_px: float, min_area_px: float) -> np.ndarray:
@@ -140,7 +366,8 @@ def thin_strips(label_map: np.ndarray, n_labels: int, min_width_px: float, min_a
 
 
 def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0,
-                     blocked: np.ndarray | None = None) -> tuple[np.ndarray, float]:
+                     blocked: np.ndarray | None = None,
+                     fixed: np.ndarray | None = None) -> tuple[np.ndarray, float]:
     """Make ink at least `min_width_px` wide, without merging separate marks: they keep
     at least `gap_px` between them (or the gap that was drawn, if smaller), even if a mark
     then stays a little thinner. It never grows into `blocked` (thin strips of other
@@ -148,6 +375,8 @@ def thicken_thin_ink(mask: np.ndarray, min_width_px: float, gap_px: float = 0.0,
     r = min_width_px / 2.0
     opened = cv2.morphologyEx(_u8(mask), cv2.MORPH_OPEN, _disk(r)).astype(bool)
     thin_zone = mask & ~opened
+    if fixed is not None:      # round dots keep their shape (already grown as far as they can)
+        thin_zone &= ~fixed
     if not thin_zone.any():
         return mask, 0.0
     # Keep only thin parts that are not just ragged edges of thick parts.
@@ -390,7 +619,7 @@ def bridge_components(shape, width_mm: float) -> tuple[Polygon, int]:
 
 
 def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on: bool,
-               name: str, product: str, tidy: bool = False) -> Design:
+               name: str, product: str, tidy: bool = False, keep_dots: bool = True) -> Design:
     """Apply every print fix in spec order and vectorize. `tidy` redraws every stroke at
     one even thickness with smooth edges (off unless asked for)."""
     pr = cfg["process"]
@@ -407,9 +636,19 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         label_map[(label_map == 0) & layer.mask] = i
     label_map = smooth_labels(label_map, len(layers), max(1, int(round(0.2 * px_per_mm))))
     union = label_map > 0
-    union, specks = remove_specks(union, speck_px, pr["speck_max_extent"] * px_per_mm)
+    union, specks = remove_specks(union, speck_px, pr["speck_max_extent"] * px_per_mm,
+                                  pr["min_dot_area_mm2"] * px_per_mm ** 2 if keep_dots else None)
     if specks:
         fixes.append(f"{specks} speck(s) smaller than {pr['min_speck_area_mm2']} mm² removed")
+    # Small round dots are kept (eyes, dots on a wing). A speck of pencil dust looks the
+    # same, so they are circled on the preview; --no-dots removes them for a card.
+    kept_dots = []
+    n_d, _, _, cents = cv2.connectedComponentsWithStats(_u8(round_dots(union, speck_px)), connectivity=8)
+    hh = union.shape[0]
+    for cx, cy in cents[1:]:
+        kept_dots.append(((cx + 0.5) / px_per_mm, (hh - (cy + 0.5)) / px_per_mm))
+    if kept_dots:
+        fixes.append(f"{len(kept_dots)} small dot(s) kept, circled in blue (eyes or dots in the drawing)")
     filled, holes = fill_small_holes(union, speck_px)
     if holes:
         fixes.append(f"{holes} tiny hole(s) filled")
@@ -428,9 +667,12 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
     r = max(1, int(round(pr["coloring_gap"] / 2 * px_per_mm)))
     disk = _disk(r)
     gap_px = 0
+    small_px = pr["small_mark_area"] * px_per_mm ** 2
     for i in range(1, len(layers) + 1):
-        closed = cv2.morphologyEx(_u8(label_map == i), cv2.MORPH_CLOSE, disk).astype(bool)
+        m = label_map == i
+        closed = cv2.morphologyEx(_u8(m), cv2.MORPH_CLOSE, disk).astype(bool)
         fill = closed & (label_map == 0)
+        fill &= ~small_mark_bridges(m, fill, small_px)
         label_map[fill] = i
         gap_px += int(fill.sum())
     if gap_px / px_per_mm ** 2 > 0.5:
@@ -447,8 +689,14 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         m = label_map == i
         if not m.any():
             continue
+        m, dots, pulled, pairs = pull_apart(m, pr["min_gap"] * px_per_mm, width_px, small_px)
+        if pairs:
+            fixes.append(f"{layer.name}: {pairs} pair(s) of side-by-side dots (eyes) made the same shape and size")
+        if pulled:
+            fixes.append(f"{layer.name}: {pulled} place(s) where separate marks almost touched "
+                         f"opened to a {pr['min_gap']} mm gap, so they print apart")
         m, added = thicken_thin_ink(m, width_px, pr["min_gap"] * px_per_mm,
-                                    blocked=thin & (label_map > 0) & (label_map != i))
+                                    blocked=thin & (label_map > 0) & (label_map != i), fixed=dots)
         if added > 0.5 * px_per_mm ** 2:
             fixes.append(f"{layer.name}: thin lines thickened to {pr['min_ink_width']} mm "
                          f"({added / px_per_mm ** 2:.1f} mm² added)")
@@ -510,7 +758,7 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
             warnings.append(f"{layer.name} ink vanished after clean-up")
             continue
         inks.append(InkRegion(layer.name, layer.rgb, geom, layer.slot, layer.off_palette))
-    return Design(name, product, outline, inks, fixes, warnings)
+    return Design(name, product, outline, inks, fixes, warnings, dots=kept_dots)
 
 
 def _largest(geom) -> Polygon:
@@ -522,4 +770,5 @@ def scale_design(design: Design, factor: float) -> Design:
     design.outline = affinity.scale(design.outline, factor, factor, origin=(0, 0))
     for ink in design.inks:
         ink.geometry = _as_multi(affinity.scale(ink.geometry, factor, factor, origin=(0, 0)))
+    design.dots = [(x * factor, y * factor) for x, y in design.dots]
     return design

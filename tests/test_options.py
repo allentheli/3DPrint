@@ -55,9 +55,9 @@ def test_cards_show_the_choices(cfg, tmp_path):
     for word in ["Pick a shape", "Flat", "Puffy", "Raised lines", "Puffy + lines", "Figurine", "neat lines"]:
         assert word in key
     assert sum(im[5] == "DeviceRGB" for im in text[0].get_images()) == len(SHAPES), "a real picture of each shape"
-    # Clicker keys stay flat (the switch sits under them): no shape boxes, but neat lines still.
-    assert "shape_boxes" not in card_layout(cfg, "clicker", 1).zones
-    assert "Clicker keys stay flat" in click and "neat lines" in click and "Puffy" not in click
+    # Clickers can be shaped too (a shaped keycap gets its post as a separate piece).
+    assert [k for k, *_ in card_layout(cfg, "clicker", 1).zones["shape_boxes"]] == [k for k, _ in SHAPES]
+    assert "Figurine" in click and "neat lines" in click
 
 
 def test_reading_ticks(cfg, tmp_path):

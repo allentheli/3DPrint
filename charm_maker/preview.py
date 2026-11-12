@@ -226,7 +226,8 @@ def _region_mask(size, geom, origin, px_per_mm, h_px):
     return mask
 
 
-def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0) -> Image.Image:
+def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0,
+                     mark_dots: bool = False) -> Image.Image:
     d = piece.design
     minx, miny, maxx, maxy = d.outline.bounds
     origin = (minx - pad_mm, miny - pad_mm)
@@ -244,6 +245,10 @@ def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0) 
     draw = ImageDraw.Draw(img)
     ext = [((x - origin[0]) * px_per_mm, h - (y - origin[1]) * px_per_mm) for x, y in d.outline.exterior.coords]
     draw.line(ext + ext[:1], fill=(90, 90, 90), width=max(1, int(0.15 * px_per_mm)))
+    if mark_dots:   # small dots kept as eyes: easy to spot if one is really a speck
+        for x, y in getattr(d, "dots", []):
+            _dashed_circle(draw, (x - origin[0]) * px_per_mm, h - (y - origin[1]) * px_per_mm,
+                           1.1 * px_per_mm, (40, 110, 230), max(1, int(0.12 * px_per_mm)))
     att = piece.attachment
     if att.get("kind") == "clip_pocket":
         cx, cy = att["center"]
@@ -301,7 +306,7 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
     ppm = dpi / 25.4
     d = piece.design
     actual = _draw_piece_face(piece, assignments, ppm)
-    big = _draw_piece_face(piece, assignments, ppm * zoom)
+    big = _draw_piece_face(piece, assignments, ppm * zoom, mark_dots=True)
     # Cap the zoomed view so the sheet stays reasonable.
     max_big = 1400
     if max(big.size) > max_big:
