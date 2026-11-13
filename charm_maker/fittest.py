@@ -141,64 +141,79 @@ def _revolve(profile) -> m3d.Manifold:
 
 
 def flexi_joint(cfg: dict, gap: float, cx: float, cy: float) -> dict:
-    """A print-in-place pivot for flat flexi toys: a round knob on the arm sits in a round
-    cup in the body, `gap` apart all around. The knob is widest in its middle band and
-    narrows at 45 degrees above and below, and the cup closes round it at the top and the
-    bottom, so the knob can't slide out or pop up; only the middle band of the cup's wall
-    has a slot for the arm's neck, which stops the swing at `swing` degrees each way.
-    Everything slopes at 45 degrees or bridges, so it prints flat with no supports.
-    Returns the knob-and-neck solid, the cup void, the slot solid and the sizes."""
+    """The common flexi-toy joint (like the shark Allen showed): the front piece has a pocket
+    with an upright pin standing in it; the back piece reaches in with a tongue that ends in
+    a closed ring around the pin, `gap` apart all around. The ring turns around the pin, so
+    the toy wiggles side to side, and it can't come off: the pin goes through it and the
+    pocket's floor and ceiling hold it. The ring's edges are chamfered at 45 degrees and the
+    pin flares to match above and below it (slimmer in the middle, like the shark's). The
+    pocket's opening for the tongue stops the swing at about `swing` degrees each way.
+    Returns the ring-and-tongue solid, the pocket void and the sizes; the front piece's
+    rounded end has radius `lobe_r` around the pin, the back piece's cupped end `lobe_r + gap`."""
     from shapely.geometry import Polygon, box
 
     j = cfg["fit_test"]["flexi_joint"]
-    t, r0, r1 = j["thickness"], j["knob_min_radius"], j["knob_max_radius"]
-    s = r1 - r0                                       # 45 degrees: as tall as it is wide
-    knob_profile = Polygon([(0, 0), (r0, 0), (r1, s), (r1, t - s), (r0, t), (0, t)])
-    knob = _revolve(knob_profile)
-    # The cup: the knob grown by `gap` square to every face, open through the top and the
-    # bottom, with a little more room in the first layers (they squash outward).
-    tall = Polygon([(0, -1), (r0, -1), (r0, 0), (r1, s), (r1, t - s), (r0, t), (r0, t + 1), (0, t + 1)])
-    void_profile = tall.buffer(gap, join_style=2).intersection(box(0, -1, 50, t + 1))
-    void_profile = void_profile.union(box(0, -1, r0 + gap + j["first_layer_extra"], j["first_layer_height"]))
-    void = _revolve(void_profile)
-    lobe_r = r1 + gap + j["cup_wall"]                 # the cup's outside
+    t = j["thickness"]
+    zm = t / 2
+    rp, w, h, c = j["pin_radius"], j["ring_width"], j["ring_height"], j["ring_chamfer"]
+    ri, ro = rp + gap, rp + gap + w
+    z0, z1 = zm - h / 2, zm + h / 2
+    ring_profile = Polygon([(ri, z0 + c), (ri + c, z0), (ro - c, z0), (ro, z0 + c),
+                            (ro, z1 - c), (ro - c, z1), (ri + c, z1), (ri, z1 - c)])
+    ring = _revolve(ring_profile)
+    pocket = _revolve(ring_profile.buffer(gap, join_style=2).intersection(box(0, -1, 50, t + 1)))
     neck_w = j["neck_width"]
-    # The slot for the neck, in the knob's straight middle band only.
-    half = np.degrees(np.arcsin((neck_w / 2 + gap) / (r1 + gap))) + j["swing"]
+    lobe_r = ro + gap + j["cup_wall"]
+    # The tongue: same height and chamfers as the ring, from the ring out into the back piece.
+    tongue_yz = Polygon([(-neck_w / 2, z0 + c), (-neck_w / 2 + c, z0), (neck_w / 2 - c, z0), (neck_w / 2, z0 + c),
+                         (neck_w / 2, z1 - c), (neck_w / 2 - c, z1), (-neck_w / 2 + c, z1), (-neck_w / 2, z1 - c)])
+    from .geom import to_cross_section
+    length = lobe_r + gap + 1.5 - (ro - 0.5)
+    tongue = (m3d.Manifold.extrude(to_cross_section(tongue_yz), length)       # along +z, then lay it along +x
+              .rotate([0.0, 90.0, 0.0]).rotate([90.0, 0.0, 0.0]))
+    tb = tongue.bounding_box()
+    tongue = tongue.translate([ro - 0.5 - tb[0], -(tb[1] + tb[4]) / 2, z0 - tb[2]])
+    # The pocket's opening for the tongue: a slice of the pocket's height, swing degrees wider.
+    half = np.degrees(np.arcsin((neck_w / 2 + gap) / ro)) + j["swing"]
     far = lobe_r + 5
     wedge = Polygon([(0, 0)] + [(far * np.cos(np.radians(a)), far * np.sin(np.radians(a)))
                                 for a in np.linspace(-half, half, 25)])
-    slot = extrude(wedge, (t - 2 * s) + 2 * gap, s - gap)
-    bar_start = lobe_r + gap
-    neck = extrude(box(0, -neck_w / 2, bar_start + 1.0, neck_w / 2), t - 2 * s, s)
-    move = lambda m: m.translate([cx, cy, 0.0])        # noqa: E731
-    return {"knob": move(knob + neck), "void": move(void), "slot": move(slot), "lobe_r": lobe_r,
-            "bar_start": bar_start, "slot_half_angle": float(half), "t": t, "r0": r0, "r1": r1, "s": s}
+    channel_yz = tongue_yz.buffer(gap, join_style=2)
+    zc0, zc1 = channel_yz.bounds[1], channel_yz.bounds[3]
+    channel = extrude(wedge, zc1 - zc0, zc0)
+    channel = channel - _revolve(box(0, -1, rp, t + 1))                  # never cut the pin
+    move = lambda m: m.translate([cx, cy, 0.0])                            # noqa: E731
+    return {"ring": move(ring + tongue), "void": move(pocket + channel), "lobe_r": lobe_r,
+            "slot_half_angle": float(half), "t": t, "pin_r": rp, "ring_in": ri, "ring_out": ro,
+            "ring_z": (z0, z1)}
 
 
 def _flexi_joint_coupon(cfg: dict, n: int, gap: float) -> Coupon:
-    """A body block with an arm joined by the flexi pivot. Hold the body, swing the arm."""
-    from shapely.geometry import Point
+    """A block with an arm on the ring joint. Hold the block, swing the arm."""
+    from shapely.geometry import Point, Polygon
     from shapely.ops import unary_union
 
     ft = cfg["fit_test"]
     j = ft["flexi_joint"]
     bw, bh = j["body"]
-    cx, cy = bw, bh / 2                               # the pivot sits at the block's right edge
+    cx, cy = bw, bh / 2                               # the pin sits at the block's right end
     jt = flexi_joint(cfg, gap, cx, cy)
     t = jt["t"]
     block = rounded_rect(bw, bh, ft["coupon_corner_radius"], bw / 2, bh / 2)
-    body2d = unary_union([block, Point(cx, cy).buffer(jt["lobe_r"], 64)])
-    body = extrude(body2d, t) - jt["void"] - jt["slot"]
+    body2d = unary_union([block, Point(cx, cy).buffer(jt["lobe_r"], 96)])
+    body = extrude(body2d, t) - jt["void"]
     label = label_shape(str(n), ft["label_height"], ft["label_stroke"], bw / 2 - 1.5, bh / 2)
     body = body + extrude(label, ft["label_raise"], t)
-    arm2d = rounded_rect(j["arm_length"], j["arm_width"], j["arm_width"] / 2 - 0.01,
-                         cx + jt["bar_start"] + j["arm_length"] / 2, cy)
-    arm = extrude(arm2d, t) + jt["knob"]
+    cup = Point(cx, cy).buffer(jt["lobe_r"] + gap, 96)                 # the arm's end hugs the round end
+    bar = rounded_rect(j["arm_length"], j["arm_width"], j["arm_width"] / 2 - 0.01,
+                       cx + jt["lobe_r"] + j["arm_length"] / 2, cy)
+    front = Polygon.from_bounds(cx + 2.0, cy - j["arm_width"] / 2, cx + jt["lobe_r"] + 2.0, cy + j["arm_width"] / 2)
+    arm2d = unary_union([bar, front]).difference(cup)
+    arm = extrude(arm2d, t) + jt["ring"]
     outline = unary_union([body2d, arm2d])
     return Coupon(n, "flexi_joint_gap", gap,
-                  f"flexi joint, {gap} mm gap all around the knob (swings about {j['swing'] + 5:g} degrees each way)",
-                  body + arm, (cx, cy), 2 * jt["r1"], outline,
+                  f"flexi ring joint, {gap} mm gap all around the ring (swings about {j['swing'] + 5:g} degrees each way)",
+                  body + arm, (cx, cy), 2 * jt["ring_out"], outline,
                   {"body": body, "arm": arm, "joint": jt})
 
 
@@ -324,7 +339,7 @@ GROUP_TITLES = {
     "earring_hole_diameter": ("Earring jump-ring hole", "Put a 4 mm jump ring through each small hole and twist it shut. Best = the ring goes through and closes easily around the tab without bending it open; the smallest hole that does."),
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
-    "flexi_joint_gap": ("Flexi joint", "Each piece is a block with an arm, printed already joined by a round knob. Hold the block and swing the arm left and right; give it a firm wiggle first if it is stuck. Best = the arm swings freely and stops by itself at each side, does not wobble up and down, and does not come out. Pick the tightest one that swings freely."),
+    "flexi_joint_gap": ("Flexi joint", "Each piece is a block with an arm, printed already joined by a ring around a pin (the usual flexi-toy joint). Hold the block and swing the arm left and right; give it a firm wiggle first if it is stuck. Best = the arm swings freely and stops by itself at each side, does not wobble up and down, and does not come out. Pick the tightest one that swings freely."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 

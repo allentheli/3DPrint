@@ -365,17 +365,17 @@ fit_test:
   stem_boss_height: 4.5
   stem_span_clearance: 0.1         # added to the cross length (the arm widths get the tested clearance)
   stem_socket_depth: 4.0
-  flexi_joint:                     # the print-in-place pivot of a flat flexi (frog arms, legs)
+  flexi_joint:                     # the usual flexi-toy joint: a ring around an upright pin, printed linked
     thickness: 8.0                 # the joint's height (the shark-style toy's body is taller still)
-    knob_min_radius: 1.8           # the knob at its top and bottom...
-    knob_max_radius: 3.0           # ...and in its middle band (45-degree slopes between)
-    neck_width: 2.6                # the arm's neck through the cup's slot
-    cup_wall: 1.6                  # plastic around the cup
-    swing: 30                      # degrees each way before the neck stops on the slot's side
-    first_layer_extra: 0.2         # more gap in the first layers, which squash outward
-    first_layer_height: 0.3
+    pin_radius: 1.9                # the pin at its slimmest (the example shark's is about 3.8 mm across)
+    ring_width: 2.4                # the ring, flat across...
+    ring_height: 2.8               # ...and tall, with 45-degree chamfers on its edges
+    ring_chamfer: 0.8
+    neck_width: 2.6                # the tongue that joins the ring to its piece
+    cup_wall: 1.6                  # plastic around the pocket
+    swing: 30                      # degrees each way before the tongue stops on the pocket's opening
     body: [16, 18]                 # test block, width x height
-    arm_length: 24
+    arm_length: 20
     arm_width: 6.0
 
 # Design cards (the printable PDF). Lengths in mm on the card.

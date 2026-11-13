@@ -39,9 +39,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   a chain of parts (head, upper body, torso, lower body, and a tail if they want one), each drawn
   in its own box on the card, from the side, facing the same way. Each part is puffed round on both
   sides like his example shark and stands on a flat belly; neighbors nest (rounded end in a cupped
-  end) and turn on an upright knob-in-cup joint, so it wiggles side to side. We never use the
-  shark's file (his example only); its joints taught the gap (0.42 and 0.54 mm). The joint test
-  plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm, 8 mm tall);
+  end) and turn on the common flexi joint (Allen's call): a ring on one piece around an upright
+  pin in a pocket of the next, so it wiggles side to side. His examples (the shark, and
+  MontoyaMaker's articulated kitten) use exactly this, with gaps of 0.39-0.65 mm; we never use
+  their files. The joint test plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps
+  0.30-0.60 mm, 8 mm tall);
   waiting on his number. Next: the flexi card and the build. (The flat frog with swinging arms and
   legs in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
