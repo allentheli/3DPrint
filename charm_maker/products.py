@@ -169,10 +169,16 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
         slots[name] = ink.slot
         if ink.off_palette:
             off[name] = ink.off_palette
-    if attachment == "strips" and info.get("cut") is not None:
-        cut = extrude(info["cut"], t + 2.0, -1.0)
-        parts = {n: solid - cut for n, solid in parts.items()}
-        parts = {n: solid for n, solid in parts.items() if not solid.is_empty()}
+    if attachment == "strips":
+        tunnels, pins = info.pop("tunnels", []), info.pop("pins", [])
+        if info.get("cut") is not None:
+            cut = extrude(info["cut"], t + 2.0, -1.0)
+            if tunnels:                      # the round tunnel through each tab
+                cut = cut + m3d.Manifold.batch_boolean(tunnels, m3d.OpType.Add)
+            parts = {n: solid - cut for n, solid in parts.items()}
+            parts = {n: solid for n, solid in parts.items() if not solid.is_empty()}
+        if pins:                             # the pin across each notch, through the tab's tunnel
+            parts[base_name] = parts[base_name] + m3d.Manifold.batch_boolean(pins, m3d.OpType.Add)
     # Face-down: the face is the side that touched the bed. Seen from the front after
     # flipping the piece over, it reads mirrored unless the solid is built mirrored.
     parts = {n: solid.mirror([1.0, 0.0, 0.0]) for n, solid in parts.items()}

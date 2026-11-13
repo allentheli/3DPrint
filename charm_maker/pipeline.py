@@ -591,7 +591,7 @@ def _check_piece(piece: Piece) -> None:
         if not to_trimesh(solid).is_watertight:
             raise ValueError(f"part {name} is not watertight")
         union = solid if union is None else union + solid
-    expected = piece.attachment.get("bodies", 1)          # a flexi: one per strip, linked by T-joints
+    expected = piece.attachment.get("bodies", 1)          # a flexi: one per strip, linked by pin joints
     if count_bodies(union) != expected:
         raise ValueError("the piece is not one connected part" if expected == 1 else
                          f"the flexi came out in {count_bodies(union)} pieces, not its {expected} strips")

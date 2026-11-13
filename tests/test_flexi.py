@@ -56,17 +56,22 @@ def test_a_flexi_card_becomes_linked_strips(cfg, ghost):
 
 
 def test_the_strips_slide_but_hold_together(cfg, ghost):
+    """Bambu's MakerLab flexi joint: the pin in the tab's tunnel holds the strips together in every
+    direction (0.47 mm of play), and the tab slides along the pin by its 0.8 mm of side room."""
     piece, _ = ghost
-    st = cfg["products"]["flexi"]["strips"]
-    gap = cfg["fit"]["flexi_strip_gap"]["value"]
+    j = cfg["products"]["flexi"]["strips"]["joint"]
+    play = j["tunnel_radius"] - j["pin_radius"]
+    side = (j["notch_width"] - j["tab_width"]) / 2
     strips = _strips(piece)
     for up, low in zip(strips, strips[1:]):
-        def hit(dx, dy):
-            return (up.translate([dx, dy, 0]) ^ low).volume() > 1e-3
+        def hit(dx, dy, dz=0.0):
+            return (up.translate([dx, dy, dz]) ^ low).volume() > 1e-3
         assert not hit(0, 0), "printed apart"
-        assert not hit(st["slide"] + gap - 0.1, 0) and not hit(-(st["slide"] + gap - 0.1), 0)
-        pull = next(d for d in np.arange(0, 3.0, 0.05) if hit(0, d))
-        assert pull <= gap + 0.15, "a T-joint holds the strips together"
+        for dx, dy, dz in ((0, 1, 0), (0, 0, 1), (0, 0, -1), (0, -1, 0)):
+            stop = next(d for d in np.arange(0, 3.0, 0.05) if hit(dx * d, dy * d, dz * d))
+            assert stop <= play + 0.15, f"held when pushed or pulled ({dx}, {dy}, {dz}): {stop:.2f} mm"
+        slide = min(next(d for d in np.arange(0, 3.0, 0.05) if hit(s * d, 0)) for s in (1, -1))
+        assert side - 0.1 <= slide <= side + 0.15, f"slides {slide:.2f} mm along the pin"
 
 
 def test_the_cuts_keep_the_eyes_whole(cfg, ghost):

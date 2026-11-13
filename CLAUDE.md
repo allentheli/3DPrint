@@ -38,15 +38,19 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
   - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
     keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
-    at the usual card scale, made 1.5 times bigger), cut into strips about 12 mm tall, linked by
-    T-shaped tabs in roomy slots (they slide about 1 mm each way and hold), printed flat and
-    already linked, 4.5 mm thick, like the two flat Pusheen flexis he showed. Cuts keep the face
-    whole: never through a kept dot, a small round mark or a small closed mark (ring eyes, teeth);
-    the cut heights are chosen together, with fewer strips if that is what it takes. Any card can
-    be made a flexi with `--as key-02=flexi`; first try: the shark duck (keychain-3, key-02),
-    4 strips, 6 T-joints, 49 x 65 mm. Waiting on the strip gap: `fit-test --only flexi_strip_gap
-    --out output/fit-test-flexi-strips` (pieces 23-26). The flexi card prints with
-    `cards --products flexi` (no shape boxes; no picture of a flexi on it yet).
+    at the usual card scale, made 1.5 times bigger), 7 mm thick, cut into strips at least 9 mm
+    tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
+    for size from Lawk3t's Pusheen Cat Flexi Toy (CC0) that Allen uploaded ("lets do the joint
+    like this"): strips 1.5 mm apart, a 5.4 mm tab from the strip above in a 7.0 mm notch of the
+    strip below, a 2.8 mm pin across the notch through a round tunnel in the tab, 0.47 mm all
+    around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test
+    (Allen: don't test or reinvent joints). Cuts keep the face whole: never through a kept dot, a
+    small round mark or a small closed mark (ring eyes, teeth); cut heights are chosen together,
+    with fewer strips if that is what it takes. Any card can be made a flexi with
+    `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
+    (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
+    Pusheen's). The flexi card prints with `cards --products flexi` (no shape boxes; no picture
+    of a flexi on it yet).
   - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
     legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
     both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
@@ -225,7 +229,6 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
-| Flat flexi strip test plate | `python -m charm_maker fit-test --only flexi_strip_gap --out output/fit-test-flexi-strips` (pieces 23-26) |
 | Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
 | A flexi creature from the parts | `python -m charm_maker creature --head cat --body regular --legs paws --tail cat --name mia` |
 | Picture of every creature part | `python -m charm_maker creature-library` (writes `output/creature-library/`) |
@@ -247,8 +250,7 @@ the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 7-9 earring jump-ring hole (small top tab, front to back), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
-16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20"),
-23-26 flat flexi strips (two strips linked by a T; he may say "strips 25").
+16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20").
 
 ## Reading the results
 

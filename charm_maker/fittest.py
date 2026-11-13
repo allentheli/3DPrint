@@ -284,33 +284,7 @@ def build_coupons(cfg: dict) -> list[Coupon]:
     for g in fit["flexi_joint_gap"]["candidates"]:
         n += 1
         coupons.append(_flexi_joint_coupon(cfg, n, g))
-    # 8. Flat flexi strips: two strips linked by a T-joint, printed already linked.
-    for g in fit["flexi_strip_gap"]["candidates"]:
-        n += 1
-        coupons.append(_strip_joint_coupon(cfg, n, g))
     return coupons
-
-
-def _strip_joint_coupon(cfg: dict, n: int, gap: float) -> Coupon:
-    """Two strips of a flat flexi, the real thickness, linked by one T-joint as on the toy.
-    Hold one strip, slide and wiggle the other."""
-    from shapely.ops import unary_union
-
-    from .strips import cut_shape
-
-    ft = cfg["fit_test"]
-    prod = cfg["products"]["flexi"]
-    st, t = prod["strips"], float(prod["thickness"])
-    w, h = 30.0, 11.0                                   # each strip
-    outline = rounded_rect(w, 2 * h, ft["coupon_corner_radius"], w / 2, h)
-    cut = cut_shape(st, gap, h, [w / 2], -5.0, w + 5.0)
-    pieces = sorted(outline.difference(cut).geoms, key=lambda g: -g.bounds[3])
-    upper, lower = (extrude(g, t) for g in pieces[:2])
-    label = label_shape(str(n), ft["label_height"], ft["label_stroke"], w * 0.2, h + h / 2 + 1.0)
-    upper = upper + extrude(label, ft["label_raise"], t)
-    return Coupon(n, "flexi_strip_gap", gap, f"flat flexi strips, {gap} mm gap around a T-joint",
-                  upper + lower, (w / 2, h), st["head_width"], unary_union([outline]),
-                  {"body": lower, "arm": upper})
 
 
 def build_fit_plate(cfg: dict, only: str | None = None) -> FitPlate:
@@ -368,7 +342,6 @@ GROUP_TITLES = {
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
     "flexi_joint_gap": ("Flexi joint", "Each piece is a block with an arm, printed already joined by a ring around a pin (the usual flexi-toy joint). Hold the block and swing the arm left and right; give it a firm wiggle first if it is stuck. Best = the arm swings freely and stops by itself at each side, does not wobble up and down, and does not come out. Pick the tightest one that swings freely."),
-    "flexi_strip_gap": ("Flat flexi strips", "Each piece is two strips printed already linked by a T-shaped tab, like the flat flexi toys. Hold the bottom strip and slide the top one left and right, then bend them a little. Best = the strips slide and wiggle freely but stay together when you pull gently. Pick the tightest one that moves freely."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 

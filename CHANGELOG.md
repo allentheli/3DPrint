@@ -2,12 +2,12 @@
 
 ## Flexis: the drawing in wiggly strips (2026-11-13)
 
-- New product, the flexi (Allen's call, from two flat Pusheen flexis): the kid's drawing as a flat toy about 80 mm long, cut into strips that slide and wiggle, linked by T-shaped tabs, printed flat and already linked. Its own card (`cards --products flexi`).
+- New product, the flexi (Allen's call, from two flat Pusheen flexis): the kid's drawing as a flat toy about 80 mm long and 7 mm thick, cut into strips that slide and wiggle, printed flat and already linked. Its own card (`cards --products flexi`).
+- The joint is Bambu Lab's MakerLab Flexi joint, copied size for size from the CC0 Pusheen Cat Flexi Toy Allen uploaded: a tab with a round tunnel around a pin, 0.47 mm all around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test.
 - The cuts keep the face whole: never through the eyes, teeth or other small marks; the cut heights are chosen together, with fewer strips if needed.
-- `run --as key-02=flexi` makes any card a flexi (or another product). First try: the shark duck, 4 strips and 6 T-joints.
-- Fit test pieces 23-26: two strips linked by a T, one per gap (0.25 to 0.40 mm). `fit-test --only flexi_strip_gap`.
+- `run --as key-02=flexi` makes any card a flexi (or another product). First try: the shark duck, 3 strips and 4 joints.
 - The 3D mix-and-match animals are now "creatures": `creature` and `creature-library` (were `flexi` and `flexi-library`).
-- 7 new tests, 2 updated.
+- 6 new tests.
 
 ## Flexi toys from ready-made parts (2026-11-13)
 

@@ -1,16 +1,19 @@
 """Flexi: a kid's flat drawing cut into strips that wiggle (Allen, 2026-11-13, from two flat
 Pusheen flexis he showed). The drawing is only cut, never changed.
 
-Strips run across the drawing's long side (a tall drawing gets level cuts). Each cut is a thin
-gap with T-shaped tabs: a narrow neck from the strip above, ending in a wider head, sits in a
-roomy slot in the strip below. The head can't pull out past the slot's lips, and the slot
-leaves room to slide sideways and turn a little: that is the wiggle. Everything prints flat,
-already linked. Cuts go where they cross the least ink and never through a small dot or a
-small closed mark (eyes, a nose), so the face stays whole. All 2D: the cut is removed from
-every part through the full thickness.
+Strips run across the drawing's long side (a tall drawing gets level cuts). The joint is the
+one Bambu Lab's MakerLab Flexi tool makes (Allen: "lets do the joint like this"), measured on
+Lawk3t's Pusheen Cat Flexi Toy (CC0) and copied size for size: the strips stand 1.5 mm apart;
+the strip above reaches down with a tab into a wider notch in the strip below, and a round pin
+of the strip below runs across the notch, through a round tunnel in the tab, with a gap all
+around. The pin holds the strips together in every direction; the extra room in the notch lets
+them slide along the pin and bend: that is the wiggle. Everything prints flat, already linked.
+Cuts go where they cross the least ink and never through a small dot or a small closed mark
+(eyes, a nose), so the face stays whole.
 """
 from __future__ import annotations
 
+import manifold3d as m3d
 from shapely import affinity
 from shapely.geometry import LineString, MultiLineString, Point, Polygon, box
 from shapely.ops import unary_union
@@ -18,30 +21,42 @@ from shapely.ops import unary_union
 from .shape import Design, _as_multi
 
 
-def joint_shapes(st: dict, gap: float, x: float, y: float):
-    """One T-joint at x on a cut at height y: the tab (part of the strip above) and the slot
-    it moves in (cut out of the strip below, gap included)."""
-    wn, ln, wh, hh, s = st["neck_width"], st["neck_length"], st["head_width"], st["head_height"], st["slide"]
-    tab = unary_union([box(x - wn / 2, y - ln, x + wn / 2, y + gap),
-                       box(x - wh / 2, y - ln - hh, x + wh / 2, y - ln)])
-    room = unary_union([box(x - wn / 2 - s, y - ln, x + wn / 2 + s, y),
-                        box(x - wh / 2 - s, y - ln - hh, x + wh / 2 + s, y - ln)])
-    return tab, room.buffer(gap, join_style=2)
+def joint_shapes(j: dict, x: float, y: float):
+    """One joint at x on a cut whose middle is at height y (2D): the tab (part of the strip above)
+    and the notch it sits in (cut out of the strip below)."""
+    g = j["seam_gap"] / 2
+    tab = box(x - j["tab_width"] / 2, y + g - j["tab_length"], x + j["tab_width"] / 2, y + g + 0.01)
+    notch = box(x - j["notch_width"] / 2, y - g - j["notch_depth"], x + j["notch_width"] / 2, y - g)
+    return tab, notch
 
 
-def cut_shape(st: dict, gap: float, y: float, xs: list[float], x0: float, x1: float):
-    """Everything removed along one cut: the gap across, and around each T the slot minus its tab."""
-    depth = st["neck_length"] + st["head_height"] + gap + 1.0
-    band = box(x0, y - depth, x1, y + gap + 1.0)
-    upper = box(x0, y + gap / 2, x1, y + gap + 1.0)
-    lower = box(x0, y - depth, x1, y - gap / 2)
-    tabs, slots = [], []
-    for x in xs:
-        tab, slot = joint_shapes(st, gap, x, y)
-        tabs.append(tab)
-        slots.append(slot)
-    keep = unary_union([upper, *tabs, lower.difference(unary_union(slots))])
+def cut_shape(j: dict, y: float, xs: list[float], x0: float, x1: float):
+    """Everything removed through the full thickness along one cut: the gap between the strips,
+    and each notch around its tab."""
+    g = j["seam_gap"] / 2
+    depth = g + j["notch_depth"] + 1.0
+    band = box(x0, y - depth, x1, y + g + 1.0)
+    upper = box(x0, y + g, x1, y + g + 1.0)
+    lower = box(x0, y - depth, x1, y - g)
+    tabs, notches = zip(*(joint_shapes(j, x, y) for x in xs)) if xs else ((), ())
+    keep = unary_union([upper, *tabs, lower.difference(unary_union(list(notches)))])
     return band.difference(keep)
+
+
+def _rod(x: float, y: float, z: float, radius: float, length: float) -> m3d.Manifold:
+    """A round rod lying along X, centered at (x, y, z)."""
+    return (m3d.Manifold.cylinder(length, radius, radius, 64, True)
+            .rotate([0.0, 90.0, 0.0]).translate([x, y, z]))
+
+
+def joint_solids(j: dict, y: float, xs: list[float], thickness: float):
+    """The 3D part of the joints on one cut: the tunnels through the tabs (removed from every part)
+    and the pins (added to the strip below), at mid-thickness."""
+    g = j["seam_gap"] / 2
+    yc, zc = y - g - j["pin_below_edge"], thickness / 2
+    tunnels = [_rod(x, yc, zc, j["tunnel_radius"], j["tab_width"] + 0.4) for x in xs]
+    pins = [_rod(x, yc, zc, j["pin_radius"], j["notch_width"] + 1.0) for x in xs]
+    return tunnels, pins
 
 
 def _segments(geom) -> list[LineString]:
@@ -59,7 +74,7 @@ def plan_strips(cfg: dict, design: Design) -> dict:
     "warnings", "cuts_y"} in the drawing's own coordinates."""
     prod = cfg["products"][design.product]
     st = prod["strips"]
-    gap = float(cfg["fit"]["flexi_strip_gap"]["value"])
+    j = st["joint"]
     minx, miny, maxx, maxy = design.outline.bounds
     turn = (maxx - minx) > (maxy - miny) * 1.05             # wide: cut it top to bottom instead
     to_work = (lambda g: affinity.rotate(g, 90, origin=(0, 0))) if turn else (lambda g: g)    # noqa: E731
@@ -93,14 +108,14 @@ def plan_strips(cfg: dict, design: Design) -> dict:
     X0, Y0, X1, Y1 = outline.bounds
     X0, X1 = X0 - 5, X1 + 5
     H = Y1 - Y0
-    depth = st["neck_length"] + st["head_height"] + gap
-    min_h = max(st["min_height"], depth + st["wall"] + 1.0)
+    depth = j["seam_gap"] / 2 + j["notch_depth"]
+    min_h = max(st["min_height"], depth + st["wall"] + j["seam_gap"] / 2)
     n = max(2, min(round(H / st["height"]), int(H // min_h)))
-    min_width = st["head_width"] + 2 * (st["slide"] + gap + st["wall"]) + 2.0
+    min_width = j["notch_width"] + 2 * st["wall"] + 2.0
 
     def joint_fits(x, y):
-        _, slot = joint_shapes(st, gap, x, y)
-        return outline.contains(slot.buffer(st["wall"], join_style=2))
+        _, notch = joint_shapes(j, x, y)
+        return outline.contains(notch.buffer(st["wall"], join_style=2))
 
     def place_joints(y, xl, xr):
         """T positions on a cut from xl to xr: the best spot near each target, in the base color if it can."""
@@ -113,7 +128,7 @@ def plan_strips(cfg: dict, design: Design) -> dict:
                 x = tx + 0.25 * k
                 if not joint_fits(x, y):
                     continue
-                tab, slot = joint_shapes(st, gap, x, y)
+                tab, slot = joint_shapes(j, x, y)
                 cost = 0.2 * abs(x - tx)
                 if inks is not None:
                     cost += slot.boundary.intersection(inks).length
@@ -148,10 +163,11 @@ def plan_strips(cfg: dict, design: Design) -> dict:
         line = LineString([(xl, y), (xr, y)])
         cost = 0.0
         if inks is not None:      # ink cut through, or run along closely (a cut beside a line shows)
-            cost += line.buffer(0.6, cap_style=2).intersection(inks).area / 1.2
-        if forbid is not None and line.buffer(gap / 2).intersects(forbid):
+            w = j["seam_gap"] / 2 + 0.6
+            cost += line.buffer(w, cap_style=2).intersection(inks).area / (2 * w)
+        if forbid is not None and line.buffer(j["seam_gap"] / 2).intersects(forbid):
             cost += 1000
-        elif near is not None and line.buffer(gap / 2).intersects(near):
+        elif near is not None and line.buffer(j["seam_gap"] / 2).intersects(near):
             cost += 20
         joints = place_joints(y, xl, xr)
         if not joints:
@@ -207,12 +223,20 @@ def plan_strips(cfg: dict, design: Design) -> dict:
     for y in (picked[1] if picked else []):
         cost, xl, xr, xs = scored[y]
         cuts.append({"y": y, "x": (xl, xr), "joints": xs, "crosses_small_mark": cost >= 1000})
-    shape = unary_union([cut_shape(st, gap, c["y"], c["joints"], X0, X1) for c in cuts]) if cuts else None
+    shape = unary_union([cut_shape(j, c["y"], c["joints"], X0, X1) for c in cuts]) if cuts else None
+    tunnels, pins = [], []
+    for c in cuts:
+        t, p = joint_solids(j, c["y"], c["joints"], float(prod["thickness"]))
+        tunnels += t
+        pins += p
+    turn3d = (lambda m: m.rotate([0.0, 0.0, -90.0])) if turn else (lambda m: m)    # noqa: E731
+    tunnels = [turn3d(m) for m in tunnels]
+    pins = [turn3d(m) for m in pins]
     notes, warnings = [], []
     joints = sum(len(c["joints"]) for c in cuts)
     crossed = sum(c["crosses_small_mark"] for c in cuts)
     if cuts:
-        notes.append(f"cut into {len(cuts) + 1} strips linked by {joints} T-joints ({gap} mm gap), "
+        notes.append(f"cut into {len(cuts) + 1} strips linked by {joints} pin joints (Bambu's MakerLab flexi joint), "
                      f"cuts {'top to bottom' if turn else 'across'}" +
                      ("" if crossed else ", clear of the eyes and other small marks"))
     else:
@@ -220,8 +244,6 @@ def plan_strips(cfg: dict, design: Design) -> dict:
     if crossed:
         warnings.append(f"{crossed} cut(s) had to go through a small closed shape or dot (an eye? a toe?); "
                         "look at the preview")
-    if not cfg["fit"]["flexi_strip_gap"].get("tested"):
-        warnings.append(f"the flexi gap ({gap} mm) is not tested on your printer yet (fit-test pieces 23-26)")
     cut = back(shape) if shape is not None else None
     expected = len(cuts) + 1
     if cut is not None:
@@ -230,7 +252,8 @@ def plan_strips(cfg: dict, design: Design) -> dict:
         if len(real) != expected:
             warnings.append(f"the cuts make {len(real)} pieces, not {expected}; look at the preview")
             expected = len(real)
-    return {"kind": "strips", "cut": cut, "strips": expected, "joints": joints, "notes": notes,
+    return {"kind": "strips", "cut": cut, "tunnels": tunnels, "pins": pins, "strips": expected, "joints": joints,
+            "notes": notes,
             "warnings": warnings, "cuts_y": [c["y"] for c in cuts], "turned": turn, "bodies": expected}
 
 

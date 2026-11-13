@@ -127,11 +127,6 @@ fit:
     tested: false
     candidates: [0.30, 0.40, 0.50, 0.60]
     note: gap all around a flexi toy's round knob joint (print-in-place, no supports); pieces 19-22. Centred on the gaps of a proven flexi shark Allen showed (0.42 and 0.54 mm)
-  flexi_strip_gap:
-    value: 0.35
-    tested: false
-    candidates: [0.25, 0.30, 0.35, 0.40]
-    note: gap between the strips of a flat flexi and around its T-joints (printed flat, already linked); pieces 23-26
 
 # Hardware sizes that are not tolerances (measured or from the manufacturer).
 hardware:
@@ -186,20 +181,24 @@ products:
     size_max: 80
     default_size: 80
     drawing_scale: 1.5            # the biggest card box is 3x a 54 mm piece; a flexi is 1.5x that (Allen's examples: about 80 mm)
-    thickness: 4.5
+    thickness: 7.0                # the joint is built for 7 mm (like the MakerLab flexis)
     attachment: strips
     copies: 1
     card: flexi
-    strips:                       # the cuts and T-joints (strips.py)
+    strips:                       # the cuts and joints (strips.py)
       height: 12                  # each strip about this tall
-      min_height: 8
-      neck_width: 3.0             # the T's neck, from the strip above...
-      neck_length: 2.4            # ...through the lips of the slot below
-      head_width: 8.0             # the T's head, wider than the slot's mouth so it can't pull out
-      head_height: 2.6
-      slide: 0.6                  # room for the T to slide sideways, each way: the wiggle
-      wall: 1.6                   # plastic between a slot and the piece's edge
-      two_joints_from: 34         # a cut at least this wide gets two T-joints
+      min_height: 9
+      joint:                      # Bambu MakerLab's Flexi joint, measured on Lawk3t's Pusheen Cat Flexi Toy (CC0); proven, not a fit-test value
+        seam_gap: 1.5             # between the strips
+        tab_width: 5.4            # the tab, from the strip above...
+        tab_length: 5.4           # ...measured from that strip's edge
+        notch_width: 7.0          # the notch in the strip below, 0.8 mm wider than the tab each side (it slides along the pin)
+        notch_depth: 5.4          # below that strip's edge (1.5 mm past the tab's end)
+        pin_radius: 1.4           # the pin across the notch, at mid-thickness...
+        pin_below_edge: 1.3       # ...its middle this far below the lower strip's edge
+        tunnel_radius: 1.87       # the round tunnel through the tab around the pin: 0.47 mm all around
+      wall: 1.6                   # plastic between a notch and the piece's edge
+      two_joints_from: 34         # a cut at least this wide gets two joints
       small_mark_area: 8.0        # separate ink marks smaller than this (mm²) are never cut (eyes, a nose)
       closed_mark_area: 60.0      # nor closed marks around paper smaller than this (mm²): ring eyes, teeth
   keychain:

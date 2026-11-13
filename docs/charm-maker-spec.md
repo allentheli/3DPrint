@@ -19,7 +19,7 @@ Kids (and adults) draw on printed design cards. Allen takes a photo of each card
 | Figure stand | (no drawing) | One stand design that holds any magnet figure |
 | Necklace pendant | Anyone | A flat charm with a loop on top; the chain goes through it left to right |
 | Earrings | Adults | A mirror-image pair of light flat charms with a small tab on top: a 4 mm jump ring goes through its hole and the hook hangs on the ring; or a flat back for stud posts |
-| Flexi | Anyone | A flat toy from the drawing, about 80 mm tall, cut into strips linked by little T-shaped joints so it wiggles, printed already linked |
+| Flexi | Anyone | A flat toy from the drawing, about 80 mm tall, cut into strips linked by Bambu's flexi pin joints so it wiggles, printed already linked |
 | Flexi creature | Kids (no drawing) | A wiggly 3D creature the kid designs by picking a head, body, legs, tail and colors from ready-made parts |
 
 First use: a design party for four girls aged 5 and 8 (two families), with the parents making earrings and pendants. The tool should keep working for later parties and one-off drawings.
@@ -62,7 +62,7 @@ All numbers are starting values. Fit-critical ones (marked *) are replaced by mi
 | Magnet figure | 30 to 55 mm | About 3.2 mm | Flat back; the magnet is glued on | 1 |
 | Earrings | 15 to 35 mm | 1.8 mm | Small top tab with a 1.5 mm hole front to back for a 4 mm jump ring*, or a flat back for glue-on studs | 2 |
 | Pendant | 25 to 45 mm | 2.6 mm | Top loop with a 3.5 mm hole running left to right* | 1 |
-| Flexi | 50 to 80 mm | 4.5 mm | None: a toy on its own, cut into linked strips (T-joint gap*) | 1 |
+| Flexi | 50 to 80 mm | 7 mm | None: a toy on its own, cut into strips linked by Bambu's flexi joint | 1 |
 
 ### Shape styles
 
@@ -83,12 +83,12 @@ Every product can be flat (the default) or shaped. All shapes come straight from
 
 Allen's calls (2026-11-13, from two flat Pusheen flexis he showed): a kid's drawing can become a flexi toy, and the flexi is a product of its own with its own card, like the keychain (not a tick box on other cards). The drawing stays exactly the kid's; it is only cut.
 
-- **What it is:** the drawing as a flat piece, cut into strips across its long side (a tall drawing gets level cuts, so it wiggles side to side). Each strip hooks into the next with T-shaped tabs: a narrow neck from one strip ending in a wider head that sits in a matching slot in the next strip, with a gap all around. The head cannot pull out through the neck's opening, and the slot is roomy enough that the strips slide and turn a little. Printed flat and already linked, no supports.
-- **Joints:** one T per cut on narrow strips, two on wide ones (as in Allen's examples). The gap is fit-critical: a new fit-test group (pieces 23-26, two strips linked by a T, 0.25 to 0.40 mm) sets it.
+- **What it is:** the drawing as a flat piece, cut into strips across its long side (a tall drawing gets level cuts). Printed flat and already linked, no supports.
+- **Joints (Allen, 2026-11-13: "lets do the joint like this", with Lawk3t's Pusheen Cat Flexi Toy, made with Bambu Lab's MakerLab Flexi tool, CC0):** Bambu's own flexi joint, copied size for size, so it needs no testing. The strips stand 1.5 mm apart. The strip above reaches down with a 5.4 mm tab into a 7.0 mm notch in the strip below; a 2.8 mm round pin of the strip below runs across the notch at mid-thickness, through a round tunnel in the tab with 0.47 mm all around. The pin holds the strips together in every direction (they can't pull apart or pop out up or down), and the tab slides 0.8 mm along the pin each way: that is the wiggle. One joint per cut on narrow strips, two on wide ones.
 - **Size:** about 80 mm on its long side, like Allen's examples. The card is drawn at the usual card scale and the drawing is made 1.5 times bigger, so bold marker lines stay bold. A smaller drawing is scaled up to the flexi's size, with a note (like the clicker).
-- **Strips:** about 12 mm tall, never under 8 mm (the T needs room), so an 80 mm flexi gets about 6 or 7 strips.
-- **Cuts avoid the face:** cuts go where they cross the least ink and never through a small dot or a small closed mark (eyes, a nose, a ring eye). The T-tabs sit in the base color where they can. Cutting through a long line or a colored area is fine.
-- **Colors and printing:** as a flat piece (face-down, colors flush, built mirrored), 4.5 mm thick so the T-tabs are strong.
+- **Strips:** about 12 mm tall, never under 9 mm (the joint needs room), so an 80 mm flexi gets up to 6 or 7 strips; fewer when a face fills the space between.
+- **Cuts avoid the face:** cuts go where they cross the least ink and never through a small dot or a small closed mark (eyes, a nose, a ring eye). The joints sit in the base color where they can. Cutting through a long line or a colored area is fine.
+- **Colors and printing:** as a flat piece (face-down, colors flush, built mirrored), 7 mm thick, as the joint needs.
 
 ### Loops for pendants and earrings
 
@@ -230,7 +230,7 @@ Finish and show each milestone before starting the next. Each ends with somethin
 
 **Milestone 5: magnet figures and the stand.** The figure card (built: flat back, glued magnet), the stand, and the print notes. Done when a printed figure with a glued magnet holds on the fridge and stands on the stand. Ask Allen whether magnet figures are needed for the party; if yes, build this right after milestone 2.
 
-**Milestone 6: flexis.** The flat T-joint fit test, then the flexi card and product (cuts that avoid the face). Done when a kid's drawing becomes a printed flexi that wiggles and holds together.
+**Milestone 6: flexis.** The flexi card and product, with Bambu's flexi joint (cuts that avoid the face). Done when a kid's drawing becomes a printed flexi that wiggles and holds together.
 
 **Milestone 7: flexi creatures.** The ring-joint fit test (pieces 19-22, printed), the parts set (heads, bodies, legs, tails: built), the ready-made faces, and the creature card read like the other cards. Done when a kid's ticked card becomes a printed creature that wiggles.
 
