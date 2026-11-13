@@ -31,6 +31,7 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
+  **2026-11-13:** the shark duck flexi (Bambu's joint, 3 strips): "it works well".
 - **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
   poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
   he found one on MakerWorld that can work and parked ours for the future. Don't work on them
@@ -38,7 +39,7 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
   (separate glued post, new) and the short sloped ring tab.
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
-  - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
+  - **Flexi (built 2026-11-13; the shark duck printed and works well):** a product of its own with its own card, like the
     keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
     at the usual card scale, made 1.5 times bigger), 7 mm thick, cut into strips at least 9 mm
     tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
