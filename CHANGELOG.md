@@ -1,5 +1,12 @@
 # Changelog
 
+## Party prep (2026-11-13)
+
+- Magnet figures are fridge magnets: new cards drop the "stand here" line; the print notes say to glue the magnet in the middle of the back.
+- Coloring is optional: the cards say "Draw big and bold", "Close the lines", "Color it in, or we will". Allen fills the colors of line drawings in Bambu Studio.
+- Rehearsal on every real scan so far: 23 pieces, 4 plates, about a minute, no problems.
+- 2 tests updated.
+
 ## Poop containers you can see into (2026-11-13)
 
 - Allen filled his printed duck and couldn't see the poop through the 4 mm diamond holes. Every container now has tall windows, 8 mm wide with thin bars and pointed tops (still no supports), and bigger windows in the roofs: 40 to 75% more window, in openings you can see through. The duck's belly is a little taller for bigger windows.

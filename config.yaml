@@ -430,6 +430,7 @@ creature:
 
 # Design cards (the printable PDF). Lengths in mm on the card.
 cards:
+  kids_color: optional            # Allen, 2026-11-13: kids may color or just draw the lines (he fills colors in Bambu Studio); yes: "Color it in"; no: "Use a black marker"
   page_size: [215.9, 279.4]       # US Letter
   margin: 10
   marker_size: 20

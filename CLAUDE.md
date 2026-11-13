@@ -173,6 +173,13 @@ the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_dia
 case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
 makes a plain charm to glue onto a store-bought blank keycap instead.
 
+Coloring is optional (Allen, 2026-11-13): the cards say "Draw big and bold", "Close the lines",
+"Color it in, or we will" (`cards.kids_color: optional`; `yes` brings back "Use the colors in the
+printer ... Color it in", `no` says "Use a black marker"). A colored drawing works as always (every
+color its own part). A line drawing comes out as its lines plus white areas, and Allen fills the
+areas in Bambu Studio with the color-painting fill tool (no separate parts needed: the lines keep
+the fill in). Flat pieces print face-down, so he paints them from the bottom view.
+
 Card tick boxes: under the name line, every card (clicker too, since 2026-11-11) shows the five shapes, each
 with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
 Figurine. A "neat lines" box beside the name turns on tidy. The run reads the ticks itself and
