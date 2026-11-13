@@ -36,12 +36,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
-  - **Flexi drawings (next to build):** an option on keychain, pendant and magnet figure cards
-    (a "Flexi" tick box) that cuts the kid's flat drawing into strips about 10 mm tall, linked
-    by T-shaped tabs in roomy slots, printed flat and already linked, like the two flat Pusheen
-    flexis he showed. Cuts avoid the face (never through a small dot or closed mark). Not on hair
-    clips, clicker keycaps or earrings. Needs a flat T-joint fit test first (gap around
-    0.25-0.40 mm).
+  - **Flexi (next to build):** a product of its own with its own card, like the keychain (Allen:
+    not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn at the usual
+    card scale, made 1.5 times bigger), cut into strips about 12 mm tall, linked by T-shaped tabs
+    in roomy slots, printed flat and already linked, like the two flat Pusheen flexis he showed.
+    Cuts avoid the face (never through a small dot or closed mark). 4.5 mm thick. Needs a flat
+    T-joint fit test first (gap around 0.25-0.40 mm).
   - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
     legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
     both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
