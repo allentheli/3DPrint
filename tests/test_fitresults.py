@@ -26,7 +26,7 @@ def test_apply_fit_results_updates_values_and_keeps_comments(tmp_path):
     assert cfg["fit"]["switch_cutout"]["value"] == 14.0
     assert cfg["fit"]["stem_socket_clearance"]["value"] == 0.15
     assert cfg["fit"]["necklace_hole_diameter"]["value"] == 3.0
-    assert cfg["fit"]["flexi_joint_gap"]["value"] == 0.35
+    assert cfg["fit"]["flexi_joint_gap"]["value"] == 0.50
     for g in cfg["fit"].values():
         assert g["tested"] is True
     after = cfg_path.read_text()

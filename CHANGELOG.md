@@ -2,7 +2,7 @@
 
 ## Flexi joint test (2026-11-13)
 
-- First step toward flexi toys kids draw themselves (a frog whose arms and legs swing): a joint test plate, pieces 19-22, one per gap (0.25 to 0.40 mm). Each is a block with an arm on a round knob, printed already joined, no supports. `fit-test --only flexi_joint_gap` builds it; report the best number like the other fit tests.
+- First step toward flexi toys kids draw themselves, shark style (head, upper body, torso, lower body, tail): a joint test plate, pieces 19-22, one per gap (0.30 to 0.60 mm, centred on the gaps of the flexi shark Allen showed), 8 mm tall. Each is a block with an arm on a round knob, printed already joined, no supports. `fit-test --only flexi_joint_gap` builds it; report the best number like the other fit tests.
 - The fit test's top view draws two-piece coupons.
 - 1 new test, 2 updated.
 

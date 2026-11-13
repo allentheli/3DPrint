@@ -300,6 +300,8 @@ def test_flexi_joint_coupons_swing_and_hold(cfg, coupons):
         for deg in (-45, 45):
             assert (turned(deg) ^ body).volume() > 1e-3, f"piece {c.number} stops before {deg} degrees"
         g = c.candidate
-        for move in ([0, 0, g + 0.15], [0, 0, -(g + 0.15)], [g + 0.25, 0, 0], [0, g + 0.25, 0]):
+        # Held: it can rattle by about its gap (a bit more sideways, along the 45-degree lips)
+        # but never far enough to come out.
+        for move in ([0, 0, g + 0.15], [0, 0, -(g + 0.15)], [1.3, 0, 0], [0, 1.3, 0], [-1.3, 0, 0]):
             assert (arm.translate(move) ^ body).volume() > 1e-3, f"piece {c.number}: the knob is held ({move})"
         assert (arm.translate([0, 0, g - 0.05]) ^ body).volume() < 1e-3, "the gap is all around, up too"

@@ -35,13 +35,15 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
-- **Flexi toys (2026-11-13, next big feature):** Allen likes kids drawing the parts in separate
-  boxes (head, body, one arm, one leg; the tool mirrors the second arm and leg) and a flat flexi
-  like the frog sketch in `output/flexi-concept/frog-flexi.png`: arms and legs swing on 4
-  print-in-place joints (a round knob in a cup, 45-degree slopes, no supports). The joint test
-  plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.25-0.40 mm); waiting on
-  his number. Next: the flexi card and the build. The round "shark style" (puffed both sides,
-  standing on its belly) is a later option.
+- **Flexi toys (2026-11-13, next big feature):** Allen wants shark-style flexis the kids design:
+  a chain of parts (head, upper body, torso, lower body, and a tail if they want one), each drawn
+  in its own box on the card, from the side, facing the same way. Each part is puffed round on both
+  sides like his example shark and stands on a flat belly; neighbors nest (rounded end in a cupped
+  end) and turn on an upright knob-in-cup joint, so it wiggles side to side. We never use the
+  shark's file (his example only); its joints taught the gap (0.42 and 0.54 mm). The joint test
+  plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm, 8 mm tall);
+  waiting on his number. Next: the flexi card and the build. (The flat frog with swinging arms and
+  legs in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
   markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
