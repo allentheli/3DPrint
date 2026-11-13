@@ -6,6 +6,7 @@
 - The joint is Bambu Lab's MakerLab Flexi joint, copied size for size from the CC0 Pusheen Cat Flexi Toy Allen uploaded: a tab with a round tunnel around a pin, 0.47 mm all around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test.
 - The cuts keep the face whole: never through the eyes, teeth or other small marks; the cut heights are chosen together, with fewer strips if needed.
 - `run --as key-02=flexi` makes any card a flexi (or another product). First try: the shark duck, 3 strips and 4 joints.
+- The flexi card is part of the normal card set, with a real render of a sample flexi and "Draw it big and tall".
 - The 3D mix-and-match animals are now "creatures": `creature` and `creature-library` (were `flexi` and `flexi-library`).
 - 6 new tests.
 

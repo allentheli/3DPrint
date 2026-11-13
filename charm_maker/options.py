@@ -164,3 +164,49 @@ def shape_pictures(cfg: dict) -> dict:
             out[style] = im.resize((im.width // shrink, im.height // shrink), Image.LANCZOS)
     _PICTURES[key] = {"images": out, "px_per_mm": ppm}
     return _PICTURES[key]
+
+
+def flexi_picture(cfg: dict):
+    """A real render of a flexi, made by the tool itself from a sample cat with a face, for the
+    flexi card: (PIL image, pixels per mm). Built once per run."""
+    import math
+
+    from PIL import Image
+    from shapely.geometry import LineString, Point, Polygon
+    from shapely.ops import unary_union
+
+    from .preview import render_shaded
+    from .products import build_piece
+    from .shape import Design, InkRegion, _as_multi
+
+    if "flexi" in _PICTURES:
+        return _PICTURES["flexi"]
+    import tempfile
+    from pathlib import Path
+
+    body = Polygon([(math.sin(t) * 19, math.cos(t) * 27 - 4) for t in np.linspace(0, 2 * math.pi, 120)])
+    ears = Polygon([(-16, 12), (-14, 30), (-4, 21)]).union(Polygon([(16, 12), (14, 30), (4, 21)]))
+    cat = body.union(ears).buffer(1.5).buffer(-1.5)
+    inside = cat.buffer(-1.4)
+    eyes = Point(-6, 12).buffer(2.0).union(Point(6, 12).buffer(2.0))
+    smile = LineString([(4 * math.cos(a), 6.5 + 4 * math.sin(a))
+                        for a in np.linspace(math.radians(200), math.radians(340), 20)]).buffer(0.7)
+    stripes = [LineString([(x, -14), (x * 1.15, -24)]).buffer(1.0) for x in (-8, 0, 8)]
+    black = unary_union([cat.difference(inside), eyes, smile, *stripes])
+    d = Design("flexi", "flexi", cat, [
+        InkRegion("black", (30, 30, 30), _as_multi(black)),
+        InkRegion("orange", (245, 160, 60), _as_multi(inside.difference(black)))])
+    p = build_piece(cfg, d)
+    parts = {n: s.rotate([0.0, 180.0, 0.0]) for n, s in p.parts.items()}      # face up, as you hold it
+    ppm, shrink, elev = 10.0, 2, 30.0
+    e = math.radians(elev)
+    parts = {n: (s if n == p.base_part else s.translate([0.0, -0.06 * math.cos(e), 0.06 * math.sin(e)]))
+             for n, s in parts.items()}
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "flexi.png"
+        render_shaded(parts, f, view=(elev, 0.0), px_per_mm=ppm * shrink, labels=False, colors=dict(p.part_colors))
+        a = np.asarray(Image.open(f).convert("RGB")).copy()
+    a[(a == (245, 245, 240)).all(axis=2)] = 255
+    im = Image.fromarray(a)
+    _PICTURES["flexi"] = (im.resize((im.width // shrink, im.height // shrink), Image.LANCZOS), ppm)
+    return _PICTURES["flexi"]

@@ -52,7 +52,7 @@ def cmd_cards(args: argparse.Namespace) -> int:
     from .palette import load_palette
 
     cfg = load_config(args.config)
-    products = args.products or ["hair_clip", "keychain", "pendant", "earrings", "magnet_figure", "clicker"]
+    products = args.products or ["hair_clip", "keychain", "pendant", "earrings", "magnet_figure", "clicker", "flexi"]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     blank = write_cards_pdf(cfg, products, out / "design-cards.pdf", count=args.count)

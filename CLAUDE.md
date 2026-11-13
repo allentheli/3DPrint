@@ -49,8 +49,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
     with fewer strips if that is what it takes. Any card can be made a flexi with
     `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
     (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
-    Pusheen's). The flexi card prints with `cards --products flexi` (no shape boxes; no picture
-    of a flexi on it yet).
+    Pusheen's). The flexi card is in the normal card set (`cards`; alone: `cards --products
+    flexi`): the biggest drawing box, no shape boxes, and a real render of a sample flexi cat with
+    "Your drawing becomes a wiggly flexi! Draw it big and tall." Ready for kids (2026-11-13).
   - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
     legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
     both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
@@ -220,7 +221,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Record a spool in a slot | `python -m charm_maker load <slot> "<spool>" [--color "#RRGGBB"]` |
 | Show slots and calibration | `python -m charm_maker slots` |
 | Print the cards | `python -m charm_maker cards` (blank cards, plus calibration if slots are loaded; `--half-drawn` adds pre-set outlines, which Allen said he does not need) |
-| One card of each type | `python -m charm_maker cards --count 1 --out output/cards-one-each` (6 pages; Allen can print a page as often as he likes: repeats read as `key-01`, `key-01-b`, and pieces are named after the kid anyway) |
+| One card of each type | `python -m charm_maker cards --count 1 --out output/cards-one-each` (7 pages; Allen can print a page as often as he likes: repeats read as `key-01`, `key-01-b`, and pieces are named after the kid anyway) |
 | Read a calibration scan | `python -m charm_maker calibrate <scan>` |
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |

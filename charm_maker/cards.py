@@ -48,7 +48,7 @@ SHORT_NAMES = {
 }
 
 HALF_DRAWN_FRACTION = {"hair_clip": 0.75, "keychain": 0.70, "magnet_figure": 0.75, "clicker": 0.75,
-                       "earrings": 0.75, "pendant": 0.75}
+                       "earrings": 0.75, "pendant": 0.75, "flexi": 0.75}
 
 
 def half_drawn_shape_name(cfg: dict, number: int) -> str | None:
@@ -385,6 +385,22 @@ def _draw_options(pdf, cfg: dict, lay: CardLayout):
             pdf.setFillColorRGB(0, 0, 0)
             pdf.setFont("Helvetica", 8.5)
             pdf.drawCentredString((x + s + 1.5 + pw / 2) * mm, (y - 6.0) * mm, WORDS[key])
+    if not boxes and cfg["products"][lay.product].get("attachment") == "strips":
+        # A flexi: a real render of one, so kids see what their drawing becomes.
+        from reportlab.lib.utils import ImageReader
+
+        from .options import flexi_picture
+
+        im, ppm = flexi_picture(cfg)
+        h = 24.0
+        w = im.width / im.height * h
+        x0, y0 = c["margin"] + 8.0, lay.zones["tidy_box"][1] - 27.0
+        pdf.drawImage(ImageReader(im), x0 * mm, y0 * mm, w * mm, h * mm)
+        pdf.setFillColorRGB(0, 0, 0)
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString((x0 + w + 6) * mm, (y0 + 15) * mm, "Your drawing becomes a wiggly flexi!")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString((x0 + w + 6) * mm, (y0 + 9) * mm, "Draw it big and tall. We cut it into strips that wiggle.")
     x, y, s = lay.zones["tidy_box"]
     box(x, y, s)
     pdf.setFillColorRGB(0, 0, 0)
