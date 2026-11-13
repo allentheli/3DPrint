@@ -140,7 +140,7 @@ def _revolve(profile) -> m3d.Manifold:
     return m3d.Manifold.revolve(to_cross_section(profile), CIRCLE_SEGMENTS)
 
 
-def flexi_joint(cfg: dict, gap: float, cx: float, cy: float) -> dict:
+def flexi_joint(cfg: dict, gap: float, cx: float, cy: float, end_r: float | None = None) -> dict:
     """The common flexi-toy joint (like the shark Allen showed): the front piece has a pocket
     with an upright pin standing in it; the back piece reaches in with a tongue that ends in
     a closed ring around the pin, `gap` apart all around. The ring turns around the pin, so
@@ -149,7 +149,8 @@ def flexi_joint(cfg: dict, gap: float, cx: float, cy: float) -> dict:
     pin flares to match above and below it (slimmer in the middle, like the shark's). The
     pocket's opening for the tongue stops the swing at about `swing` degrees each way.
     Returns the ring-and-tongue solid, the pocket void and the sizes; the front piece's
-    rounded end has radius `lobe_r` around the pin, the back piece's cupped end `lobe_r + gap`."""
+    rounded end has radius `lobe_r` around the pin (or `end_r`, if the piece's round end is
+    bigger, as in a toy), the back piece's cupped end that plus `gap`; the tongue reaches it."""
     from shapely.geometry import Polygon, box
 
     j = cfg["fit_test"]["flexi_joint"]
@@ -164,18 +165,19 @@ def flexi_joint(cfg: dict, gap: float, cx: float, cy: float) -> dict:
     pocket = _revolve(ring_profile.buffer(gap, join_style=2).intersection(box(0, -1, 50, t + 1)))
     neck_w = j["neck_width"]
     lobe_r = ro + gap + j["cup_wall"]
+    end_r = max(end_r or 0.0, lobe_r)
     # The tongue: same height and chamfers as the ring, from the ring out into the back piece.
     tongue_yz = Polygon([(-neck_w / 2, z0 + c), (-neck_w / 2 + c, z0), (neck_w / 2 - c, z0), (neck_w / 2, z0 + c),
                          (neck_w / 2, z1 - c), (neck_w / 2 - c, z1), (-neck_w / 2 + c, z1), (-neck_w / 2, z1 - c)])
     from .geom import to_cross_section
-    length = lobe_r + gap + 1.5 - (ro - 0.5)
+    length = end_r + gap + 1.5 - (ro - 0.5)
     tongue = (m3d.Manifold.extrude(to_cross_section(tongue_yz), length)       # along +z, then lay it along +x
               .rotate([0.0, 90.0, 0.0]).rotate([90.0, 0.0, 0.0]))
     tb = tongue.bounding_box()
     tongue = tongue.translate([ro - 0.5 - tb[0], -(tb[1] + tb[4]) / 2, z0 - tb[2]])
     # The pocket's opening for the tongue: a slice of the pocket's height, swing degrees wider.
     half = np.degrees(np.arcsin((neck_w / 2 + gap) / ro)) + j["swing"]
-    far = lobe_r + 5
+    far = end_r + 5
     wedge = Polygon([(0, 0)] + [(far * np.cos(np.radians(a)), far * np.sin(np.radians(a)))
                                 for a in np.linspace(-half, half, 25)])
     channel_yz = tongue_yz.buffer(gap, join_style=2)
