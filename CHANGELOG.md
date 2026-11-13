@@ -1,5 +1,16 @@
 # Changelog
 
+## Flexi toys from ready-made parts (2026-11-13)
+
+- `flexi` puts a flexi toy together from a mix-and-match set: heads (cat, bear, bunny, fish), bodies (short 2 pieces, regular 3, long 6), legs (chunky paws or none) and tails (cat, fish fin, none). Every piece meets the next at the same ring joint, so any head fits any body and any tail. It prints in one go, linked, standing on its flat belly, with no supports.
+- Each pair of legs is built onto its own piece only (front legs on the chest, back legs on the hips) and never crosses a seam.
+- The kid draws the face on the head's face guide (a soft picture of the head, printed twice its real size in the card's light guide color, which the reader removes); `--face` paints each color onto the head's surface as its own part. Cat, bear and bunny faces are drawn from the front, the fish from the side (painted on both sides).
+- Every toy is checked: one solid per piece, no two pieces touching as printed, and how far each joint turns before something bumps (a check line under 20 degrees). Bumping while bending is fine (Allen).
+- `flexi-library` draws every part and writes each head's face guide.
+- Out: the 3MF (one object, every piece and face color its own part), a preview (front corner, side, wiggled from above), PRINT_NOTES.md and a report.
+- Not printed yet: the cat prototype is on Allen's printer, the joint gap waits on the test plate.
+- 8 new tests.
+
 ## Flexi joint test (2026-11-13)
 
 - First step toward flexi toys kids draw themselves, shark style (head, upper body, torso, lower body, tail): a joint test plate, pieces 19-22, one per gap (0.30 to 0.60 mm, around the gaps of the flexi shark and kitten Allen showed), 8 mm tall. The joint is the usual flexi one: a ring around an upright pin. Each is a block with an arm on a round knob, printed already joined, no supports. `fit-test --only flexi_joint_gap` builds it; report the best number like the other fit tests.

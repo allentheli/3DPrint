@@ -50,11 +50,14 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   cannot reach MakerWorld, Printables or Thingiverse; Allen downloads and uploads. Downloads and
   anything made from them never go in git. Prefer Creative Commons models for (B); MakerWorld's
   Standard license is personal printing only.
-  The first full toy (cat head with a test face, legs, tail, 4 joints at 0.5 mm, 94 x 37 x 22 mm)
-  is built by `tools/flexi_prototype/` (not in the tool yet); Allen is printing it. Waiting on that
-  and on the joint test plate (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm).
-  Next: the flexi card and the build into the tool, starting with (A) on his uploaded kitten if he
-  says yes. (The flat frog in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
+  Allen then chose the ready-made parts as the main way ("more consistent"); borrowed parts join
+  the set once they have the standard joint end. Built: `flexi` (heads cat, bear, bunny, fish;
+  bodies short, regular, long; legs paws or none; tails cat, fin, none; `--face` paints a drawing of
+  the face guide onto the head) and `flexi-library` (a picture of every part, the face guides).
+  The first cat (94 x 37 x 22 mm) is on Allen's printer. Waiting on that and on the joint test
+  plate (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm). Next: the flexi card
+  (head, body, legs, tail ticks and the face guide box, read like the other cards), then more parts.
+  (The flat frog in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
   markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
@@ -219,6 +222,8 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
+| A flexi toy from the parts | `python -m charm_maker flexi --head cat --body regular --legs paws --tail cat [--face face.png] --name mia` |
+| Picture of every flexi part, face guides | `python -m charm_maker flexi-library` (writes `output/flexi-library/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |

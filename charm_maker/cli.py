@@ -233,6 +233,44 @@ def cmd_screw_top(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_flexi(args: argparse.Namespace) -> int:
+    import cv2
+
+    from .flexi import build_toy, write_toy
+
+    cfg = load_config(args.config)
+    face = None
+    if args.face:
+        face = cv2.imread(str(args.face))
+        if face is None:
+            print(f"could not read the face drawing {args.face}")
+            return 1
+    name = args.name or f"flexi-{args.head}"
+    toy = build_toy(cfg, args.head, args.body, args.legs, args.tail, face=face, name=name)
+    paths = write_toy(cfg, toy, Path(args.out) / name)
+    size = " x ".join(f"{v:.0f}" for v in toy.size())
+    print(f"{name}: {args.head} head, {args.body} body, legs: {args.legs}, tail: {args.tail}; "
+          f"{len(toy.pieces)} pieces, {size} mm")
+    for joint, (a, b) in toy.info.get("swing_deg", {}).items():
+        print(f"  {joint}: turns {a} / {b} degrees each way")
+    for line in toy.fixes + toy.checks:
+        print(f"  {line}")
+    for k, p in paths.items():
+        print(f"  {k:8s} {p}")
+    return 0
+
+
+def cmd_flexi_library(args: argparse.Namespace) -> int:
+    from .flexi import write_library
+
+    cfg = load_config(args.config)
+    paths = write_library(cfg, Path(args.out))
+    print(f"parts: {paths['library']}")
+    for p in paths["guides"]:
+        print(f"face guide: {p}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="charm_maker", description="Charm Maker")
     parser.add_argument("--config", default=None, help="path to config.yaml (default: repo config)")
@@ -329,6 +367,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--name", default=None)
     p.add_argument("--out", default="output/screw-top")
     p.set_defaults(func=cmd_screw_top)
+
+    from .flexi import BODIES, HEADS, LEGS, TAILS
+    p = sub.add_parser("flexi", help="a flexi toy from the ready-made parts: head, body, legs, tail")
+    p.add_argument("--head", default="cat", choices=HEADS)
+    p.add_argument("--body", default="regular", choices=list(BODIES), help="short (2 pieces), regular (3), long (6)")
+    p.add_argument("--legs", default="paws", choices=LEGS)
+    p.add_argument("--tail", default="cat", choices=TAILS)
+    p.add_argument("--face", default=None, help="the face drawing: the head's face guide, drawn on, cropped to it")
+    p.add_argument("--name", default=None, help="file name (default flexi-<head>)")
+    p.add_argument("--out", default="output/flexi")
+    p.set_defaults(func=cmd_flexi)
+
+    p = sub.add_parser("flexi-library", help="a picture of every flexi part, and each head's face guide")
+    p.add_argument("--out", default="output/flexi-library")
+    p.set_defaults(func=cmd_flexi_library)
 
     p = sub.add_parser("stand", help="build just the figure stand")
     p.add_argument("--out", default="output/stand", help="output folder")

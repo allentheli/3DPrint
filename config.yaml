@@ -378,6 +378,21 @@ fit_test:
     arm_length: 20
     arm_width: 6.0
 
+# Flexi toys: ready-made parts (heads, bodies, legs, tails) on one standard ring joint
+# (fit.flexi_joint_gap and fit_test.flexi_joint), so any head fits any body and any tail.
+flexi:
+  joint_height: 8.6               # the joints' middle, above the shapes' base (before the belly cut)
+  belly_cut: 2.4                  # everything lower is cut flat: the toy stands and prints on its belly
+  piece_length: 15.5              # joint to joint
+  half_width: 9.0                 # body half-width at the joints (sets the round ends that nest)
+  voxel: 0.2                      # shape detail: smaller is smoother and slower
+  face_skin: 0.8                  # face colors go this deep into the head
+  face_guide_scale: 2.0           # the face guide prints at this many times the head's real size
+  min_swing: 20                   # check: a joint turns less than this each way before something bumps
+  fuse_distance: 0.3              # check: two pieces come this close as printed (they could fuse)
+  layer_height: 0.16
+  body_rgb: [250, 165, 80]        # preview only; Allen picks the spools in Bambu Studio
+
 # Design cards (the printable PDF). Lengths in mm on the card.
 cards:
   page_size: [215.9, 279.4]       # US Letter
