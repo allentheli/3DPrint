@@ -242,6 +242,10 @@ def _draw_piece_face(piece, assignments, px_per_mm: float, pad_mm: float = 2.0,
         part = f"{d.name} {ink.name}"
         rgb = assignments[part].rgb if part in assignments else ink.rgb
         img.paste(Image.new("RGB", (w, h), rgb), mask=_region_mask((w, h), ink.geometry, origin, px_per_mm, h))
+    if piece.attachment.get("kind") == "strips" and piece.attachment.get("cut") is not None:
+        img.paste(Image.new("RGB", (w, h), (255, 255, 255)),     # a flexi's cuts, as printed
+                  mask=_region_mask((w, h), piece.attachment["cut"].intersection(d.outline.buffer(0.5)),
+                                    origin, px_per_mm, h))
     # Outline edge and attachment hints.
     draw = ImageDraw.Draw(img)
     ext = [((x - origin[0]) * px_per_mm, h - (y - origin[1]) * px_per_mm) for x, y in d.outline.exterior.coords]

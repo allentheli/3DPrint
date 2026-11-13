@@ -36,23 +36,28 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
-  - **Flexi (next to build):** a product of its own with its own card, like the keychain (Allen:
-    not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn at the usual
-    card scale, made 1.5 times bigger), cut into strips about 12 mm tall, linked by T-shaped tabs
-    in roomy slots, printed flat and already linked, like the two flat Pusheen flexis he showed.
-    Cuts avoid the face (never through a small dot or closed mark). 4.5 mm thick. Needs a flat
-    T-joint fit test first (gap around 0.25-0.40 mm).
+  - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
+    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
+    at the usual card scale, made 1.5 times bigger), cut into strips about 12 mm tall, linked by
+    T-shaped tabs in roomy slots (they slide about 1 mm each way and hold), printed flat and
+    already linked, 4.5 mm thick, like the two flat Pusheen flexis he showed. Cuts keep the face
+    whole: never through a kept dot, a small round mark or a small closed mark (ring eyes, teeth);
+    the cut heights are chosen together, with fewer strips if that is what it takes. Any card can
+    be made a flexi with `--as key-02=flexi`; first try: the shark duck (keychain-3, key-02),
+    4 strips, 6 T-joints, 49 x 65 mm. Waiting on the strip gap: `fit-test --only flexi_strip_gap
+    --out output/fit-test-flexi-strips` (pieces 23-26). The flexi card prints with
+    `cards --products flexi` (no shape boxes; no picture of a flexi on it yet).
   - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
     legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
     both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
     and MontoyaMaker's kitten; gaps 0.39-0.65 mm). Allen's rules: legs big, each pair wholly on
     one piece; bumping while bending is fine, but pieces must not touch as printed; supports
     are fine where needed ("On build plate only", so they stay out of the joints). Built:
-    `flexi` (heads cat, bear, bunny, fish; bodies short, regular, long; paws or none; tails
-    cat, fin, none; checks) and `flexi-library`. Parts may be borrowed from free downloads Allen
+    `creature` (heads cat, bear, bunny, fish; bodies short, regular, long; paws or none; tails
+    cat, fin, none; checks) and `creature-library` (code in `creature.py`). Parts may be borrowed from free downloads Allen
     picks (cut at a solid spot, given our joint end; never in git; Creative Commons preferred,
     MakerWorld's Standard license is personal printing only). I cannot reach MakerWorld,
-    Printables, Thingiverse or Etsy. Painting a drawn face (`flexi --face`) works but is not
+    Printables, Thingiverse or Etsy. Painting a drawn face (`creature --face`) works but is not
     used by the card. The first cat is on Allen's printer; the ring-joint test plate
     (`fit-test --only flexi_joint_gap`, pieces 19-22) waits on his number. Next: ready-made
     faces and the creature card.
@@ -128,7 +133,7 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), clicker keychain, and earrings for adults (one drawing makes a
+figure (flat back, glued magnet), clicker keychain, flexi (the drawing in wiggly strips), and earrings for adults (one drawing makes a
 mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm jump rings, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
@@ -220,8 +225,10 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
-| A flexi toy from the parts | `python -m charm_maker flexi --head cat --body regular --legs paws --tail cat [--face face.png] --name mia` |
-| Picture of every flexi part, face guides | `python -m charm_maker flexi-library` (writes `output/flexi-library/`) |
+| Flat flexi strip test plate | `python -m charm_maker fit-test --only flexi_strip_gap --out output/fit-test-flexi-strips` (pieces 23-26) |
+| Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
+| A flexi creature from the parts | `python -m charm_maker creature --head cat --body regular --legs paws --tail cat --name mia` |
+| Picture of every creature part | `python -m charm_maker creature-library` (writes `output/creature-library/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
@@ -240,7 +247,8 @@ the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 7-9 earring jump-ring hole (small top tab, front to back), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
-16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20").
+16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20"),
+23-26 flat flexi strips (two strips linked by a T; he may say "strips 25").
 
 ## Reading the results
 

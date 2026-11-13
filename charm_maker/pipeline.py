@@ -47,16 +47,21 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None, tidy: bool = False,
-                     keep_dots: bool = True, size: float = 1.0) -> Design:
+                     keep_dots: bool = True, size: float = 1.0, product_override: str | None = None) -> Design:
     """`size` makes the piece that many times the drawn size (Allen, 2026-11-12: a bigger
     butterfly so its tiny face keeps its shape). It is applied before the print fixes, so
     her lines and the gaps between them grow too and the 1 mm minimum has room."""
     pr = cfg["process"]
-    scale = pr["card_scale"] / size
+    asked = size
     if border is None:
         border = pr["border_default"]
     if read.layout is not None:
-        product = read.layout.product
+        product = product_override or read.layout.product
+        if product not in cfg["products"]:
+            raise ValueError(f"unknown product {product!r}; products: {', '.join(cfg['products'])}")
+        # Some products are bigger than their card box at the usual card scale (a flexi).
+        size = asked * cfg["products"][product].get("drawing_scale", 1.0)
+        scale = pr["card_scale"] / size
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
@@ -68,13 +73,20 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
         design.name_image = read.name_image
-        if size != 1.0:
-            design.fixes.append(f"made {size:g} times the drawn size (asked for)")
+        if product != read.layout.product:
+            design.fixes.append(f"made into a {cfg['products'][product]['label'].lower()} (asked for; drawn on a "
+                                f"{cfg['products'][read.layout.product]['label'].lower()} card)")
+        if size != asked:
+            design.fixes.append(f"made {size / asked:g} times the drawn size (a {cfg['products'][product]['label'].lower()} "
+                                "is bigger than its card box)")
+        if asked != 1.0:
+            design.fixes.append(f"made {asked:g} times the drawn size (asked for)")
         return design
 
     # Fallback: no markers. Use the whole image, scale the ink to the default size.
-    product = product_hint
+    product = product_override or product_hint
     assert product is not None
+    scale = pr["card_scale"] / size
     img = read.box_image
     h, w = img.shape[:2]
     f = min(1.0, 1600.0 / max(h, w))
@@ -179,7 +191,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
               names: dict[str, str] | None = None, one_plate: bool = False,
-              no_dots: set[str] | None = None, sizes: dict[str, float] | None = None) -> BatchResult:
+              no_dots: set[str] | None = None, sizes: dict[str, float] | None = None,
+              products: dict[str, str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -213,6 +226,10 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     tidy = set(tidy or ())
     no_dots = set(no_dots or ())
+    products = dict(products or {})
+    for key, prod in products.items():
+        if prod not in cfg["products"]:
+            raise ValueError(f"--as {key}={prod}: no such product; use one of {', '.join(cfg['products'])}")
     sizes = {k: float(v) for k, v in (sizes or {}).items()}
     for key, k in sizes.items():
         if not 0.25 <= k <= 4.0:
@@ -259,7 +276,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
                                       tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
                                       keep_dots=not (no_dots & {name, base_name, "*"}),
-                                      size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0))
+                                      size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0),
+                                      product_override=next((products[c] for c in (name, base_name, "*")
+                                                             if c in products), None))
             design.source = label
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
@@ -572,8 +591,10 @@ def _check_piece(piece: Piece) -> None:
         if not to_trimesh(solid).is_watertight:
             raise ValueError(f"part {name} is not watertight")
         union = solid if union is None else union + solid
-    if count_bodies(union) != 1:
-        raise ValueError("the piece is not one connected part")
+    expected = piece.attachment.get("bodies", 1)          # a flexi: one per strip, linked by T-joints
+    if count_bodies(union) != expected:
+        raise ValueError("the piece is not one connected part" if expected == 1 else
+                         f"the flexi came out in {count_bodies(union)} pieces, not its {expected} strips")
 
 
 def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: dict[str, str]) -> dict:
@@ -590,7 +611,7 @@ def _piece_summary(piece: Piece, assignments: dict[str, Filament], slot_labels: 
         "parts": {n: {"filament": f.name, "where": slot_labels.get(n, "")} for n, f in assignments.items()},
         "off_palette": {n: {k: v for k, v in i.items() if k != "suggested"} for n, i in piece.part_off_palette.items()},
         "attachment": {k: (list(v) if isinstance(v, tuple) else v) for k, v in piece.attachment.items()
-                       if k not in ("hole", "solid", "hole_solid", "opening")},
+                       if k not in ("hole", "solid", "hole_solid", "opening", "cut")},
         "fixes": d.fixes,
         "warnings": d.warnings,
     }

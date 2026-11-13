@@ -43,7 +43,7 @@ class CardLayout:
 
 SHORT_NAMES = {
     "hair_clip": "clip", "keychain": "key", "clicker": "click",
-    "magnet_figure": "fig", "earrings": "ear", "pendant": "pend",
+    "magnet_figure": "fig", "earrings": "ear", "pendant": "pend", "flexi": "flexi",
     "calibration": "calib",
 }
 

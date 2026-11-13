@@ -1,4 +1,4 @@
-"""Flexi toys: a mix-and-match set of ready-made parts on one standard joint.
+"""Flexi creatures (no drawing): a mix-and-match set of ready-made parts on one standard joint.
 
 A toy is a head, a body of 2, 3 or 6 pieces, legs or none, and a tail or none. Neighbor pieces
 meet at the same ring joint (`fittest.flexi_joint`, the one on the fit-test plate): the front
@@ -217,7 +217,7 @@ def piece_names(body: str, tail: str) -> list[str]:
 
 
 def _standard(cfg: dict) -> dict:
-    fx = cfg["flexi"]
+    fx = cfg["creature"]
     j = cfg["fit_test"]["flexi_joint"]
     gap = float(cfg["fit"]["flexi_joint_gap"]["value"])
     lobe_r = j["pin_radius"] + gap + j["ring_width"] + gap + j["cup_wall"]
@@ -273,7 +273,7 @@ def _overlaps(a, b) -> bool:
 
 
 def build_toy(cfg: dict, head: str = "cat", body: str = "regular", legs: str = "paws", tail: str = "cat",
-              face=None, name: str = "flexi", checks: bool = True) -> Toy:
+              face=None, name: str = "creature", checks: bool = True) -> Toy:
     """Put a toy together from the library. `face` is the kid's face drawing (a BGR image of
     the face guide, drawn on), or None for a plain head."""
     if head not in HEADS:
@@ -351,7 +351,7 @@ def build_toy(cfg: dict, head: str = "cat", body: str = "regular", legs: str = "
         if pname == "head":
             head_grid = (axes, d)
 
-    body_rgb = tuple(cfg["flexi"]["body_rgb"])
+    body_rgb = tuple(cfg["creature"]["body_rgb"])
     toy.colors = {n: body_rgb for n in names}
     if face is not None:
         _paint_face(cfg, toy, face, head_grid)
@@ -402,7 +402,7 @@ def face_guide(cfg: dict, head: str) -> tuple[np.ndarray, tuple]:
     axes, d = _head_only(cfg, head)
     inside = d < 0
     frame, sil = _canvas(axes, inside, view)
-    vox = cfg["flexi"]["voxel"]
+    vox = cfg["creature"]["voxel"]
     if view == "front":                               # height of the surface toward the viewer
         idx = np.arange(inside.shape[0]).reshape(-1, 1, 1)
         h = np.where(inside, idx, -1).max(axis=0).astype(np.float32) * vox      # [y, z]
@@ -433,7 +433,7 @@ def face_guide(cfg: dict, head: str) -> tuple[np.ndarray, tuple]:
     # A smooth outline (the voxels' stair steps blurred away) and a soft shading inside it.
     inside_up = cv2.GaussianBlur(up(sil.astype(np.float32), 0.0), (0, 0), GUIDE_PPM * 0.2) > 0.5
     shade_up = up(shade, 1.0)
-    line_px = max(2, int(round(cfg["cards"]["guide_line_width"] / cfg["flexi"]["face_guide_scale"] * GUIDE_PPM)))
+    line_px = max(2, int(round(cfg["cards"]["guide_line_width"] / cfg["creature"]["face_guide_scale"] * GUIDE_PPM)))
     rim = inside_up & ~ndimage.binary_erosion(inside_up, iterations=line_px)
     pale, mid, line = np.array([238, 248, 253.0]), np.array([170, 215, 235.0]), np.array([150, 205, 232.0])
     t = (1 - np.clip(shade_up, 0, 1))[..., None] * 0.85
@@ -454,8 +454,8 @@ def _paint_face(cfg: dict, toy: Toy, face, head_grid) -> None:
     head = toy.parts["head"]
     view = FACE_VIEW[head]
     axes, d = head_grid
-    vox = cfg["flexi"]["voxel"]
-    skin_mm = cfg["flexi"]["face_skin"]
+    vox = cfg["creature"]["voxel"]
+    skin_mm = cfg["creature"]["face_skin"]
     inside = d < 0
     piece = toy.pieces["head"]
     depth = ndimage.distance_transform_edt(inside).astype(np.float32) * vox
@@ -537,7 +537,7 @@ def joint_swing(front: m3d.Manifold, back: m3d.Manifold, x: float, limit: int = 
 
 
 def _check(cfg: dict, toy: Toy, st: dict) -> None:
-    fx = cfg["flexi"]
+    fx = cfg["creature"]
     names = list(toy.pieces)
     for n, p in toy.pieces.items():
         paint = [s for k, s in toy.paint.items() if k.split()[0] == n]
@@ -647,7 +647,7 @@ def write_toy(cfg: dict, toy: Toy, out_dir: Path) -> dict:
              "## Plate", "",
              f"- Import `{toy.name}.3mf` (**File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**, "
              "**Load geometry only** if asked). It is one object: keep its parts together, do not split it.",
-             f"- Layer height: **{cfg['flexi']['layer_height']} mm**. Supports: off. It stands on its flat belly. "
+             f"- Layer height: **{cfg['creature']['layer_height']} mm**. Supports: off. It stands on its flat belly. "
              "Plate: either PEI plate.",
              "- If you ever turn supports on for a toy, also tick **On build plate only** (Support tab), so the "
              "slicer does not fill the gaps in the joints.", "",
@@ -678,7 +678,7 @@ def write_guides(cfg: dict, out_dir: Path) -> list[Path]:
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    dpi = GUIDE_PPM / cfg["flexi"]["face_guide_scale"] * 25.4
+    dpi = GUIDE_PPM / cfg["creature"]["face_guide_scale"] * 25.4
     paths = []
     for h in HEADS:
         img, _ = face_guide(cfg, h)

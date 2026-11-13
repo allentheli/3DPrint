@@ -67,6 +67,9 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
     prod = cfg["products"][design.product]
     t = float(prod["thickness"])
     attachment = prod.get("attachment")
+    if attachment == "strips" and style != "flat":
+        design.warnings.append(f"flexis are flat for now; the {style} shape is not used")
+        style = "flat"
     if attachment in ("side_loop", "jump_ring_tab") and prod.get("style") == "stud":
         attachment = None            # stud earrings: flat back, glue-on post
     info: dict = {}
@@ -94,6 +97,13 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
         else:
             _keycap_min_size(design, prod)
             info = _place_stem_post(cfg, design)
+    elif attachment == "strips":
+        from .strips import plan_strips, scale_up_small
+
+        scale_up_small(cfg, design)
+        info = plan_strips(cfg, design)
+        design.fixes.extend(info.pop("notes"))
+        design.warnings.extend(info.pop("warnings"))
     elif attachment is None:
         if prod.get("style") == "stud":
             design.fixes.append("stud style: flat back for a glue-on post")
@@ -159,6 +169,10 @@ def build_piece(cfg: dict, design: Design, *, tab_position: str | None = None, s
         slots[name] = ink.slot
         if ink.off_palette:
             off[name] = ink.off_palette
+    if attachment == "strips" and info.get("cut") is not None:
+        cut = extrude(info["cut"], t + 2.0, -1.0)
+        parts = {n: solid - cut for n, solid in parts.items()}
+        parts = {n: solid for n, solid in parts.items() if not solid.is_empty()}
     # Face-down: the face is the side that touched the bed. Seen from the front after
     # flipping the piece over, it reads mirrored unless the solid is built mirrored.
     parts = {n: solid.mirror([1.0, 0.0, 0.0]) for n, solid in parts.items()}

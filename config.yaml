@@ -127,6 +127,11 @@ fit:
     tested: false
     candidates: [0.30, 0.40, 0.50, 0.60]
     note: gap all around a flexi toy's round knob joint (print-in-place, no supports); pieces 19-22. Centred on the gaps of a proven flexi shark Allen showed (0.42 and 0.54 mm)
+  flexi_strip_gap:
+    value: 0.35
+    tested: false
+    candidates: [0.25, 0.30, 0.35, 0.40]
+    note: gap between the strips of a flat flexi and around its T-joints (printed flat, already linked); pieces 23-26
 
 # Hardware sizes that are not tolerances (measured or from the manufacturer).
 hardware:
@@ -174,6 +179,29 @@ products:
     attachment: clip_pocket
     copies: 1
     card: hair_clip
+  flexi:
+    label: Flexi
+    file_word: flexi
+    size_min: 50
+    size_max: 80
+    default_size: 80
+    drawing_scale: 1.5            # the biggest card box is 3x a 54 mm piece; a flexi is 1.5x that (Allen's examples: about 80 mm)
+    thickness: 4.5
+    attachment: strips
+    copies: 1
+    card: flexi
+    strips:                       # the cuts and T-joints (strips.py)
+      height: 12                  # each strip about this tall
+      min_height: 8
+      neck_width: 3.0             # the T's neck, from the strip above...
+      neck_length: 2.4            # ...through the lips of the slot below
+      head_width: 8.0             # the T's head, wider than the slot's mouth so it can't pull out
+      head_height: 2.6
+      slide: 0.6                  # room for the T to slide sideways, each way: the wiggle
+      wall: 1.6                   # plastic between a slot and the piece's edge
+      two_joints_from: 34         # a cut at least this wide gets two T-joints
+      small_mark_area: 8.0        # separate ink marks smaller than this (mm²) are never cut (eyes, a nose)
+      closed_mark_area: 60.0      # nor closed marks around paper smaller than this (mm²): ring eyes, teeth
   keychain:
     label: Keychain
     file_word: keychain              # files are named keychain-jack after the kid
@@ -378,9 +406,9 @@ fit_test:
     arm_length: 20
     arm_width: 6.0
 
-# Flexi toys: ready-made parts (heads, bodies, legs, tails) on one standard ring joint
+# Flexi creatures: ready-made parts (heads, bodies, legs, tails) on one standard ring joint
 # (fit.flexi_joint_gap and fit_test.flexi_joint), so any head fits any body and any tail.
-flexi:
+creature:
   joint_height: 8.6               # the joints' middle, above the shapes' base (before the belly cut)
   belly_cut: 2.4                  # everything lower is cut flat: the toy stands and prints on its belly
   piece_length: 15.5              # joint to joint
@@ -415,6 +443,7 @@ cards:
     magnet_figure: 3
     earrings: 4
     pendant: 5
+    flexi: 6
     calibration: 7
 
 # Photo reader and ink separation.

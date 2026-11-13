@@ -40,10 +40,10 @@ def _inner_contours(solid: m3d.Manifold, z: float):
 
 
 def test_every_coupon_is_a_single_watertight_solid(coupons):
-    assert len(coupons) == 22
-    assert [c.number for c in coupons] == list(range(1, 23))
+    assert len(coupons) == 26
+    assert [c.number for c in coupons] == list(range(1, 27))
     for c in coupons:
-        if c.group == "flexi_joint_gap":          # a body and an arm, printed already joined
+        if c.group in ("flexi_joint_gap", "flexi_strip_gap"):     # two pieces, printed already joined
             _assert_solid(c.extras["body"])
             _assert_solid(c.extras["arm"])
         else:
@@ -51,7 +51,7 @@ def test_every_coupon_is_a_single_watertight_solid(coupons):
 
 
 LOOP_GROUPS = ("earring_hole_diameter", "necklace_hole_diameter",   # tags with their own shape
-               "flexi_joint_gap")
+               "flexi_joint_gap", "flexi_strip_gap")
 
 
 def test_coupon_sizes_match_config(cfg, coupons):
@@ -305,3 +305,24 @@ def test_flexi_joint_coupons_swing_and_hold(cfg, coupons):
         for move in ([0, 0, g + 0.15], [0, 0, -(g + 0.15)], [1.3, 0, 0], [0, 1.3, 0], [-1.3, 0, 0]):
             assert (arm.translate(move) ^ body).volume() > 1e-3, f"piece {c.number}: the knob is held ({move})"
         assert (arm.translate([0, 0, g - 0.05]) ^ body).volume() < 1e-3, "the gap is all around, up too"
+
+
+def test_flat_flexi_strip_coupons_slide_and_hold(cfg, coupons):
+    """Pieces 23-26: two strips linked by a T-joint. Apart as printed, they slide sideways
+    by the T's room plus the gap, and pulling them apart stops after the gap."""
+    import numpy as np
+
+    strips = [c for c in coupons if c.group == "flexi_strip_gap"]
+    assert [c.number for c in strips] == [23, 24, 25, 26]
+    st = cfg["products"]["flexi"]["strips"]
+    for c in strips:
+        lower, upper = c.extras["body"], c.extras["arm"]
+        g = c.candidate
+        assert (lower ^ upper).volume() < 1e-6, "printed apart"
+
+        def hit(dx, dy):
+            return (upper.translate([dx, dy, 0]) ^ lower).volume() > 1e-3
+        assert not hit(st["slide"] + g - 0.1, 0) and not hit(-(st["slide"] + g - 0.1), 0)
+        assert hit(st["slide"] + g + 0.6, 0)
+        pull = next(d for d in np.arange(0, 3.0, 0.05) if hit(0, d))
+        assert g - 0.05 <= pull <= g + 0.15, f"piece {c.number} pulls {pull:.2f} mm"

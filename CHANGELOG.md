@@ -1,5 +1,14 @@
 # Changelog
 
+## Flexis: the drawing in wiggly strips (2026-11-13)
+
+- New product, the flexi (Allen's call, from two flat Pusheen flexis): the kid's drawing as a flat toy about 80 mm long, cut into strips that slide and wiggle, linked by T-shaped tabs, printed flat and already linked. Its own card (`cards --products flexi`).
+- The cuts keep the face whole: never through the eyes, teeth or other small marks; the cut heights are chosen together, with fewer strips if needed.
+- `run --as key-02=flexi` makes any card a flexi (or another product). First try: the shark duck, 4 strips and 6 T-joints.
+- Fit test pieces 23-26: two strips linked by a T, one per gap (0.25 to 0.40 mm). `fit-test --only flexi_strip_gap`.
+- The 3D mix-and-match animals are now "creatures": `creature` and `creature-library` (were `flexi` and `flexi-library`).
+- 7 new tests, 2 updated.
+
 ## Flexi toys from ready-made parts (2026-11-13)
 
 - `flexi` puts a flexi toy together from a mix-and-match set: heads (cat, bear, bunny, fish), bodies (short 2 pieces, regular 3, long 6), legs (chunky paws or none) and tails (cat, fish fin, none). Every piece meets the next at the same ring joint, so any head fits any body and any tail. It prints in one go, linked, standing on its flat belly, with no supports.
