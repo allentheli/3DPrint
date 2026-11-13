@@ -1,5 +1,11 @@
 # Changelog
 
+## Flexi joint test (2026-11-13)
+
+- First step toward flexi toys kids draw themselves (a frog whose arms and legs swing): a joint test plate, pieces 19-22, one per gap (0.25 to 0.40 mm). Each is a block with an arm on a round knob, printed already joined, no supports. `fit-test --only flexi_joint_gap` builds it; report the best number like the other fit tests.
+- The fit test's top view draws two-piece coupons.
+- 1 new test, 2 updated.
+
 ## Eyes are kept, round and matching (2026-11-12)
 
 - Small round dots (eyes, dots on a wing, boba pearls) are no longer removed as specks: the cat and the butterfly have their eyes back.

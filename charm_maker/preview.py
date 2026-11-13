@@ -118,8 +118,9 @@ def render_plan(plate, path: Path, *, dpi: int = 300, title: str = "") -> Path:
     for c in plate.coupons:
         name = f"fit-{c.number:02d}"
         ox, oy = plate.positions[name]
-        ext = [(X(ox + x), Y(oy + y)) for x, y in c.outline.exterior.coords]
-        draw.polygon(ext, outline=(0, 0, 0), width=max(1, int(0.25 * px)))
+        for part in getattr(c.outline, "geoms", [c.outline]):     # a flexi joint coupon is two pieces
+            ext = [(X(ox + x), Y(oy + y)) for x, y in part.exterior.coords]
+            draw.polygon(ext, outline=(0, 0, 0), width=max(1, int(0.25 * px)))
         fx, fy = c.feature_center
         r = c.feature_size / 2
         bbox = [X(ox + fx - r), Y(oy + fy + r), X(ox + fx + r), Y(oy + fy - r)]

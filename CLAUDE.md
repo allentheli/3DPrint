@@ -35,6 +35,16 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
+- **Flexi toys (2026-11-13, next big feature):** Allen likes kids drawing the parts in separate
+  boxes (head, body, one arm, one leg; the tool mirrors the second arm and leg) and a flat flexi
+  like the frog sketch in `output/flexi-concept/frog-flexi.png`: arms and legs swing on 4
+  print-in-place joints (a round knob in a cup, 45-degree slopes, no supports). The joint test
+  plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.25-0.40 mm); waiting on
+  his number. Next: the flexi card and the build. The round "shark style" (puffed both sides,
+  standing on its belly) is a later option.
+- **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
+  markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
+  wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
 - **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
@@ -195,6 +205,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
+| Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
@@ -213,7 +224,7 @@ the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 7-9 earring jump-ring hole (small top tab, front to back), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
-16-18 necklace loop (sideways hole).
+16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20").
 
 ## Reading the results
 

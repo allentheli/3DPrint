@@ -122,6 +122,11 @@ fit:
     tested: true   # 2026-11-11
     candidates: [3.0, 3.5, 4.0]
     note: sideways hole (left to right) in the pendant's top loop; the chain goes straight through
+  flexi_joint_gap:
+    value: 0.30
+    tested: false
+    candidates: [0.25, 0.30, 0.35, 0.40]
+    note: gap all around a flexi toy's round knob joint (print-in-place, no supports); pieces 19-22
 
 # Hardware sizes that are not tolerances (measured or from the manufacturer).
 hardware:
@@ -360,6 +365,18 @@ fit_test:
   stem_boss_height: 4.5
   stem_span_clearance: 0.1         # added to the cross length (the arm widths get the tested clearance)
   stem_socket_depth: 4.0
+  flexi_joint:                     # the print-in-place pivot of a flat flexi (frog arms, legs)
+    thickness: 6.0                 # the toy's thickness
+    knob_min_radius: 1.8           # the knob at its top and bottom...
+    knob_max_radius: 3.0           # ...and in its middle band (45-degree slopes between)
+    neck_width: 2.6                # the arm's neck through the cup's slot
+    cup_wall: 1.6                  # plastic around the cup
+    swing: 30                      # degrees each way before the neck stops on the slot's side
+    first_layer_extra: 0.2         # more gap in the first layers, which squash outward
+    first_layer_height: 0.3
+    body: [16, 18]                 # test block, width x height
+    arm_length: 24
+    arm_width: 6.0
 
 # Design cards (the printable PDF). Lengths in mm on the card.
 cards:

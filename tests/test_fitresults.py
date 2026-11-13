@@ -17,8 +17,8 @@ def _untested_copy(tmp_path):
 def test_apply_fit_results_updates_values_and_keeps_comments(tmp_path):
     cfg_path = _untested_copy(tmp_path)
     before = cfg_path.read_text()
-    changes = apply_fit_results(cfg_path, [3, 4, 9, 11, 14, 16])
-    assert len(changes) == 6
+    changes = apply_fit_results(cfg_path, [3, 4, 9, 11, 14, 16, 21])
+    assert len(changes) == 7
     cfg = load_config(cfg_path)
     assert cfg["fit"]["clip_pocket_diameter"]["value"] == 11.8
     assert cfg["fit"]["keyring_hole_diameter"]["value"] == 4.5
@@ -26,11 +26,12 @@ def test_apply_fit_results_updates_values_and_keeps_comments(tmp_path):
     assert cfg["fit"]["switch_cutout"]["value"] == 14.0
     assert cfg["fit"]["stem_socket_clearance"]["value"] == 0.15
     assert cfg["fit"]["necklace_hole_diameter"]["value"] == 3.0
+    assert cfg["fit"]["flexi_joint_gap"]["value"] == 0.35
     for g in cfg["fit"].values():
         assert g["tested"] is True
     after = cfg_path.read_text()
     # Comments and everything outside the fit block are untouched.
-    assert after.count("#") == before.count("#") + 6
+    assert after.count("#") == before.count("#") + 7
     assert after.split("# Hardware sizes")[1] == before.split("# Hardware sizes")[1]
 
 

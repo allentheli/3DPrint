@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import manifold3d as m3d
+import numpy as np
 
 from .geom import (
     circle,
@@ -132,6 +133,75 @@ def _earring_tab_coupon(cfg: dict, n: int, d: float) -> Coupon:
                   body, info["hole_center"], d, Polygon(design.outline.exterior), {"wall": info["wall"]})
 
 
+def _revolve(profile) -> m3d.Manifold:
+    """Spin a Shapely (radius, height) profile around the z axis."""
+    from .geom import CIRCLE_SEGMENTS, to_cross_section
+
+    return m3d.Manifold.revolve(to_cross_section(profile), CIRCLE_SEGMENTS)
+
+
+def flexi_joint(cfg: dict, gap: float, cx: float, cy: float) -> dict:
+    """A print-in-place pivot for flat flexi toys: a round knob on the arm sits in a round
+    cup in the body, `gap` apart all around. The knob is widest in its middle band and
+    narrows at 45 degrees above and below, and the cup closes round it at the top and the
+    bottom, so the knob can't slide out or pop up; only the middle band of the cup's wall
+    has a slot for the arm's neck, which stops the swing at `swing` degrees each way.
+    Everything slopes at 45 degrees or bridges, so it prints flat with no supports.
+    Returns the knob-and-neck solid, the cup void, the slot solid and the sizes."""
+    from shapely.geometry import Polygon, box
+
+    j = cfg["fit_test"]["flexi_joint"]
+    t, r0, r1 = j["thickness"], j["knob_min_radius"], j["knob_max_radius"]
+    s = r1 - r0                                       # 45 degrees: as tall as it is wide
+    knob_profile = Polygon([(0, 0), (r0, 0), (r1, s), (r1, t - s), (r0, t), (0, t)])
+    knob = _revolve(knob_profile)
+    # The cup: the knob grown by `gap` square to every face, open through the top and the
+    # bottom, with a little more room in the first layers (they squash outward).
+    tall = Polygon([(0, -1), (r0, -1), (r0, 0), (r1, s), (r1, t - s), (r0, t), (r0, t + 1), (0, t + 1)])
+    void_profile = tall.buffer(gap, join_style=2).intersection(box(0, -1, 50, t + 1))
+    void_profile = void_profile.union(box(0, -1, r0 + gap + j["first_layer_extra"], j["first_layer_height"]))
+    void = _revolve(void_profile)
+    lobe_r = r1 + gap + j["cup_wall"]                 # the cup's outside
+    neck_w = j["neck_width"]
+    # The slot for the neck, in the knob's straight middle band only.
+    half = np.degrees(np.arcsin((neck_w / 2 + gap) / (r1 + gap))) + j["swing"]
+    far = lobe_r + 5
+    wedge = Polygon([(0, 0)] + [(far * np.cos(np.radians(a)), far * np.sin(np.radians(a)))
+                                for a in np.linspace(-half, half, 25)])
+    slot = extrude(wedge, (t - 2 * s) + 2 * gap, s - gap)
+    bar_start = lobe_r + gap
+    neck = extrude(box(0, -neck_w / 2, bar_start + 1.0, neck_w / 2), t - 2 * s, s)
+    move = lambda m: m.translate([cx, cy, 0.0])        # noqa: E731
+    return {"knob": move(knob + neck), "void": move(void), "slot": move(slot), "lobe_r": lobe_r,
+            "bar_start": bar_start, "slot_half_angle": float(half), "t": t, "r0": r0, "r1": r1, "s": s}
+
+
+def _flexi_joint_coupon(cfg: dict, n: int, gap: float) -> Coupon:
+    """A body block with an arm joined by the flexi pivot. Hold the body, swing the arm."""
+    from shapely.geometry import Point
+    from shapely.ops import unary_union
+
+    ft = cfg["fit_test"]
+    j = ft["flexi_joint"]
+    bw, bh = j["body"]
+    cx, cy = bw, bh / 2                               # the pivot sits at the block's right edge
+    jt = flexi_joint(cfg, gap, cx, cy)
+    t = jt["t"]
+    block = rounded_rect(bw, bh, ft["coupon_corner_radius"], bw / 2, bh / 2)
+    body2d = unary_union([block, Point(cx, cy).buffer(jt["lobe_r"], 64)])
+    body = extrude(body2d, t) - jt["void"] - jt["slot"]
+    label = label_shape(str(n), ft["label_height"], ft["label_stroke"], bw / 2 - 1.5, bh / 2)
+    body = body + extrude(label, ft["label_raise"], t)
+    arm2d = rounded_rect(j["arm_length"], j["arm_width"], j["arm_width"] / 2 - 0.01,
+                         cx + jt["bar_start"] + j["arm_length"] / 2, cy)
+    arm = extrude(arm2d, t) + jt["knob"]
+    outline = unary_union([body2d, arm2d])
+    return Coupon(n, "flexi_joint_gap", gap,
+                  f"flexi joint, {gap} mm gap all around the knob (swings about {j['swing'] + 5:g} degrees each way)",
+                  body + arm, (cx, cy), 2 * jt["r1"], outline,
+                  {"body": body, "arm": arm, "joint": jt})
+
+
 def build_coupons(cfg: dict) -> list[Coupon]:
     fit = cfg["fit"]
     hw = cfg["hardware"]
@@ -193,6 +263,10 @@ def build_coupons(cfg: dict) -> list[Coupon]:
     for d in fit["necklace_hole_diameter"]["candidates"]:
         n += 1
         coupons.append(_loop_coupon(cfg, n, "necklace", d))
+    # 7. Flexi joints: a body and an arm, printed already joined (two pieces by design).
+    for g in fit["flexi_joint_gap"]["candidates"]:
+        n += 1
+        coupons.append(_flexi_joint_coupon(cfg, n, g))
     return coupons
 
 
@@ -250,6 +324,7 @@ GROUP_TITLES = {
     "earring_hole_diameter": ("Earring jump-ring hole", "Put a 4 mm jump ring through each small hole and twist it shut. Best = the ring goes through and closes easily around the tab without bending it open; the smallest hole that does."),
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
+    "flexi_joint_gap": ("Flexi joint", "Each piece is a block with an arm, printed already joined by a round knob. Hold the block and swing the arm left and right; give it a firm wiggle first if it is stuck. Best = the arm swings freely and stops by itself at each side, does not wobble up and down, and does not come out. Pick the tightest one that swings freely."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 
@@ -258,7 +333,7 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
     hw = cfg["hardware"]
     whole = plate.stand is not None
     intro = (["Print this plate once, try the real hardware on every numbered piece, and tell",
-              "Claude which number fits best in each group. There are 18 numbered coupons and one",
+              f"Claude which number fits best in each group. There are {len(plate.coupons)} numbered coupons and one",
               "figure stand."] if whole else
              ["A small plate to retest one group after a change: "
               + ", ".join(str(c.number) for c in plate.coupons) + ". The numbers are the same as on the",
@@ -314,7 +389,7 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
         "",
         "Tell Claude one number per group, for example:",
         "",
-        "> clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17. Washer fits. Fridge and stand hold.",
+        "> clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17, joint 20. Washer fits. Fridge and stand hold.",
         "",
         "If nothing fits in a group, say whether everything was too tight or too loose, and Claude",
         "will make a second plate with new sizes. Claude then runs `python -m charm_maker fit-results`",
