@@ -1,5 +1,32 @@
 # Changelog
 
+## Flexis: the drawing in wiggly strips (2026-11-13)
+
+- New product, the flexi (Allen's call, from two flat Pusheen flexis): the kid's drawing as a flat toy about 80 mm long and 7 mm thick, cut into strips that slide and wiggle, printed flat and already linked. Its own card (`cards --products flexi`).
+- The joint is Bambu Lab's MakerLab Flexi joint, copied size for size from the CC0 Pusheen Cat Flexi Toy Allen uploaded: a tab with a round tunnel around a pin, 0.47 mm all around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test.
+- The cuts keep the face whole: never through the eyes, teeth or other small marks; the cut heights are chosen together, with fewer strips if needed.
+- `run --as key-02=flexi` makes any card a flexi (or another product). First try: the shark duck, 3 strips and 4 joints.
+- The flexi card is part of the normal card set, with a real render of a sample flexi and "Draw it big and tall".
+- The 3D mix-and-match animals are now "creatures": `creature` and `creature-library` (were `flexi` and `flexi-library`).
+- 6 new tests.
+
+## Flexi toys from ready-made parts (2026-11-13)
+
+- `flexi` puts a flexi toy together from a mix-and-match set: heads (cat, bear, bunny, fish), bodies (short 2 pieces, regular 3, long 6), legs (chunky paws or none) and tails (cat, fish fin, none). Every piece meets the next at the same ring joint, so any head fits any body and any tail. It prints in one go, linked, standing on its flat belly, with no supports.
+- Each pair of legs is built onto its own piece only (front legs on the chest, back legs on the hips) and never crosses a seam.
+- The kid draws the face on the head's face guide (a soft picture of the head, printed twice its real size in the card's light guide color, which the reader removes); `--face` paints each color onto the head's surface as its own part. Cat, bear and bunny faces are drawn from the front, the fish from the side (painted on both sides).
+- Every toy is checked: one solid per piece, no two pieces touching as printed, and how far each joint turns before something bumps (a check line under 20 degrees). Bumping while bending is fine (Allen).
+- `flexi-library` draws every part and writes each head's face guide.
+- Out: the 3MF (one object, every piece and face color its own part), a preview (front corner, side, wiggled from above), PRINT_NOTES.md and a report.
+- Not printed yet: the cat prototype is on Allen's printer, the joint gap waits on the test plate.
+- 8 new tests.
+
+## Flexi joint test (2026-11-13)
+
+- First step toward flexi toys kids draw themselves, shark style (head, upper body, torso, lower body, tail): a joint test plate, pieces 19-22, one per gap (0.30 to 0.60 mm, around the gaps of the flexi shark and kitten Allen showed), 8 mm tall. The joint is the usual flexi one: a ring around an upright pin. Each is a block with an arm on a round knob, printed already joined, no supports. `fit-test --only flexi_joint_gap` builds it; report the best number like the other fit tests.
+- The fit test's top view draws two-piece coupons.
+- 1 new test, 2 updated.
+
 ## Eyes are kept, round and matching (2026-11-12)
 
 - Small round dots (eyes, dots on a wing, boba pearls) are no longer removed as specks: the cat and the butterfly have their eyes back.

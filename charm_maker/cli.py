@@ -52,7 +52,7 @@ def cmd_cards(args: argparse.Namespace) -> int:
     from .palette import load_palette
 
     cfg = load_config(args.config)
-    products = args.products or ["hair_clip", "keychain", "pendant", "earrings", "magnet_figure", "clicker"]
+    products = args.products or ["hair_clip", "keychain", "pendant", "earrings", "magnet_figure", "clicker", "flexi"]
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     blank = write_cards_pdf(cfg, products, out / "design-cards.pdf", count=args.count)
@@ -171,7 +171,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
-                       no_dots=set(args.no_dots or ()), sizes=per_card(args.scale))
+                       no_dots=set(args.no_dots or ()), sizes=per_card(args.scale),
+                       products=per_card(args.as_product))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -230,6 +231,44 @@ def cmd_screw_top(args: argparse.Namespace) -> int:
     for k, p in paths.items():
         if not str(k).startswith("stl:"):
             print(f"  {k:16s} {p}")
+    return 0
+
+
+def cmd_creature(args: argparse.Namespace) -> int:
+    import cv2
+
+    from .creature import build_toy, write_toy
+
+    cfg = load_config(args.config)
+    face = None
+    if args.face:
+        face = cv2.imread(str(args.face))
+        if face is None:
+            print(f"could not read the face drawing {args.face}")
+            return 1
+    name = args.name or f"creature-{args.head}"
+    toy = build_toy(cfg, args.head, args.body, args.legs, args.tail, face=face, name=name)
+    paths = write_toy(cfg, toy, Path(args.out) / name)
+    size = " x ".join(f"{v:.0f}" for v in toy.size())
+    print(f"{name}: {args.head} head, {args.body} body, legs: {args.legs}, tail: {args.tail}; "
+          f"{len(toy.pieces)} pieces, {size} mm")
+    for joint, (a, b) in toy.info.get("swing_deg", {}).items():
+        print(f"  {joint}: turns {a} / {b} degrees each way")
+    for line in toy.fixes + toy.checks:
+        print(f"  {line}")
+    for k, p in paths.items():
+        print(f"  {k:8s} {p}")
+    return 0
+
+
+def cmd_creature_library(args: argparse.Namespace) -> int:
+    from .creature import write_library
+
+    cfg = load_config(args.config)
+    paths = write_library(cfg, Path(args.out))
+    print(f"parts: {paths['library']}")
+    for p in paths["guides"]:
+        print(f"face guide: {p}")
     return 0
 
 
@@ -308,6 +347,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--scale", action="append", metavar="[CARD=]FACTOR",
                    help="make a piece bigger or smaller than drawn, before the print fixes: "
                         "'--scale fig-01=1.5' for one card (repeat for more), '--scale 1.5' for every card")
+    p.add_argument("--as", dest="as_product", action="append", metavar="[CARD=]PRODUCT",
+                   help="make a card's drawing into another product, e.g. '--as key-02=flexi' (repeat for more)")
     p.add_argument("--ask-colors", action="store_true",
                    help="strict mode: stop and ask about colors that aren't loaded and an unscanned calibration card")
     p.set_defaults(func=cmd_run)
@@ -329,6 +370,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--name", default=None)
     p.add_argument("--out", default="output/screw-top")
     p.set_defaults(func=cmd_screw_top)
+
+    from .creature import BODIES, HEADS, LEGS, TAILS
+    p = sub.add_parser("creature", help="a flexi creature from the ready-made parts: head, body, legs, tail")
+    p.add_argument("--head", default="cat", choices=HEADS)
+    p.add_argument("--body", default="regular", choices=list(BODIES), help="short (2 pieces), regular (3), long (6)")
+    p.add_argument("--legs", default="paws", choices=LEGS)
+    p.add_argument("--tail", default="cat", choices=TAILS)
+    p.add_argument("--face", default=None, help="the face drawing: the head's face guide, drawn on, cropped to it")
+    p.add_argument("--name", default=None, help="file name (default creature-<head>)")
+    p.add_argument("--out", default="output/creatures")
+    p.set_defaults(func=cmd_creature)
+
+    p = sub.add_parser("creature-library", help="a picture of every creature part, and each head's face guide")
+    p.add_argument("--out", default="output/creature-library")
+    p.set_defaults(func=cmd_creature_library)
 
     p = sub.add_parser("stand", help="build just the figure stand")
     p.add_argument("--out", default="output/stand", help="output folder")

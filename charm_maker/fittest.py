@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import manifold3d as m3d
+import numpy as np
 
 from .geom import (
     circle,
@@ -132,6 +133,92 @@ def _earring_tab_coupon(cfg: dict, n: int, d: float) -> Coupon:
                   body, info["hole_center"], d, Polygon(design.outline.exterior), {"wall": info["wall"]})
 
 
+def _revolve(profile) -> m3d.Manifold:
+    """Spin a Shapely (radius, height) profile around the z axis."""
+    from .geom import CIRCLE_SEGMENTS, to_cross_section
+
+    return m3d.Manifold.revolve(to_cross_section(profile), CIRCLE_SEGMENTS)
+
+
+def flexi_joint(cfg: dict, gap: float, cx: float, cy: float, end_r: float | None = None) -> dict:
+    """The common flexi-toy joint (like the shark Allen showed): the front piece has a pocket
+    with an upright pin standing in it; the back piece reaches in with a tongue that ends in
+    a closed ring around the pin, `gap` apart all around. The ring turns around the pin, so
+    the toy wiggles side to side, and it can't come off: the pin goes through it and the
+    pocket's floor and ceiling hold it. The ring's edges are chamfered at 45 degrees and the
+    pin flares to match above and below it (slimmer in the middle, like the shark's). The
+    pocket's opening for the tongue stops the swing at about `swing` degrees each way.
+    Returns the ring-and-tongue solid, the pocket void and the sizes; the front piece's
+    rounded end has radius `lobe_r` around the pin (or `end_r`, if the piece's round end is
+    bigger, as in a toy), the back piece's cupped end that plus `gap`; the tongue reaches it."""
+    from shapely.geometry import Polygon, box
+
+    j = cfg["fit_test"]["flexi_joint"]
+    t = j["thickness"]
+    zm = t / 2
+    rp, w, h, c = j["pin_radius"], j["ring_width"], j["ring_height"], j["ring_chamfer"]
+    ri, ro = rp + gap, rp + gap + w
+    z0, z1 = zm - h / 2, zm + h / 2
+    ring_profile = Polygon([(ri, z0 + c), (ri + c, z0), (ro - c, z0), (ro, z0 + c),
+                            (ro, z1 - c), (ro - c, z1), (ri + c, z1), (ri, z1 - c)])
+    ring = _revolve(ring_profile)
+    pocket = _revolve(ring_profile.buffer(gap, join_style=2).intersection(box(0, -1, 50, t + 1)))
+    neck_w = j["neck_width"]
+    lobe_r = ro + gap + j["cup_wall"]
+    end_r = max(end_r or 0.0, lobe_r)
+    # The tongue: same height and chamfers as the ring, from the ring out into the back piece.
+    tongue_yz = Polygon([(-neck_w / 2, z0 + c), (-neck_w / 2 + c, z0), (neck_w / 2 - c, z0), (neck_w / 2, z0 + c),
+                         (neck_w / 2, z1 - c), (neck_w / 2 - c, z1), (-neck_w / 2 + c, z1), (-neck_w / 2, z1 - c)])
+    from .geom import to_cross_section
+    length = end_r + gap + 1.5 - (ro - 0.5)
+    tongue = (m3d.Manifold.extrude(to_cross_section(tongue_yz), length)       # along +z, then lay it along +x
+              .rotate([0.0, 90.0, 0.0]).rotate([90.0, 0.0, 0.0]))
+    tb = tongue.bounding_box()
+    tongue = tongue.translate([ro - 0.5 - tb[0], -(tb[1] + tb[4]) / 2, z0 - tb[2]])
+    # The pocket's opening for the tongue: a slice of the pocket's height, swing degrees wider.
+    half = np.degrees(np.arcsin((neck_w / 2 + gap) / ro)) + j["swing"]
+    far = end_r + 5
+    wedge = Polygon([(0, 0)] + [(far * np.cos(np.radians(a)), far * np.sin(np.radians(a)))
+                                for a in np.linspace(-half, half, 25)])
+    channel_yz = tongue_yz.buffer(gap, join_style=2)
+    zc0, zc1 = channel_yz.bounds[1], channel_yz.bounds[3]
+    channel = extrude(wedge, zc1 - zc0, zc0)
+    channel = channel - _revolve(box(0, -1, rp, t + 1))                  # never cut the pin
+    move = lambda m: m.translate([cx, cy, 0.0])                            # noqa: E731
+    return {"ring": move(ring + tongue), "void": move(pocket + channel), "lobe_r": lobe_r,
+            "slot_half_angle": float(half), "t": t, "pin_r": rp, "ring_in": ri, "ring_out": ro,
+            "ring_z": (z0, z1)}
+
+
+def _flexi_joint_coupon(cfg: dict, n: int, gap: float) -> Coupon:
+    """A block with an arm on the ring joint. Hold the block, swing the arm."""
+    from shapely.geometry import Point, Polygon
+    from shapely.ops import unary_union
+
+    ft = cfg["fit_test"]
+    j = ft["flexi_joint"]
+    bw, bh = j["body"]
+    cx, cy = bw, bh / 2                               # the pin sits at the block's right end
+    jt = flexi_joint(cfg, gap, cx, cy)
+    t = jt["t"]
+    block = rounded_rect(bw, bh, ft["coupon_corner_radius"], bw / 2, bh / 2)
+    body2d = unary_union([block, Point(cx, cy).buffer(jt["lobe_r"], 96)])
+    body = extrude(body2d, t) - jt["void"]
+    label = label_shape(str(n), ft["label_height"], ft["label_stroke"], bw / 2 - 1.5, bh / 2)
+    body = body + extrude(label, ft["label_raise"], t)
+    cup = Point(cx, cy).buffer(jt["lobe_r"] + gap, 96)                 # the arm's end hugs the round end
+    bar = rounded_rect(j["arm_length"], j["arm_width"], j["arm_width"] / 2 - 0.01,
+                       cx + jt["lobe_r"] + j["arm_length"] / 2, cy)
+    front = Polygon.from_bounds(cx + 2.0, cy - j["arm_width"] / 2, cx + jt["lobe_r"] + 2.0, cy + j["arm_width"] / 2)
+    arm2d = unary_union([bar, front]).difference(cup)
+    arm = extrude(arm2d, t) + jt["ring"]
+    outline = unary_union([body2d, arm2d])
+    return Coupon(n, "flexi_joint_gap", gap,
+                  f"flexi ring joint, {gap} mm gap all around the ring (swings about {j['swing'] + 5:g} degrees each way)",
+                  body + arm, (cx, cy), 2 * jt["ring_out"], outline,
+                  {"body": body, "arm": arm, "joint": jt})
+
+
 def build_coupons(cfg: dict) -> list[Coupon]:
     fit = cfg["fit"]
     hw = cfg["hardware"]
@@ -193,6 +280,10 @@ def build_coupons(cfg: dict) -> list[Coupon]:
     for d in fit["necklace_hole_diameter"]["candidates"]:
         n += 1
         coupons.append(_loop_coupon(cfg, n, "necklace", d))
+    # 7. Flexi joints: a body and an arm, printed already joined (two pieces by design).
+    for g in fit["flexi_joint_gap"]["candidates"]:
+        n += 1
+        coupons.append(_flexi_joint_coupon(cfg, n, g))
     return coupons
 
 
@@ -250,6 +341,7 @@ GROUP_TITLES = {
     "earring_hole_diameter": ("Earring jump-ring hole", "Put a 4 mm jump ring through each small hole and twist it shut. Best = the ring goes through and closes easily around the tab without bending it open; the smallest hole that does."),
     "switch_cutout": ("Switch housing", "Each piece is a small closed box, like the clicker case will be. Push the switch into the square hole in the lid until it clicks in, then press it a few times: it should click all the way down without hitting the floor. Best = snaps in, no wobble. To move the switch to the next box, push a pen through the hole in the floor (or use a switch puller from the top)."),
     "stem_socket_clearance": ("Keycap stem socket", "Each round post is the real keycap size (5.5 mm). Press each one onto the switch's cross stem. Best = firm push-on, stays on when you shake it, comes off with a pull. If a post cracks when pushed on, tell Claude: the keycap post needs to be thicker."),
+    "flexi_joint_gap": ("Flexi joint", "Each piece is a block with an arm, printed already joined by a ring around a pin (the usual flexi-toy joint). Hold the block and swing the arm left and right; give it a firm wiggle first if it is stuck. Best = the arm swings freely and stops by itself at each side, does not wobble up and down, and does not come out. Pick the tightest one that swings freely."),
     "necklace_hole_diameter": ("Necklace loop", "Thread your necklace chain (end first, clasp included) through each loop, left to right. Best = it goes through without forcing; the smallest that does."),
 }
 
@@ -258,7 +350,7 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
     hw = cfg["hardware"]
     whole = plate.stand is not None
     intro = (["Print this plate once, try the real hardware on every numbered piece, and tell",
-              "Claude which number fits best in each group. There are 18 numbered coupons and one",
+              f"Claude which number fits best in each group. There are {len(plate.coupons)} numbered coupons and one",
               "figure stand."] if whole else
              ["A small plate to retest one group after a change: "
               + ", ".join(str(c.number) for c in plate.coupons) + ". The numbers are the same as on the",
@@ -314,7 +406,7 @@ def fit_guide_markdown(cfg: dict, plate: "FitPlate") -> str:
         "",
         "Tell Claude one number per group, for example:",
         "",
-        "> clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17. Washer fits. Fridge and stand hold.",
+        "> clip 2, keyring 5, earring 8, switch 11, stem 14, necklace 17, joint 20. Washer fits. Fridge and stand hold.",
         "",
         "If nothing fits in a group, say whether everything was too tight or too loose, and Claude",
         "will make a second plate with new sizes. Claude then runs `python -m charm_maker fit-results`",

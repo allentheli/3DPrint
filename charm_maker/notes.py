@@ -15,6 +15,7 @@ FINISHING = {
     "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
     "earrings": "Earrings: twist a 4 mm jump ring open sideways (don't pull it apart), slip it through the small hole at the top, hang the hook on it and twist it shut. If an earring faces sideways, turn the jump ring a quarter turn. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
+    "flexi": "Flexis: they print as one piece of linked strips. Once the plate is cool, peel it off in one go, then gently bend and slide each strip side to side until it moves freely. If a strip is stuck, a firm twist frees it.",
     "figurine": "Round-back figurines: let the plate cool, then peel the tree supports off the back with your fingers or flush cutters; sand any nubs. They have no ring, clip or loop: they are toys to stand up or hold.",
 }
 

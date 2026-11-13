@@ -35,6 +35,40 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
+- **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
+  - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
+    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
+    at the usual card scale, made 1.5 times bigger), 7 mm thick, cut into strips at least 9 mm
+    tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
+    for size from Lawk3t's Pusheen Cat Flexi Toy (CC0) that Allen uploaded ("lets do the joint
+    like this"): strips 1.5 mm apart, a 5.4 mm tab from the strip above in a 7.0 mm notch of the
+    strip below, a 2.8 mm pin across the notch through a round tunnel in the tab, 0.47 mm all
+    around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test
+    (Allen: don't test or reinvent joints). Cuts keep the face whole: never through a kept dot, a
+    small round mark or a small closed mark (ring eyes, teeth); cut heights are chosen together,
+    with fewer strips if that is what it takes. Any card can be made a flexi with
+    `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
+    (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
+    Pusheen's). The flexi card is in the normal card set (`cards`; alone: `cards --products
+    flexi`): the biggest drawing box, no shape boxes, and a real render of a sample flexi cat with
+    "Your drawing becomes a wiggly flexi! Draw it big and tall." Ready for kids (2026-11-13).
+  - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
+    legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
+    both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
+    and MontoyaMaker's kitten; gaps 0.39-0.65 mm). Allen's rules: legs big, each pair wholly on
+    one piece; bumping while bending is fine, but pieces must not touch as printed; supports
+    are fine where needed ("On build plate only", so they stay out of the joints). Built:
+    `creature` (heads cat, bear, bunny, fish; bodies short, regular, long; paws or none; tails
+    cat, fin, none; checks) and `creature-library` (code in `creature.py`). Parts may be borrowed from free downloads Allen
+    picks (cut at a solid spot, given our joint end; never in git; Creative Commons preferred,
+    MakerWorld's Standard license is personal printing only). I cannot reach MakerWorld,
+    Printables, Thingiverse or Etsy. Painting a drawn face (`creature --face`) works but is not
+    used by the card. The first cat is on Allen's printer; the ring-joint test plate
+    (`fit-test --only flexi_joint_gap`, pieces 19-22) waits on his number. Next: ready-made
+    faces and the creature card.
+- **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
+  markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
+  wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
 - **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
@@ -104,7 +138,7 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), clicker keychain, and earrings for adults (one drawing makes a
+figure (flat back, glued magnet), clicker keychain, flexi (the drawing in wiggly strips), and earrings for adults (one drawing makes a
 mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm jump rings, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
@@ -187,7 +221,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Record a spool in a slot | `python -m charm_maker load <slot> "<spool>" [--color "#RRGGBB"]` |
 | Show slots and calibration | `python -m charm_maker slots` |
 | Print the cards | `python -m charm_maker cards` (blank cards, plus calibration if slots are loaded; `--half-drawn` adds pre-set outlines, which Allen said he does not need) |
-| One card of each type | `python -m charm_maker cards --count 1 --out output/cards-one-each` (6 pages; Allen can print a page as often as he likes: repeats read as `key-01`, `key-01-b`, and pieces are named after the kid anyway) |
+| One card of each type | `python -m charm_maker cards --count 1 --out output/cards-one-each` (7 pages; Allen can print a page as often as he likes: repeats read as `key-01`, `key-01-b`, and pieces are named after the kid anyway) |
 | Read a calibration scan | `python -m charm_maker calibrate <scan>` |
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
@@ -195,6 +229,10 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
+| Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
+| Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
+| A flexi creature from the parts | `python -m charm_maker creature --head cat --body regular --legs paws --tail cat --name mia` |
+| Picture of every creature part | `python -m charm_maker creature-library` (writes `output/creature-library/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
 | Record fit results | `python -m charm_maker fit-results <piece numbers>` |
 | Build only the stand | `python -m charm_maker stand` |
@@ -213,7 +251,7 @@ the new coupons (one small plate).
 
 Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 7-9 earring jump-ring hole (small top tab, front to back), 10-12 switch housing (cutout in the lid), 13-15 stem socket,
-16-18 necklace loop (sideways hole).
+16-18 necklace loop (sideways hole), 19-22 flexi joint gap (a block with a swinging arm; he may say "joint 20").
 
 ## Reading the results
 

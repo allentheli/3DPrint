@@ -40,13 +40,18 @@ def _inner_contours(solid: m3d.Manifold, z: float):
 
 
 def test_every_coupon_is_a_single_watertight_solid(coupons):
-    assert len(coupons) == 18
-    assert [c.number for c in coupons] == list(range(1, 19))
+    assert len(coupons) == 22
+    assert [c.number for c in coupons] == list(range(1, 23))
     for c in coupons:
-        _assert_solid(c.solid)
+        if c.group == "flexi_joint_gap":          # a body and an arm, printed already joined
+            _assert_solid(c.extras["body"])
+            _assert_solid(c.extras["arm"])
+        else:
+            _assert_solid(c.solid)
 
 
-LOOP_GROUPS = ("earring_hole_diameter", "necklace_hole_diameter")   # tags with their own shape
+LOOP_GROUPS = ("earring_hole_diameter", "necklace_hole_diameter",   # tags with their own shape
+               "flexi_joint_gap")
 
 
 def test_coupon_sizes_match_config(cfg, coupons):
@@ -273,3 +278,31 @@ def test_stem_posts_are_the_real_keycap_size(cfg, coupons):
         assert len(inner) == 1, "one cross-shaped hole"
         thinnest = post.exterior.distance(inner[0])
         assert thinnest >= 0.45, f"piece {c.number}: only {thinnest:.2f} mm at the cross tips"
+
+
+def test_flexi_joint_coupons_swing_and_hold(cfg, coupons):
+    """The frog flexi's joint (2026-11-13): a round knob on the arm in a cup in the body,
+    printed already joined. Arm and body never touch, the arm swings about 30 degrees each
+    way and then stops, and the knob cannot come out: it moves no more than its gap."""
+    joints = [c for c in coupons if c.group == "flexi_joint_gap"]
+    assert [c.number for c in joints] == [19, 20, 21, 22]
+    assert [c.candidate for c in joints] == cfg["fit"]["flexi_joint_gap"]["candidates"]
+    for c in joints:
+        body, arm = c.extras["body"], c.extras["arm"]
+        cx, cy = c.feature_center
+        assert (body ^ arm).volume() < 1e-6, "printed apart"
+
+        def turned(deg):
+            return arm.translate([-cx, -cy, 0]).rotate([0, 0, deg]).translate([cx, cy, 0])
+
+        for deg in (-30, -15, 15, 30):
+            assert (turned(deg) ^ body).volume() < 1e-3, f"piece {c.number} swings to {deg} degrees"
+        for deg in (-45, 45):
+            assert (turned(deg) ^ body).volume() > 1e-3, f"piece {c.number} stops before {deg} degrees"
+        g = c.candidate
+        # Held: it can rattle by about its gap (a bit more sideways, along the 45-degree lips)
+        # but never far enough to come out.
+        for move in ([0, 0, g + 0.15], [0, 0, -(g + 0.15)], [1.3, 0, 0], [0, 1.3, 0], [-1.3, 0, 0]):
+            assert (arm.translate(move) ^ body).volume() > 1e-3, f"piece {c.number}: the knob is held ({move})"
+        assert (arm.translate([0, 0, g - 0.05]) ^ body).volume() < 1e-3, "the gap is all around, up too"
+
