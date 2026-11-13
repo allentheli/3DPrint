@@ -31,10 +31,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
+- **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
+  poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
+  he found one on MakerWorld that can work and parked ours for the future. Don't work on them
+  unless he asks; the duck-head turn fix and the bigger windows are not printed.
 - **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
-  (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
-  facing front (his first printed duck closed fine but the head ended up turned; the thread
-  clearance itself worked).
+  (separate glued post, new) and the short sloped ring tab.
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
   - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
     keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
@@ -290,7 +292,7 @@ the parent page offers flat, puffy, raised outline and figurine), show the conta
 what his daughter liked and what looked wrong. Note which problems are real-world ones to
 fix (and add a regression test in `tests/test_real_world.py`).
 
-## Poop containers (party favors)
+## Poop containers (party favors, parked 2026-11-13)
 
 See-through containers kids fill with printer poop and twist shut. Everything prints with
 no supports and the lid closes in one turn (right-hand thread: clockwise to close). Head lids
@@ -302,6 +304,12 @@ the flat cut.
 ```bash
 python -m charm_maker poop-containers --kinds jar-round bear heart --sizes medium
 ```
+
+Windows (Allen, 2026-11-13, after filling his printed duck: the 4 mm diamond holes hid the
+poop): tall windows 8 mm wide with 1.8 mm bars and pointed 45-degree tops (no supports), a solid
+ring between rows on tall walls, and 10 mm diamond windows straight down through roofs. 40 to 75%
+more window than before; `poop_jar.windows: diamonds` brings the old mesh back. The duck's
+belly is taller for bigger windows; its sloped back stays mostly solid (little room there).
 
 Kinds: `jar-round`, `jar-hex`, `bear` (bear-head lid), `duck`, `heart`, `star`, `cloud`.
 Sizes: `small`, `medium`, `tall`. Each folder has the 3MF (body + lid parts), a preview

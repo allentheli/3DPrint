@@ -302,8 +302,15 @@ relief:
 poop_jar:
   wall: 1.8
   floor: 1.6
-  hole: 4.0                       # diamond hole, corner to corner (width and height)
-  strut: 1.4                      # plastic between holes
+  windows: slots                  # Allen, 2026-11-13: the 4 mm diamonds hid the poop. slots: tall windows with thin bars; diamonds: the old mesh
+  slot_width: 8.0                 # narrow enough that the poop stays in
+  slot_bar: 1.8                   # plastic between windows
+  slot_max_height: 30.0           # a taller wall gets a solid ring between rows of windows
+  slot_ring: 3.0
+  roof_hole: 10.0                 # diamond windows straight down through a roof or shoulder
+  roof_strut: 1.8
+  hole: 4.0                       # windows: diamonds only: diamond hole, corner to corner
+  strut: 1.4                      # windows: diamonds only: plastic between holes
   bottom_band: 6.0                # solid band above the floor
   top_band: 3.0                   # solid band between the mesh and the thread
   thread_height: 10.0

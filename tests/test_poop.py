@@ -72,7 +72,12 @@ def test_no_supports_needed(cfg, container):
 
 
 def test_see_through_and_fillable(cfg, container):
-    assert container.info["holes"] >= 100
+    """Allen's printed duck (2026-11-13): the 4 mm diamond holes hid the poop. Now tall windows
+    with thin bars: at least 20 cm² of window on every container, in windows wide enough to see
+    through, yet narrow enough that the poop stays in."""
+    assert container.info["windows"] == "slots"
+    assert container.info["open_cm2"] >= 20.0, f"{container.name}: only {container.info['open_cm2']} cm² of window"
+    assert 6.0 <= cfg["poop_jar"]["slot_width"] <= 9.0
     assert container.info["opening_mm"] >= 20.0
     assert container.info["volume_ml"] >= 60.0
 

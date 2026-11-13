@@ -211,7 +211,7 @@ def cmd_poop_containers(args: argparse.Namespace) -> int:
     kinds = args.kinds or list(KINDS)
     for r in write_containers(cfg, Path(args.out), kinds=kinds, sizes=args.sizes or ["medium"]):
         con = r["container"]
-        print(f"{con.name}: {r['dir']}  (holes {con.info['holes']}, opening {con.info['opening_mm']:.0f} mm, "
+        print(f"{con.name}: {r['dir']}  (windows {con.info['holes']}, {con.info['open_cm2']:.0f} cm² open, opening {con.info['opening_mm']:.0f} mm, "
               f"about {con.info['volume_ml']:.0f} ml, rough {r['minutes']:.0f} min)")
     return 0
 
