@@ -35,17 +35,26 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
-- **Flexi toys (2026-11-13, next big feature):** Allen wants shark-style flexis the kids design:
-  a chain of parts (head, upper body, torso, lower body, and a tail if they want one), each drawn
-  in its own box on the card, from the side, facing the same way. Each part is puffed round on both
-  sides like his example shark and stands on a flat belly; neighbors nest (rounded end in a cupped
-  end) and turn on the common flexi joint (Allen's call): a ring on one piece around an upright
-  pin in a pocket of the next, so it wiggles side to side. His examples (the shark, and
-  MontoyaMaker's articulated kitten) use exactly this, with gaps of 0.39-0.65 mm; we never use
-  their files. The joint test plate is out (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps
-  0.30-0.60 mm, 8 mm tall);
-  waiting on his number. Next: the flexi card and the build. (The flat frog with swinging arms and
-  legs in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
+- **Flexi toys (2026-11-13, next big feature):** shark-style flexis (head, chest, torso, hips, a
+  tail or not), round on both sides, standing on a flat belly, neighbors nesting (round end in a
+  cup) on the common flexi joint: a ring on one piece around an upright pin in the next (Allen's
+  call; his shark and MontoyaMaker's kitten use it, gaps 0.39-0.65 mm). Plan Allen loved: a
+  mix-and-match library on one standard joint. The kid draws the face on a ready-made head
+  (shaded picture in the card's face box; the tool paints it on), and picks body, legs and tail.
+  Rules from Allen: legs big and visible, each pair wholly on one piece (front pair on the chest,
+  back pair on the hips, never across a seam); bumping while bending is fine (part of playing; the
+  pieces must only not touch as printed); supports are fine where needed (use "On build plate
+  only" so they stay out of the joints). He also wants existing free designs used, at least in
+  parts: (A) paint a kid's face on a downloaded toy, kept whole; (B) cut a head, tail or legs off a
+  downloaded model at a solid spot and give it our joint end; (C) our own bodies and tails. I
+  cannot reach MakerWorld, Printables or Thingiverse; Allen downloads and uploads. Downloads and
+  anything made from them never go in git. Prefer Creative Commons models for (B); MakerWorld's
+  Standard license is personal printing only.
+  The first full toy (cat head with a test face, legs, tail, 4 joints at 0.5 mm, 94 x 37 x 22 mm)
+  is built by `tools/flexi_prototype/` (not in the tool yet); Allen is printing it. Waiting on that
+  and on the joint test plate (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm).
+  Next: the flexi card and the build into the tool, starting with (A) on his uploaded kitten if he
+  says yes. (The flat frog in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
   markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
