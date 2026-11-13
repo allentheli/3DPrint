@@ -6,6 +6,7 @@
 - Coloring is optional: the cards say "Draw big and bold", "Close the lines", "Color it in, or we will". Allen fills the colors of line drawings in Bambu Studio.
 - Rehearsal on every real scan so far: 23 pieces, 4 plates, about a minute, no problems.
 - Allen printed the shark duck flexi: "it works well". Flexis are proven for the party.
+- Allen tried a fridge magnet (works) and filling a line drawing with Bambu Studio's fill tool (works when the areas are enclosed).
 - 2 tests updated.
 
 ## Poop containers you can see into (2026-11-13)

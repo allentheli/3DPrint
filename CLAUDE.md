@@ -31,7 +31,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
-  **2026-11-13:** the shark duck flexi (Bambu's joint, 3 strips): "it works well".
+  **2026-11-13:** the shark duck flexi (Bambu's joint, 3 strips): "it works well"; a fridge
+  magnet (glued magnet): works; filling a line drawing's areas with Bambu Studio's fill tool:
+  works as long as the areas are enclosed.
 - **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
   poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
   he found one on MakerWorld that can work and parked ours for the future. Don't work on them
@@ -179,7 +181,8 @@ Coloring is optional (Allen, 2026-11-13): the cards say "Draw big and bold", "Cl
 printer ... Color it in", `no` says "Use a black marker"). A colored drawing works as always (every
 color its own part). A line drawing comes out as its lines plus white areas, and Allen fills the
 areas in Bambu Studio with the color-painting fill tool (no separate parts needed: the lines keep
-the fill in). Flat pieces print face-down, so he paints them from the bottom view.
+the fill in). Flat pieces print face-down, so he paints them from the bottom view. Tried
+2026-11-13: it works as long as the areas are enclosed (hence "Close the lines" on the cards).
 
 Card tick boxes: under the name line, every card (clicker too, since 2026-11-11) shows the five shapes, each
 with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
