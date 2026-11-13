@@ -247,6 +247,7 @@ products:
     default_size: 45
     thickness: 3.2
     attachment: flat_back         # the magnet is glued onto the flat back
+    stand: false                  # Allen, 2026-11-13: fridge magnets only; no "stand here" line on new cards
     copies: 1
     card: magnet_figure
   earrings:

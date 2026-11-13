@@ -288,7 +288,9 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
         pdf.setLineWidth(c["guide_line_width"] * mm)
         pdf.setFont("Helvetica", 8)
         pdf.drawString((cx + d / 2 + 2) * mm, (cy - 1) * mm, "ring goes here")
-    if "ground_line" in lay.zones:
+    if "ground_line" in lay.zones and cfg["products"][lay.product].get("stand", True):
+        # Only drawn while figures go on the stand (Allen, 2026-11-13: fridge magnets only).
+        # The zone stays in the layout, so older cards with the line still read cleanly.
         x0, y0, x1, y1 = lay.zones["ground_line"]
         pdf.line(x0 * mm, y0 * mm, x1 * mm, y1 * mm)
         pdf.setFont("Helvetica", 8)
