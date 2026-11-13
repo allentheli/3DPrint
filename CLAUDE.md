@@ -35,29 +35,27 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
   facing front (his first printed duck closed fine but the head ended up turned; the thread
   clearance itself worked).
-- **Flexi toys (2026-11-13, next big feature):** shark-style flexis (head, chest, torso, hips, a
-  tail or not), round on both sides, standing on a flat belly, neighbors nesting (round end in a
-  cup) on the common flexi joint: a ring on one piece around an upright pin in the next (Allen's
-  call; his shark and MontoyaMaker's kitten use it, gaps 0.39-0.65 mm). Plan Allen loved: a
-  mix-and-match library on one standard joint. The kid draws the face on a ready-made head
-  (shaded picture in the card's face box; the tool paints it on), and picks body, legs and tail.
-  Rules from Allen: legs big and visible, each pair wholly on one piece (front pair on the chest,
-  back pair on the hips, never across a seam); bumping while bending is fine (part of playing; the
-  pieces must only not touch as printed); supports are fine where needed (use "On build plate
-  only" so they stay out of the joints). He also wants existing free designs used, at least in
-  parts: (A) paint a kid's face on a downloaded toy, kept whole; (B) cut a head, tail or legs off a
-  downloaded model at a solid spot and give it our joint end; (C) our own bodies and tails. I
-  cannot reach MakerWorld, Printables or Thingiverse; Allen downloads and uploads. Downloads and
-  anything made from them never go in git. Prefer Creative Commons models for (B); MakerWorld's
-  Standard license is personal printing only.
-  Allen then chose the ready-made parts as the main way ("more consistent"); borrowed parts join
-  the set once they have the standard joint end. Built: `flexi` (heads cat, bear, bunny, fish;
-  bodies short, regular, long; legs paws or none; tails cat, fin, none; `--face` paints a drawing of
-  the face guide onto the head) and `flexi-library` (a picture of every part, the face guides).
-  The first cat (94 x 37 x 22 mm) is on Allen's printer. Waiting on that and on the joint test
-  plate (`fit-test --only flexi_joint_gap`, pieces 19-22, gaps 0.30-0.60 mm). Next: the flexi card
-  (head, body, legs, tail ticks and the face guide box, read like the other cards), then more parts.
-  (The flat frog in `output/flexi-concept/frog-flexi.png` was an earlier sketch.)
+- **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
+  - **Flexi drawings (next to build):** an option on keychain, pendant and magnet figure cards
+    (a "Flexi" tick box) that cuts the kid's flat drawing into strips about 10 mm tall, linked
+    by T-shaped tabs in roomy slots, printed flat and already linked, like the two flat Pusheen
+    flexis he showed. Cuts avoid the face (never through a small dot or closed mark). Not on hair
+    clips, clicker keycaps or earrings. Needs a flat T-joint fit test first (gap around
+    0.25-0.40 mm).
+  - **Flexi creatures (no drawing):** kids design their own creature by picking a head, body,
+    legs, tail and colors; faces come with the heads (a few ready-made expressions). Round on
+    both sides, flat belly, the common ring joint (a ring around an upright pin, like his shark
+    and MontoyaMaker's kitten; gaps 0.39-0.65 mm). Allen's rules: legs big, each pair wholly on
+    one piece; bumping while bending is fine, but pieces must not touch as printed; supports
+    are fine where needed ("On build plate only", so they stay out of the joints). Built:
+    `flexi` (heads cat, bear, bunny, fish; bodies short, regular, long; paws or none; tails
+    cat, fin, none; checks) and `flexi-library`. Parts may be borrowed from free downloads Allen
+    picks (cut at a solid spot, given our joint end; never in git; Creative Commons preferred,
+    MakerWorld's Standard license is personal printing only). I cannot reach MakerWorld,
+    Printables, Thingiverse or Etsy. Painting a drawn face (`flexi --face`) works but is not
+    used by the card. The first cat is on Allen's printer; the ring-joint test plate
+    (`fit-test --only flexi_joint_gap`, pieces 19-22) waits on his number. Next: ready-made
+    faces and the creature card.
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
   markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.

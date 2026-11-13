@@ -1,6 +1,6 @@
 # Charm Maker: build instructions for Claude Code
 
-Last updated: November 9, 2026. Simplified: every product for everyone (earrings for adults), sideways loops for pendants and earrings, glued-on magnets, and colors kept as separate parts that Allen assigns in Bambu Studio.
+Last updated: November 13, 2026. Added flexi toys, two separate things: **flexi drawings**, an option that cuts a kid's keychain, pendant or magnet drawing into strips that wiggle (like store-bought flat flexi toys), and **flexi creatures**, a product with no drawing, where kids design their own creature from ready-made parts. November 9: simplified: every product for everyone (earrings for adults), sideways loops for pendants and earrings, glued-on magnets, and colors kept as separate parts that Allen assigns in Bambu Studio.
 
 **The one thing that matters most:** turn a drawing, consistently, into a print file that fits a hair clip, keychain, clicker keychain, magnet figure or necklace, and for adults also earrings. Everything else is secondary.
 
@@ -19,6 +19,8 @@ Kids (and adults) draw on printed design cards. Allen takes a photo of each card
 | Figure stand | (no drawing) | One stand design that holds any magnet figure |
 | Necklace pendant | Anyone | A flat charm with a loop on top; the chain goes through it left to right |
 | Earrings | Adults | A mirror-image pair of light flat charms with a small tab on top: a 4 mm jump ring goes through its hole and the hook hangs on the ring; or a flat back for stud posts |
+| Flexi drawing (an option) | Anyone | A keychain, pendant or magnet figure drawing cut into strips linked by little T-shaped joints, so it wiggles, printed already linked |
+| Flexi creature | Kids (no drawing) | A wiggly 3D creature the kid designs by picking a head, body, legs, tail and colors from ready-made parts |
 
 First use: a design party for four girls aged 5 and 8 (two families), with the parents making earrings and pendants. The tool should keep working for later parties and one-off drawings.
 
@@ -76,6 +78,18 @@ Every product can be flat (the default) or shaped. All shapes come straight from
   - **Round back (on request):** a standalone figure about 60 mm tall, rounded on both sides; the card's ring, clip or loop is not used. The back is blank (a character should not have eyes on the back) or a mirror of the front (patterns, ornaments seen from both sides). The bottom is cut flat so it stands, or gets a round disc stand, or stays round. Prints lying on its back with tree supports, on its own plate, at 0.16 mm layers. Supports are fine here (Allen's call).
   - One solid split into color parts, like the other shaped styles. Colors change over many layers, so figurines purge the most.
 
+### Flexi drawings (wiggly strips)
+
+Allen's call (2026-11-13, from two flat Pusheen flexis he showed): a kid's drawing can be made flexi. The drawing stays exactly the kid's; it is only cut.
+
+- **What it is:** the flat piece cut into strips across its long side (a tall drawing gets level cuts, so it wiggles side to side). Each strip hooks into the next with T-shaped tabs: a narrow neck from one strip ending in a wider head that sits in a matching slot in the next strip, with a gap all around. The head cannot pull out through the neck's opening, and the slot is roomy enough that the strips slide and turn a little. Printed flat and already linked, no supports.
+- **Joints:** one T per cut on narrow strips, two on wide ones (as in Allen's examples). The gap is fit-critical: a new fit-test group (flat T-joint coupons, around 0.25 to 0.40 mm) sets it.
+- **Strips:** about 10 mm tall, never under 8 mm (the T needs room), so a 50 mm keychain gets about 5 strips. A drawing too small for 3 strips is scaled up to fit 3, with a note (like the clicker).
+- **Cuts avoid the face:** cuts go where they cross the least ink and never through a small dot or a small closed mark (eyes, a nose, a ring eye). The T-tabs sit in the base color where they can. Cutting through a long line or a colored area is fine.
+- **Colors and printing:** as a flat piece (face-down, colors flush, built mirrored). At least 3.2 mm thick so the T-tabs are strong.
+- **Products:** keychain (the ring tab on the top strip), pendant (the loop on the top strip) and magnet figure (the magnet on one strip). Not hair clips or clicker keycaps (they must stay rigid) and not earrings (too small).
+- **Choosing it:** a "Flexi" tick box on those cards, or from the command line per card, like the shape styles.
+
 ### Loops for pendants and earrings
 
 - The hole runs left to right, parallel to the face, so the chain or the earring hook goes straight through and the piece hangs facing forward. No jump ring needed.
@@ -130,6 +144,17 @@ The same figure lives on the fridge or stands up on the universal stand.
 
 - The top loop above, with a 3.5 mm hole running left to right for the chain.
 
+### Flexi creatures (no drawing)
+
+A separate product (Allen's call, 2026-11-13): the kids do not draw on these. The creative part is designing their own creature.
+
+- **What it is:** a 3D flexi toy, round on both sides like the shark and kitten flexis Allen showed, standing on a flat belly, its pieces linked by the common flexi joint (a ring on one piece around an upright pin in the next, printed already linked). Pieces nest (a round end in a cup), so they turn without gaps showing.
+- **Designing:** the kid picks a head, a body length, legs, a tail (later: wings, spikes, fins, ears) and the colors. Every part has the same joint, so any head fits any body and any tail. The faces come with the heads: a few ready-made expressions to pick from, painted on as color parts (simple shapes, not AI).
+- **Rules (Allen):** legs big and easy to see, each pair wholly on one piece (front legs on the chest, back legs on the hips), never across a cut. Parts may bump when the toy bends; that is part of playing. They must only not touch as printed, or they fuse. Supports are fine where a part needs them, set to "On build plate only" so they stay out of the joints.
+- **Parts:** our own, built from smooth blended shapes (heads cat, bear, bunny, fish; bodies of 2, 3 or 6 pieces; paws or no legs; cat tail, fish fin or none, so far). Parts can also be borrowed from free downloaded models Allen picks: cut off at a solid spot and given our joint end. Downloads stay private (never in git), Creative Commons models are preferred for this, and MakerWorld's Standard license is for personal printing only.
+- **Card:** pictures of each part with tick boxes, the face choices, a name line, and a small picture of the creature to color in, showing the colors the kid wants. Allen still assigns spools in Bambu Studio.
+- **Printing:** one 3MF object, each piece (and face color) its own part, linked as printed; 0.16 mm layers; no supports for today's parts. Every creature is checked: one solid per piece, no two pieces within 0.3 mm as printed, and how far each joint turns.
+
 ## 6. Design cards (you generate these)
 
 You generate the printable cards, so the markers on the cards always match what the reader looks for.
@@ -145,6 +170,8 @@ You generate the printable cards, so the markers on the cards always match what 
   - Magnet figure: a box with a light "ground line" near the bottom labeled "stand here."
   - Earrings: one box; the drawing becomes a matching pair.
   - Pendant: a box with a small loop picture at the top.
+  - Flexi: a "Flexi" tick box with a small picture of a wiggly strip toy, on the keychain, pendant and magnet figure cards.
+  - Flexi creature: no drawing box. Pictures of every part with tick boxes, the face choices, and a small creature outline to color in for the colors.
 - Picture rules on every card, each with a small picture: "Use the colors in the printer" (a small printer), "Big and bold," "Color it in." The same cards serve kids and adults.
 - A name line outside the drawing box. Do not read the name with OCR. Just crop that area into the preview so Allen can match pieces to kids.
 - **Half-drawn cards (optional, off by default; Allen does not think they are needed):** the same cards with a simple outline pre-printed in black (a cloud, a heart, a cat head, a star, a bow). The reader treats the printed black outline as ink, so the outline is part of the kid's design.
@@ -203,6 +230,10 @@ Finish and show each milestone before starting the next. Each ends with somethin
 
 **Milestone 5: magnet figures and the stand.** The figure card (built: flat back, glued magnet), the stand, and the print notes. Done when a printed figure with a glued magnet holds on the fridge and stands on the stand. Ask Allen whether magnet figures are needed for the party; if yes, build this right after milestone 2.
 
+**Milestone 6: flexi drawings.** The flat T-joint fit test, then the "Flexi" option on keychains, pendants and magnet figures (cuts that avoid the face, the card tick box). Done when a printed keychain wiggles and holds together.
+
+**Milestone 7: flexi creatures.** The ring-joint fit test (pieces 19-22, printed), the parts set (heads, bodies, legs, tails: built), the ready-made faces, and the creature card read like the other cards. Done when a kid's ticked card becomes a printed creature that wiggles.
+
 If Allen gives a party date, reorder to fit it. The party needs milestones 0 to 2 at minimum.
 
 ## 10. Everyday runbook (copy into CLAUDE.md)
@@ -237,6 +268,7 @@ Do not build these unless Allen asks:
 - More flat products: ornaments, gift tags, bookmarks, name plates, jigsaw puzzles, Play-Doh stamps and cutters (keep the config ready for them).
 - Printing a whole hair clip.
 - A web or iPad app version of this tool.
+- Kids' own drawings on flexi creatures (Allen, 2026-11-13: the creature is the creative part). Painting a drawn face onto a head works and stays in the code, unused by the card; so does painting a kid's face onto a downloaded toy.
 
 ## 13. Files to keep in the repository
 
