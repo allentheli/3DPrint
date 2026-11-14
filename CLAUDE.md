@@ -39,9 +39,10 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   line together came out worse (seams between every first-layer line, even in the wide border: likely the
   thinner line), so keep both at the defaults. The print notes say this. The same earring 1.25 times bigger
   (gaps 1.0-1.9 mm) was not better: wider gaps just get two lines with a dark seam between them, and the
-  wide border shows seams too, so the first-layer lines are not fusing; it is not the drawing's size. Next:
-  one earring flipped face-up in Bambu Studio (puffy pieces print face-up and look fine), then a flat face-up
-  option if that is clean.
+  wide border shows seams too, so the first-layer lines are not fusing; it is not the drawing's size.
+  Allen (2026-11-14): keep flat pieces face-down with Arachne, "prob doesnt need to be perfect, its just for a
+  kid party". A face-up test plate exists (`output/earring-faceup-test`, one thumbs-up flipped); a flat
+  face-up option is parked unless he asks after the party.
 - **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
   poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
   he found one on MakerWorld that can work and parked ours for the future. Don't work on them
