@@ -46,11 +46,13 @@ def test_named_run(cfg, tmp_path):
     names_in_3mf = "".join(zipfile.ZipFile(v["3mf"]).read(n).decode(errors="ignore")
                            for v in plate_files for n in zipfile.ZipFile(v["3mf"]).namelist() if n.endswith(".config"))
     assert "keychain-jack" in names_in_3mf and "clicker-jack-case" in names_in_3mf
-    # One plate (the clicker case too), named after the kids and what they made (Allen,
-    # 2026-11-14: every upload's plate was plate-1), in the file name and on the plate in Bambu Studio.
-    stem = "jack-clicker-keychain_mia-keychain_key-06"
-    assert [v["3mf"].name for v in plate_files] == [f"{stem}.3mf"]
-    assert [v["map"].name for v in plate_files] == [f"{stem}-map.png"]
+    # A plate per kid (the clicker case too), cards with no name together, each named after the kid
+    # and what they made (Allen, 2026-11-14: every upload's plate was plate-1; "all Alison's stuff on
+    # one plate"), in the file name and on the plate in Bambu Studio.
+    stems = ["jack-clicker-keychain", "mia-keychain", "key-06"]
+    assert [v["3mf"].name for v in plate_files] == [f"{s}.3mf" for s in stems]
+    assert [v["map"].name for v in plate_files] == [f"{s}-map.png" for s in stems]
+    stem = stems[0]
     assert f'plater_name" value="{stem}"' in names_in_3mf
     assert f"{stem}-map.png" in (out / "PRINT_NOTES.md").read_text()
 
@@ -74,4 +76,6 @@ def test_only_some_cards_or_kids(cfg, tmp_path):
     names = {"key-03": "Jack", "key-04": "Mia"}
     res = run_batch(cfg, inputs, tmp_path / "a", names=names, only={"Mia", "key-05"})
     assert sorted(p.name for p in res.pieces) == ["key-05", "keychain-mia"]
-    assert [v["3mf"].name for v in res.files["plates"].values()] == ["mia-keychain_key-05.3mf"]
+    assert [v["3mf"].name for v in res.files["plates"].values()] == ["mia-keychain.3mf", "key-05.3mf"]
+    together = run_batch(cfg, inputs, tmp_path / "b", names=names, only={"Mia", "key-05"}, together=True)
+    assert [v["3mf"].name for v in together.files["plates"].values()] == ["mia-keychain_key-05.3mf"]

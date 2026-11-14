@@ -84,9 +84,29 @@ def quickest(cfg: dict, pieces: list, assignments: dict) -> dict[str, list[dict]
     return dict(sorted(out.items(), key=lambda kv: (kv[0] not in named, kv[0])))
 
 
+def close_to_quickest(items: list[dict]) -> list[dict]:
+    """The pieces about as quick as a kid's quickest (within 5 minutes or a quarter): Allen,
+    2026-11-14: "if they r close, I will give kids the choice", so no piece is picked for them."""
+    if not items:
+        return []
+    first = items[0]["minutes"]
+    return [it for it in items if it["minutes"] <= max(first + 5.0, first * 1.25)]
+
+
 def quickest_lines(cfg: dict, table: dict[str, list[dict]]) -> list[str]:
+    def m(it):
+        return f"{it['what']} {max(1, round(it['minutes']))} min"
+
     lines = []
     for kid, items in table.items():
-        who = kid.replace("-", " ").title() if any(it["card"] != kid for it in items) else kid
-        lines.append(f"- **{who}:** " + ", ".join(f"{it['what']} {max(1, round(it['minutes']))} min" for it in items))
+        named = any(it["card"] != kid for it in items)
+        who = kid.replace("-", " ").title() if named else kid
+        close = close_to_quickest(items)
+        rest = items[len(close):]
+        text = " or ".join(m(it) for it in close)
+        if len(close) > 1:
+            text += f" (close: let {who if named else 'them'} pick)"
+        if rest:
+            text += ", then " + ", ".join(m(it) for it in rest)
+        lines.append(f"- **{who}:** {text}")
     return lines

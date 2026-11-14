@@ -266,7 +266,9 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Ignore an erased pencil draft | add `--no-pencil key-03` to `run` (repeat for more cards; alone, every card) |
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Clicker cases on their own plate | add `--separate-plates` to `run` (the default puts the cases with the charms, as many plates as the bed needs; `printer.one_plate` in config; round-back figurines always get their own plate) |
-| Just some pieces, to print first | add `--only mia key-03` to `run`: only those kids (by the name read) or cards |
+| Quick plate (when Allen asks) | add `--quick key-03 ear-01` to `run`: those cards also on a quick plate; the run lists what to delete from the kids' plates |
+| All kids on shared plates | add `--together` to `run` (default: a plate per kid) |
+| Just some pieces | add `--only mia key-03` to `run`: only those kids (by the name read) or cards |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
 | Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
@@ -299,23 +301,29 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `plates/<kids-and-pieces>.3mf` and `...-map.png`: each plate, named after the kids and what they made
-  (Allen, 2026-11-14: "just kid name and whatever stuff they made"; every upload's plate used to be
-  plate-1): `jack-clicker-keychain_mia-necklace_key-06.3mf` (kids in name order, then pieces that go by
-  their card; past about 80 letters `_and-3-more`). Bambu Studio shows the same name on the plate. Clicker
-  cases share the charms' plate (as many plates as the bed needs); a round-back figurines plate ends in
-  `-figurines`, and with `--separate-plates` a cases-only plate ends in `-clicker-cases`. Two plates in one run never share a name (`-2`). Kids may make more than 3 each and
-  Allen prints a few before they go home: when he names them, run again with `--only` (kids or
-  cards) to a new folder, for a plate of just those. The map is who's who, each piece's name where it
-  sits on the plate (send it with the plate; it stops matching if Allen presses Arrange).
+- `plates/<kid>-<pieces>.3mf` and `...-map.png`: a plate per kid with all their things, clicker case
+  included (Allen, 2026-11-14: "organize the plate file by names (ie all Alison's stuff on one plate)"),
+  named after the kid and what they made: `alison-clicker-earrings.3mf`; cards with no name read share
+  one plate (`key-01_clip-02`). Bambu Studio shows the same name on the plate. Round-back figurines get
+  a `-figurines` plate (supports); `--separate-plates` gives clicker cases a `-clicker-cases` plate;
+  `--together` packs all kids onto shared plates. Two plates in one run never share a name (`-2`). The
+  map is who's who, each piece's name where it sits on the plate (send it with the plate; it stops
+  matching if Allen presses Arrange).
+- **Quick plate, only when Allen asks** ("when I ask give the quick one for each on a separate plate and
+  tell me which one I need to take out from the main plate"). Never pick for him: kids choose when
+  times are close ("if they r close, I will give kids the choice"). When he names the pieces, run the
+  same upload again with `--quick <cards>` (cards from the quickest-first list) to a new folder: the
+  kids' plates come out the same as before and a `quick_<kids-and-pieces>.3mf` plate is added; send
+  only the quick plate and its map, and pass on the run's "take these out" lines (which piece to delete
+  from which kid's plate in Bambu Studio, so nothing prints twice).
 - Rough print times (Allen, 2026-11-14: "estimate the time ... which each kid's print would be the
   fastest"): the run prints "quickest first", each kid's pieces with rough minutes of printing (a
   clicker counts with its case, earrings as a pair), and each plate's rough total and color changes;
   `PRINT_NOTES.md` has both. The model (`printtime.py`, `print_time:` in config) counts plastic, a
   floor per layer and AMS color changes (1.5 min each), so flat one-color pieces are quickest and
   multicolor figurines and puffy pieces slowest. It ranks well; the minutes are a guess until Allen
-  gives Bambu Studio's time for one plate, then tune `print_time`. Before the kids go home: pick each
-  kid's quickest piece(s), run again with `--only` to a new folder, and give the plate's rough total.
+  gives Bambu Studio's time for one plate, then tune `print_time`. Pieces within 5 minutes (or a quarter)
+  of a kid's quickest are marked "close: let Jack pick".
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit

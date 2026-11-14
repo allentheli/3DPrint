@@ -222,7 +222,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               no_dots: set[str] | None = None, no_pencil: set[str] | None = None,
               sizes: dict[str, float] | None = None,
               products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None,
-              only: set[str] | None = None) -> BatchResult:
+              only: set[str] | None = None, together: bool | None = None,
+              quick: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -407,7 +408,27 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         try:
             if one_plate is None:                # Allen, 2026-11-14: the case on the same plate too
                 one_plate = cfg["printer"].get("one_plate", False)
-            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate)
+            if together is None:                 # Allen, 2026-11-14: each kid's things on a plate
+                together = not cfg["printer"].get("plate_per_kid", False)
+            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate, by_kid=not together)
+            # The quick plate (Allen, 2026-11-14: "when I ask give the quick one for each on a separate
+            # plate and tell me which one I need to take out from the main plate"): the cards he names,
+            # together, after the kids' plates, which still hold everything.
+            quick = {q.lower() for q in quick or ()}
+            if quick:
+                cards = {p.design.extras.get("card", p.name) for p in pieces}
+                for q in sorted(quick - cards):
+                    problems.append(f"--quick {q}: no such card in this batch ({', '.join(sorted(cards))})")
+                picked = [p for p in pieces if p.design.extras.get("card", p.name) in quick]
+                if picked:
+                    main = list(plates)
+                    more = pack_plates(cfg, picked, palette, assignments, one_plate=True)
+                    for pl in more:
+                        pl.number += len(plates)
+                        pl.tag = "quick"
+                    plates += more
+                    files["take_out"] = [(pp.piece.name, pl) for pl in main for pp in pl.pieces
+                                         if any(pp.piece is p for p in picked)]
         except ValueError as e:
             problems.append(str(e))
         if plates:
@@ -457,9 +478,11 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         for plate in plates:
             files["plates"][plate.number]["estimate"] = plate_estimate(cfg, plate)
         files["quickest"] = quickest(cfg, pieces, assignments)
+        if files.get("take_out"):
+            files["take_out"] = [(name, pl.stem) for name, pl in files["take_out"]]
         files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems,
                                            estimates={p.number: files["plates"][p.number]["estimate"] for p in plates},
-                                           quick=files["quickest"])
+                                           quick=files["quickest"], take_out=files.get("take_out"))
     return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
 
 

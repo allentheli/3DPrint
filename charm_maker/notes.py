@@ -21,7 +21,8 @@ FINISHING = {
 
 
 def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Palette, problems: list[str],
-                      estimates: dict | None = None, quick: dict | None = None) -> Path:
+                      estimates: dict | None = None, quick: dict | None = None,
+                      take_out: list | None = None) -> Path:
     pr = cfg["printer"]
     lines = ["# Print notes", ""]
     if not palette.ready:
@@ -42,6 +43,11 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
                   f"{cfg['print_time']['startup_minutes']:.0f} minutes of start-up once). Color changes take the most "
                   "time, so fewer colors and flat shapes print fastest.", ""]
         lines += quickest_lines(cfg, quick) + [""]
+    if take_out:
+        lines += ["## Quick plate: take these out of the kids' plates", "",
+                  "They print on the quick plate, so delete them from the kids' plates before printing those "
+                  "(in Bambu Studio click the piece, press **Delete**), or they print twice:", ""]
+        lines += [f"- `{name}` from `{stem}.3mf`" for name, stem in take_out] + [""]
     products = set()
     for plate in plates:
         lines.append(f"## Plate {plate.number}: `plates/{plate.stem}.3mf`")

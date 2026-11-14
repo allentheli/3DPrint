@@ -174,7 +174,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        no_dots=set(args.no_dots or ()), no_pencil=set(args.no_pencil or ()),
                        sizes=per_card(args.scale),
                        products=per_card(args.as_product), keep_whole=per_card(args.keep_whole),
-                       only={o.lower() for o in args.only or ()})
+                       only={o.lower() for o in args.only or ()}, together=args.together,
+                       quick={q.lower() for q in args.quick or ()})
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -186,6 +187,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     for n, paths in result.files.get("plates", {}).items():
         e = paths.get("estimate")
         print(f"plate {n}: {paths['3mf']}" + (f" (rough {round(e['minutes'])} min, {e['changes']} color changes)" if e else ""))
+    if result.files.get("take_out"):
+        print("take these out of the kids' plates (they print on the quick plate):")
+        for name, stem in result.files["take_out"]:
+            print(f"  {name} from {stem}.3mf")
     if result.files.get("quickest"):
         from .printtime import quickest_lines
 
@@ -339,6 +344,11 @@ def main(argv: list[str] | None = None) -> int:
                         "(config printer.one_plate). Round-back figurines always get their own plate")
     p.add_argument("--only", action="extend", nargs="+", metavar="CARD_OR_KID",
                    help="build just these cards (key-03) or kids (jack), e.g. for a plate to print first")
+    p.add_argument("--quick", action="extend", nargs="+", metavar="CARD",
+                   help="also put these cards together on a quick plate, to print first; the run says which "
+                        "pieces to delete from the kids' plates")
+    p.add_argument("--together", action="store_true", default=None,
+                   help="pack all kids' pieces onto shared plates instead of a plate per kid")
     p.add_argument("--separate-plates", dest="one_plate", action="store_false",
                    help="clicker cases on a plate of their own")
     p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",

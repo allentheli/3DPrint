@@ -50,6 +50,7 @@ class Plate:
     shelf_y: float = 0.0
     shelf_h: float = 0.0
     suffix: str = ""                # -2, -3 when two plates in a batch would share a name
+    tag: str = ""                   # "quick" for the plate of pieces printed first
 
     @property
     def kind(self) -> str:
@@ -88,6 +89,8 @@ class Plate:
             label += f"_and-{len(parts) - used}-more"
         if self.kind in ("clicker-cases", "figurines"):
             label += f"-{self.kind}"
+        if self.tag:
+            label = f"{self.tag}_{label}"
         return label + self.suffix
 
     def slots(self) -> dict[Filament, int]:
@@ -161,8 +164,33 @@ def unanswered_off_palette(piece: Piece, assignments: dict[str, Filament]) -> li
     return [p for p, f in assignments.items() if f.name.endswith("(not loaded)")]
 
 
+def kid_of(piece: Piece) -> str:
+    """The kid a piece was named after, or "" for a card with no name read."""
+    kid, word = piece.design.extras.get("who", ("", ""))
+    return kid if word else ""
+
+
 def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
-                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
+                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False,
+                by_kid: bool = False) -> list[Plate]:
+    """With `by_kid`, each kid's pieces get plates of their own (Allen, 2026-11-14: "all Alison's
+    stuff on one plate"); cards with no name share theirs. Within each, as below."""
+    if by_kid:
+        kids: dict[str, list[Piece]] = {}
+        for p in pieces:
+            kids.setdefault(kid_of(p), []).append(p)
+        plates: list[Plate] = []
+        for kid in sorted(kids, key=lambda k: (not k, k)):
+            more = pack_plates(cfg, kids[kid], palette, assignments, one_plate=one_plate)
+            for pl in more:
+                pl.number += len(plates)
+            plates += more
+        return plates
+    return _pack_together(cfg, pieces, palette, assignments, one_plate=one_plate)
+
+
+def _pack_together(cfg: dict, pieces: list[Piece], palette: Palette,
+                   assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
     """Charms first (flat-back figurines and clicker keycaps included), then clicker cases
     (upright, thicker layers, one filament), then round-back figurines (they need supports
     and a different layer height), each group on plates of its own. With `one_plate` (the
