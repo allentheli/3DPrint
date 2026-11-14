@@ -397,6 +397,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         except ValueError as e:
             problems.append(str(e))
         if plates:
+            tag = _safe_stem(batch_name or out_dir.name)
+            for plate in plates:
+                plate.batch = tag
             files["plates"] = write_plates(cfg, plates, out_dir / "plates")
             from .preview import render_plate_map
 

@@ -49,11 +49,13 @@ class Plate:
     shelf_x: float = 0.0
     shelf_y: float = 0.0
     shelf_h: float = 0.0
+    batch: str = ""                 # the upload's batch name, so every upload's files differ
 
     @property
     def stem(self) -> str:
         """The plate's file name says what is on it (Allen, 2026-11-14: two files both called
-        "plate" hid the clicker case): plate-2-clicker-cases, plate-1-charms."""
+        "plate" hid the clicker case): plate-2-clicker-cases, plate-1-charms. It starts with the batch
+        name (Allen, 2026-11-14: every upload's plate was plate-1), e.g. party-gifts-plate-1-charms."""
         groups = {pp.piece.group for pp in self.pieces}
         if groups == {"cases"}:
             kind = "clicker-cases"
@@ -63,7 +65,8 @@ class Plate:
             kind = "everything"
         else:
             kind = "charms"
-        return f"plate-{self.number}-{kind}"
+        name = f"plate-{self.number}-{kind}"
+        return f"{self.batch}-{name}" if self.batch else name
 
     def slots(self) -> dict[Filament, int]:
         """Filament -> AMS slot. Loaded slots when known, else 1..N in order."""
@@ -305,7 +308,7 @@ def write_plates(cfg: dict, plates: list[Plate], out_dir: Path) -> dict[int, dic
                 parts.append((name, solid, slots[f], f.rgb))
                 plain[name] = solid
             objects.append((pp.piece.name, parts))
-        paths = {"3mf": write_bambu_3mf(objects, out_dir / f"{stem}.3mf")}
+        paths = {"3mf": write_bambu_3mf(objects, out_dir / f"{stem}.3mf", plate_name=stem)}
         paths.update({f"plain-{k}": v for k, v in write_plate(plain, out_dir, f"{stem}-plain").items()})
         result[plate.number] = paths
     return result

@@ -47,6 +47,11 @@ def test_named_run(cfg, tmp_path):
                            for v in plate_files for n in zipfile.ZipFile(v["3mf"]).namelist() if n.endswith(".config"))
     assert "keychain-jack" in names_in_3mf and "clicker-jack-case" in names_in_3mf
     assert "plate-1-charms-map.png" in (out / "PRINT_NOTES.md").read_text()
+    # Every upload's plates have their own names (Allen, 2026-11-14: they were all plate-1):
+    # the batch name first, in the file name and on the plate in Bambu Studio.
+    assert all(v["3mf"].name.startswith(f"{out.name}-plate-") for v in plate_files)
+    assert all(v["map"].name.startswith(f"{out.name}-plate-") for v in plate_files)
+    assert f'plater_name" value="{out.name}-plate-1-charms"' in names_in_3mf
 
 
 def _assignments(res, name):

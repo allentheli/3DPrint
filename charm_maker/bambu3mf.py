@@ -39,7 +39,7 @@ def _mesh_xml(obj_id: int, solid: m3d.Manifold) -> str:
 
 
 def write_bambu_3mf(objects: list[tuple[str, list[tuple[str, m3d.Manifold, int, tuple[int, int, int]]]]],
-                    path: Path, slot_filaments: dict | None = None) -> Path:
+                    path: Path, slot_filaments: dict | None = None, plate_name: str = "") -> Path:
     """objects: [(object_name, [(part_name, solid, extruder_slot, rgb), ...]), ...]"""
     path = Path(path)
     next_id = 1
@@ -102,7 +102,8 @@ def write_bambu_3mf(objects: list[tuple[str, list[tuple[str, m3d.Manifold, int, 
     config_xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n<config>'
         f'{"".join(config_objects)}'
-        '<plate><metadata key="plater_id" value="1"/><metadata key="plater_name" value=""/>'
+        '<plate><metadata key="plater_id" value="1"/>'
+        f'<metadata key="plater_name" value="{escape(plate_name, {chr(34): "&quot;"})}"/>'
         f'<metadata key="locked" value="false"/>{instances}</plate></config>'
     )
     content_types = (
