@@ -171,7 +171,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
-                       no_dots=set(args.no_dots or ()), sizes=per_card(args.scale),
+                       no_dots=set(args.no_dots or ()), no_pencil=set(args.no_pencil or ()),
+                       sizes=per_card(args.scale),
                        products=per_card(args.as_product), keep_whole=per_card(args.keep_whole))
     for line in result.calibration:
         print(f"calibration: {line}")
@@ -344,6 +345,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
                    help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
                         "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
+    p.add_argument("--no-pencil", action="append", nargs="?", const="*", metavar="CARD",
+                   help="read only the marker, not pencil, for a card whose erased pencil draft came back as "
+                        "extra lines: '--no-pencil key-03' for one card (repeat for more), '--no-pencil' for all")
     p.add_argument("--scale", action="append", metavar="[CARD=]FACTOR",
                    help="make a piece bigger or smaller than drawn, before the print fixes: "
                         "'--scale fig-01=1.5' for one card (repeat for more), '--scale 1.5' for every card")

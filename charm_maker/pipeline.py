@@ -47,10 +47,15 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None, tidy: bool = False,
-                     keep_dots: bool = True, size: float = 1.0, product_override: str | None = None) -> Design:
+                     keep_dots: bool = True, size: float = 1.0, product_override: str | None = None,
+                     pencil: bool = True) -> Design:
     """`size` makes the piece that many times the drawn size (Allen, 2026-11-12: a bigger
     butterfly so its tiny face keeps its shape). It is applied before the print fixes, so
     her lines and the gaps between them grow too and the 1 mm minimum has room."""
+    if not pencil:
+        # Kids may draft in pencil and erase it; a line still dark enough to read as pencil would
+        # print. --no-pencil reads only the marker for that card.
+        cfg = {**cfg, "reader": {**cfg["reader"], "pencil": False}}
     pr = cfg["process"]
     asked = size
     if border is None:
@@ -214,7 +219,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
               names: dict[str, str] | None = None, one_plate: bool = False,
-              no_dots: set[str] | None = None, sizes: dict[str, float] | None = None,
+              no_dots: set[str] | None = None, no_pencil: set[str] | None = None,
+              sizes: dict[str, float] | None = None,
               products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
@@ -249,6 +255,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     tidy = set(tidy or ())
     no_dots = set(no_dots or ())
+    no_pencil = set(no_pencil or ())
     products = dict(products or {})
     keep = {}
     for key, span in (keep_whole or {}).items():
@@ -308,10 +315,13 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
                                       tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
                                       keep_dots=not (no_dots & {name, base_name, "*"}),
+                                      pencil=not (no_pencil & {name, base_name, "*"}),
                                       size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0),
                                       product_override=next((products[c] for c in (name, base_name, "*")
                                                              if c in products), None))
             design.source = label
+            if no_pencil & {name, base_name, "*"}:
+                design.fixes.append("pencil not read, only the marker (asked for: an erased pencil draft)")
             span = next((keep[c] for c in (name, base_name, "*") if c in keep), None)
             if span:
                 design.extras["keep_whole"] = span

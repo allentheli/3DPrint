@@ -85,7 +85,7 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
     faces and the creature card.
 - **Laminated reusable cards (2026-11-13):** Allen will try one laminated card with dry-erase
   markers (draw, scan, wipe, draw, scan) to check glare and ghost marks. After his scans: card
-  wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
+  wording, a glare check, and duplicate names past `-z` (`--no-pencil` exists now, for ghost marks).
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
 - **Party: 2026-11-14 or 15, 5:30-8 pm** (Allen, 2026-11-13: "get what we have ready"; creatures keep
@@ -224,6 +224,10 @@ and a pair of eyes is made the same shape and size; they are circled in blue on 
 listed in the fixes. A pencil speck looks exactly like a dot, so if a drawing gets dots it does not
 have (test drive 4's rainbow has no face), run again with `--no-dots <card>` (repeat for more, or
 `--no-dots` for all). Decided by shape and position only, never by how dark the ink is.
+Pencil drafts (Allen, 2026-11-14: kids may draft in pencil and erase before the marker): pencil is read on
+purpose (test drive 4 was drawn in pencil). A well-erased line is too faint to read; one still clearly
+visible after erasing reads as a line and prints. Look for stray lines on the contact sheet; if a card has
+one, run again with `--no-pencil <card>` (repeat for more, or `--no-pencil` for all): only the marker is read.
 A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
 1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
 gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.
@@ -257,6 +261,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Chip plate (printer tour) | `python -m charm_maker chips` (writes `output/chips/`) |
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
+| Ignore an erased pencil draft | add `--no-pencil key-03` to `run` (repeat for more cards; alone, every card) |
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |

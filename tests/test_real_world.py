@@ -564,3 +564,44 @@ def test_a_ring_eye_keeps_its_rings(cfg):
     assert all(h.buffer(-0.17).area > 0 for h in gaps), "every gap is at least about 0.35 mm wide, so it prints"
     assert blob and all(not g.interiors for g in blob), "the pinhole in the blob is filled"
     assert any("little closed marks kept" in f for f in d.fixes)
+
+
+def test_an_erased_pencil_draft_can_be_left_out(cfg, tmp_path):
+    """Party kids may draft in pencil and erase it (Allen, 2026-11-14). A well-erased line is too
+    faint to read; one still clearly visible reads as a pencil line and would print, so
+    --no-pencil reads only the marker for that card."""
+    from PIL import ImageDraw
+
+    from tests.synthetic import BLACK, card_image, photograph
+
+    photos = tmp_path / "photos"
+    photos.mkdir()
+    img, lay, ppm, P = card_image(cfg, "keychain", 1, photos)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.36
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], outline=BLACK, width=int(3.5 * ppm))
+    rng = np.random.default_rng(3)
+    for y, g in ((cy + 0.4 * r, 232), (cy - 0.4 * r, 185)):      # a ghost of a line, a half-erased line
+        for t in np.linspace(0, 1, 400):
+            if rng.random() < 0.25:
+                continue
+            x = cx - 0.55 * r + 1.1 * r * t
+            v = int(np.clip(g + rng.normal(0, 8), 0, 255))
+            d.rectangle([P(x, y + 0.3), P(x + 0.35, y - 0.3)], fill=(v, v, v))
+    photograph(img, photos / "keychain-1.jpg", seed=1)
+
+    def ink_area(**kw):
+        res = run_batch(cfg, sorted(photos.glob("*.jpg")), tmp_path / f"out-{len(kw)}", **kw)
+        design = res.pieces[0].design
+        return design, sum(i.geometry.area for i in design.inks)
+
+    line_mm2 = 1.1 * r / 3 * 1.0          # one stroke at real size, thickened to the 1 mm minimum
+    _, with_pencil = ink_area()
+    design, marker_only = ink_area(no_pencil={"key-01"})
+    assert any("pencil not read" in f for f in design.fixes)
+    extra = with_pencil - marker_only
+    # Read with pencil, only the half-erased line comes back (the ghost is too faint);
+    # with --no-pencil it is gone too.
+    assert 0.6 * line_mm2 < extra < 1.6 * line_mm2, (extra, line_mm2)
