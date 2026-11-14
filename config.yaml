@@ -12,6 +12,8 @@ printer:
   max_filaments_per_plate: 4      # one AMS
   layer_height_charms: 0.12       # charms, figures, earrings, pendants, keycaps
   layer_height_cases: 0.20        # clicker cases and figure stands
+  one_plate: true                 # Allen, 2026-11-14: clicker cases share the charms' plate; false = their
+                                  # own plate, as before (run --separate-plates). Round figurines: always apart
   nozzle: 0.4
 
 # Spools Allen owns. Fill in once. `color` is a hex code close to the real

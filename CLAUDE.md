@@ -177,7 +177,8 @@ clearance, face 1.5 mm above the rim) and presses down into it, so nothing of th
 Below the plate a hollow for the switch body and pins and a floor with a push-out hole; a short
 ring tab (about 9.5 mm tall, Allen: not the whole height) halfway up the side, its hole running
 left to right (the ring hangs beside the case, so it sits flat on a table). About 25 mm tall plus
-the keycap (the switch needs that height); printed upright on its own plate at 0.2 mm in one
+the keycap (the switch needs that height); printed upright on the same plate as the charms (Allen,
+2026-11-14; at their 0.12 mm, slower than the 0.2 mm it gets on its own plate with `--separate-plates`) in one
 filament, no supports: the tab's underside slopes back to the wall at 45 degrees (Allen: with
 tree supports on, Bambu Studio also filled the hollow inside the case; `ring_tab_supports: true`
 gives the tab a flat underside on supports instead). The clicker card has a "cover the square" guide (16 mm keycap) in a 40 mm drawing box
@@ -243,7 +244,8 @@ back-down with no supports, on the normal plates. The dome is capped per product
 figure instead (the card's ring, clip or loop is dropped): `--figurine-back fig-02=blank` (plain
 back, for characters) or `=mirror` (front colors on the back too). Round-back figures stand on a
 flat-cut bottom; `--figurine-base fig-02=disc` adds a round stand, `none` keeps it round. They
-go on their own plates with tree supports on and 0.16 mm layers.
+go on their own plates with tree supports on and 0.16 mm layers (never with the charms and cases:
+supports on a shared plate also filled the hollow in Allen's clicker case).
 
 Optional extras, only when Allen asks: the marker calibration card (`calibrate`), strict
 color checking (`run --ask-colors`, which stops with `QUESTION.md` and exit code 2), swap
@@ -263,7 +265,8 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
 | Ignore an erased pencil draft | add `--no-pencil key-03` to `run` (repeat for more cards; alone, every card) |
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
-| Everything on one plate | add `--one-plate` to `run`: clicker cases and figurines join the charms in one 3MF at 0.12 mm, any number of colors (Allen sets spools in Bambu Studio) |
+| Clicker cases on their own plate | add `--separate-plates` to `run` (the default puts the cases with the charms, as many plates as the bed needs; `printer.one_plate` in config; round-back figurines always get their own plate) |
+| Just some pieces, to print first | add `--only mia key-03` to `run`: only those kids (by the name read) or cards |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
 | Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
@@ -296,14 +299,15 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `plates/<batch>-plate-N-<kind>.3mf` and `...-map.png`: each plate, named after the batch (the `--out`
-  folder's name) and what is on it: `party-gifts-plate-1-charms`, `party-gifts-plate-2-clicker-cases`,
-  `figurines`, `everything` with `--one-plate` (Allen, 2026-11-14: two files both called "plate" hid the
-  clicker case, and every upload's plate was plate-1). Bambu Studio shows the same name on the plate.
-  So give every upload its own batch name (`party-gifts`, `party-kids-1`, `party-kids-2`), and send a
-  rerun to a new one (`party-gifts-2`), so no two files Allen downloads share a name. The map is who's
-  who, each piece's name where it sits on the plate (send it with the plate; it stops matching if Allen
-  presses Arrange).
+- `plates/<kids-and-pieces>.3mf` and `...-map.png`: each plate, named after the kids and what they made
+  (Allen, 2026-11-14: "just kid name and whatever stuff they made"; every upload's plate used to be
+  plate-1): `jack-clicker-keychain_mia-necklace_key-06.3mf` (kids in name order, then pieces that go by
+  their card; past about 80 letters `_and-3-more`). Bambu Studio shows the same name on the plate. Clicker
+  cases share the charms' plate (as many plates as the bed needs); a round-back figurines plate ends in
+  `-figurines`, and with `--separate-plates` a cases-only plate ends in `-clicker-cases`. Two plates in one run never share a name (`-2`). Kids may make more than 3 each and
+  Allen prints a few before they go home: when he names them, run again with `--only` (kids or
+  cards) to a new folder, for a plate of just those. The map is who's who, each piece's name where it
+  sits on the plate (send it with the plate; it stops matching if Allen presses Arrange).
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
@@ -318,9 +322,9 @@ plate, and the print notes say what goes in and out of which slot.
 
 ## Handing files over
 
-In a cloud session, send every `output/.../plates/*-plate-*.3mf` (not the `-plain` copies), the plate maps,
+In a cloud session, send every `output/.../plates/*.3mf` (not the `-plain` copies), the plate maps,
 the contact sheet and `PRINT_NOTES.md` with the file tool, and name each plate in the reply (a clicker's
-case is always on its own `clicker-cases` plate). For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
+case is on the same plate as the charms unless `--separate-plates`). For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 
 ## Test drive

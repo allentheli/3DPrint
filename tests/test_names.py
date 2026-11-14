@@ -46,12 +46,13 @@ def test_named_run(cfg, tmp_path):
     names_in_3mf = "".join(zipfile.ZipFile(v["3mf"]).read(n).decode(errors="ignore")
                            for v in plate_files for n in zipfile.ZipFile(v["3mf"]).namelist() if n.endswith(".config"))
     assert "keychain-jack" in names_in_3mf and "clicker-jack-case" in names_in_3mf
-    assert "plate-1-charms-map.png" in (out / "PRINT_NOTES.md").read_text()
-    # Every upload's plates have their own names (Allen, 2026-11-14: they were all plate-1):
-    # the batch name first, in the file name and on the plate in Bambu Studio.
-    assert all(v["3mf"].name.startswith(f"{out.name}-plate-") for v in plate_files)
-    assert all(v["map"].name.startswith(f"{out.name}-plate-") for v in plate_files)
-    assert f'plater_name" value="{out.name}-plate-1-charms"' in names_in_3mf
+    # One plate (the clicker case too), named after the kids and what they made (Allen,
+    # 2026-11-14: every upload's plate was plate-1), in the file name and on the plate in Bambu Studio.
+    stem = "jack-clicker-keychain_mia-keychain_key-06"
+    assert [v["3mf"].name for v in plate_files] == [f"{stem}.3mf"]
+    assert [v["map"].name for v in plate_files] == [f"{stem}-map.png"]
+    assert f'plater_name" value="{stem}"' in names_in_3mf
+    assert f"{stem}-map.png" in (out / "PRINT_NOTES.md").read_text()
 
 
 def _assignments(res, name):
@@ -60,3 +61,17 @@ def _assignments(res, name):
             if pp.piece.name == name:
                 return pp.assignments
     raise KeyError(name)
+
+
+def test_only_some_cards_or_kids(cfg, tmp_path):
+    """Allen, 2026-11-14: kids may make more than 3 each; a few print before they go home, the
+    rest after. --only builds just those cards or kids, on a plate named after them."""
+    photos = tmp_path / "photos"
+    photos.mkdir()
+    for n in (3, 4, 5):
+        draw_blob_card(cfg, photos, "keychain", n, BLACK, PINK)
+    inputs = sorted(photos.glob("*.jpg"))
+    names = {"key-03": "Jack", "key-04": "Mia"}
+    res = run_batch(cfg, inputs, tmp_path / "a", names=names, only={"Mia", "key-05"})
+    assert sorted(p.name for p in res.pieces) == ["key-05", "keychain-mia"]
+    assert [v["3mf"].name for v in res.files["plates"].values()] == ["mia-keychain_key-05.3mf"]

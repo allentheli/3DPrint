@@ -173,7 +173,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
                        no_dots=set(args.no_dots or ()), no_pencil=set(args.no_pencil or ()),
                        sizes=per_card(args.scale),
-                       products=per_card(args.as_product), keep_whole=per_card(args.keep_whole))
+                       products=per_card(args.as_product), keep_whole=per_card(args.keep_whole),
+                       only={o.lower() for o in args.only or ()})
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -326,8 +327,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
-    p.add_argument("--one-plate", action="store_true",
-                   help="everything on one plate in one 3MF (clicker cases and figurines too, any number of colors)")
+    p.add_argument("--one-plate", dest="one_plate", action="store_true", default=None,
+                   help="clicker cases on the charms' plate (any number of colors); the default "
+                        "(config printer.one_plate). Round-back figurines always get their own plate")
+    p.add_argument("--only", action="extend", nargs="+", metavar="CARD_OR_KID",
+                   help="build just these cards (key-03) or kids (jack), e.g. for a plate to print first")
+    p.add_argument("--separate-plates", dest="one_plate", action="store_false",
+                   help="clicker cases on a plate of their own")
     p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",
                    help="name pieces after the kid, e.g. key-01=Jack clip-02=Mia (from the names sheet)")
     p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",

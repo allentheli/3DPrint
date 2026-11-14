@@ -218,10 +218,11 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
-              names: dict[str, str] | None = None, one_plate: bool = False,
+              names: dict[str, str] | None = None, one_plate: bool | None = None,
               no_dots: set[str] | None = None, no_pencil: set[str] | None = None,
               sizes: dict[str, float] | None = None,
-              products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None) -> BatchResult:
+              products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None,
+              only: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -307,7 +308,12 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     pieces: list[Piece] = []
     names = dict(names or {})
     kid_names: dict[str, int] = {}
+    only = {o.lower() for o in only or ()}
     for (label, path, read), (name, base_name) in zip(drawings, _card_names(drawings)):
+        # --only: just these cards, for a plate printed first (Allen, 2026-11-14: a few pieces
+        # before the kids go home, the rest after). Matched by card or by the kid's name.
+        if only and not (only & {name, base_name, *([names[name].lower()] if names.get(name) else [])}):
+            continue
         try:
             from .options import read_options
 
@@ -359,6 +365,11 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                         _map_to_palette(cfg, more, palette)
                         _set_base_slot(cfg, more, palette)
                         new.append(more)
+            # Whose piece it is and what it is, for the plate's file name (jack-keychain-clicker).
+            word = cfg["products"][design.product].get("file_word", design.product)
+            who = (kid[len(word) + 1:], word) if kid else (name, "")
+            for pc in new:
+                pc.design.extras["who"] = who
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -393,13 +404,17 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
     else:
         try:
+            if one_plate is None:                # Allen, 2026-11-14: the case on the same plate too
+                one_plate = cfg["printer"].get("one_plate", False)
             plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate)
         except ValueError as e:
             problems.append(str(e))
         if plates:
-            tag = _safe_stem(batch_name or out_dir.name)
-            for plate in plates:
-                plate.batch = tag
+            seen: dict[str, int] = {}
+            for plate in plates:                 # two plates never share a file name
+                seen[plate.stem] = seen.get(plate.stem, 0) + 1
+                if seen[plate.stem] > 1:
+                    plate.suffix = f"-{seen[plate.stem]}"
             files["plates"] = write_plates(cfg, plates, out_dir / "plates")
             from .preview import render_plate_map
 

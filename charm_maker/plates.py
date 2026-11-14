@@ -49,24 +49,46 @@ class Plate:
     shelf_x: float = 0.0
     shelf_y: float = 0.0
     shelf_h: float = 0.0
-    batch: str = ""                 # the upload's batch name, so every upload's files differ
+    suffix: str = ""                # -2, -3 when two plates in a batch would share a name
+
+    @property
+    def kind(self) -> str:
+        groups = {pp.piece.group for pp in self.pieces}
+        if groups == {"cases"}:
+            return "clicker-cases"
+        if self.pieces and all(pp.piece.supports for pp in self.pieces):
+            return "figurines"
+        return "everything" if len(groups) > 1 else "charms"
 
     @property
     def stem(self) -> str:
-        """The plate's file name says what is on it (Allen, 2026-11-14: two files both called
-        "plate" hid the clicker case): plate-2-clicker-cases, plate-1-charms. It starts with the batch
-        name (Allen, 2026-11-14: every upload's plate was plate-1), e.g. party-gifts-plate-1-charms."""
-        groups = {pp.piece.group for pp in self.pieces}
-        if groups == {"cases"}:
-            kind = "clicker-cases"
-        elif self.pieces and all(pp.piece.supports for pp in self.pieces):
-            kind = "figurines"
-        elif len(groups) > 1:
-            kind = "everything"
-        else:
-            kind = "charms"
-        name = f"plate-{self.number}-{kind}"
-        return f"{self.batch}-{name}" if self.batch else name
+        """The plate's file name says whose pieces are on it and what they are (Allen, 2026-11-14:
+        every upload's plate was plate-1; "just kid name and whatever stuff they made"):
+        jack-keychain-clicker_mia-necklace. A plate of only clicker cases or round figurines says so
+        (two files both called "plate" once hid the clicker case). Pieces not named after a kid go
+        by their card (key-01). Pieces built before names existed fall back to plate-1-charms."""
+        who: dict[str, list[str]] = {}
+        for pp in self.pieces:
+            kid, item = pp.piece.design.extras.get("who", (None, None))
+            if kid is None:
+                return f"plate-{self.number}-{self.kind}{self.suffix}"
+            items = who.setdefault(kid, [])
+            if item and item not in items:
+                items.append(item)
+        # Kids in name order, then pieces that go by their card number; each kid's pieces in name order.
+        order = sorted(who, key=lambda k: (not who[k], k))
+        parts = ["-".join([kid, *sorted(who[kid])]) for kid in order]
+        label, used = "", 0
+        for part in parts:
+            if label and len(label) + len(part) + 1 > 80:
+                break
+            label = f"{label}_{part}" if label else part
+            used += 1
+        if used < len(parts):
+            label += f"_and-{len(parts) - used}-more"
+        if self.kind in ("clicker-cases", "figurines"):
+            label += f"-{self.kind}"
+        return label + self.suffix
 
     def slots(self) -> dict[Filament, int]:
         """Filament -> AMS slot. Loaded slots when known, else 1..N in order."""
@@ -143,14 +165,18 @@ def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
                 assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
     """Charms first (flat-back figurines and clicker keycaps included), then clicker cases
     (upright, thicker layers, one filament), then round-back figurines (they need supports
-    and a different layer height), each group on plates of its own. With `one_plate`,
-    everything shares a plate (as many as the bed needs, usually one), whatever the
-    layer heights and however many colors: Allen sets the spools in Bambu Studio."""
+    and a different layer height), each group on plates of its own. With `one_plate` (the
+    default), the cases share the charms' plates (as many as the bed needs, usually one),
+    however many colors: Allen sets the spools in Bambu Studio. Round-back figurines always
+    get their own."""
     groups = [[p for p in pieces if not p.supports and p.group != "cases"],
               [p for p in pieces if p.group == "cases"],
               [p for p in pieces if p.supports]]
     if one_plate:
-        groups = [list(pieces)]
+        # Clicker cases join the charms (Allen, 2026-11-14). Round-back figurines keep a plate of
+        # their own: they need supports, and supports on a shared plate also filled the hollow
+        # inside his clicker case (2026-11-11).
+        groups = [[p for p in pieces if not p.supports], [p for p in pieces if p.supports]]
     plates: list[Plate] = []
     for group in groups:
         if not group:
