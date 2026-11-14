@@ -46,8 +46,10 @@ def test_a_flexi_card_becomes_linked_strips(cfg, ghost):
     piece, res = ghost
     assert piece.design.product == "flexi"
     w, h = piece.size()
-    # Drawn 100 x 140 card mm: a third of that, made 1.5 times bigger, plus the border.
-    assert h == pytest.approx(140 / 3 * 1.5 + 2 * cfg["process"]["border"], abs=2.0)
+    # Drawn 100 x 140 card mm: a third of that, made 1.5 times bigger (73 mm with the border),
+    # then up to the flexi's 80 mm so the strips have room around the face.
+    assert max(w, h) == pytest.approx(cfg["products"]["flexi"]["default_size"], abs=0.5)
+    assert any("to 80 mm, the flexi's size" in f for f in piece.design.fixes)
     n = piece.attachment["strips"]
     assert 4 <= n <= 7
     assert len(_strips(piece)) == n

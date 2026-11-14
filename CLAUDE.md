@@ -42,8 +42,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (separate glued post, new) and the short sloped ring tab.
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
   - **Flexi (built 2026-11-13; the shark duck printed and works well):** a product of its own with its own card, like the
-    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
-    at the usual card scale, made 1.5 times bigger), 7 mm thick, cut into strips at least 9 mm
+    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy 80 mm long (drawn
+    at the usual card scale, made 1.5 times bigger; a smaller drawing is scaled up to 80 mm), 7 mm thick, cut into strips at least 9 mm
     tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
     for size from Lawk3t's Pusheen Cat Flexi Toy (CC0) that Allen uploaded ("lets do the joint
     like this"): strips 1.5 mm apart, a 5.4 mm tab from the strip above in a 7.0 mm notch of the

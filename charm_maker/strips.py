@@ -258,14 +258,16 @@ def plan_strips(cfg: dict, design: Design) -> dict:
 
 
 def scale_up_small(cfg: dict, design: Design) -> None:
-    """A flexi needs room for its strips: a drawing shorter than size_min on its long side is
-    scaled up to it (like the clicker; Allen: kids don't think in sizes)."""
+    """A flexi is about default_size (80 mm) on its long side, like Allen's examples: a drawing
+    drawn smaller is scaled up to it (like the clicker; Allen: kids don't think in sizes), so the
+    strips and joints have room and the cuts can go around the face."""
     from .shape import scale_design
 
     prod = cfg["products"][design.product]
     minx, miny, maxx, maxy = design.outline.bounds
     long_ = max(maxx - minx, maxy - miny)
-    if long_ < prod["size_min"] - 0.05:
-        k = prod["size_min"] / long_
+    target = float(prod["default_size"])
+    if long_ < target - 2.0:
+        k = target / long_
         scale_design(design, k)
-        design.fixes.append(f"drawing scaled up {k:.2f}x to {prod['size_min']} mm, so the strips have room")
+        design.fixes.append(f"drawing scaled up {k:.2f}x to {target:g} mm, the flexi's size, so the strips have room")
