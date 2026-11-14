@@ -24,21 +24,26 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Fit test** (`output/fit-test`, printed 2026-11-10). Recorded on 2026-11-11: clip pocket
   piece 1 = 11.2 mm, keyring hole piece 4 = 4.5 mm, switch hole piece 10 = 13.9 mm, keycap
   socket piece 13 = 0.10 mm (all four the tightest candidate, so if any feels loose in real
-  pieces, add tighter candidates), necklace loop piece 17 = 3.5 mm. Still waiting on the earring
-  jump-ring hole only: Allen thought 1.5 mm looked small, so it is now 1.8 mm (piece 9's size),
-  same 1 mm of plastic to the edge; he tests it on real earrings. If the jump ring goes on and
-  closes, record 9. Until then earrings say so in a `check:` line.
+  pieces, add tighter candidates), necklace loop piece 17 = 3.5 mm. 2026-11-14: earring
+  jump-ring hole piece 9 = 1.8 mm (Allen printed the earring test plate). Every fit group is
+  now tested except the creatures' flexi joint gap (pieces 19-22).
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
-- **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
-  (separate glued post, new), the short sloped ring tab, and a duck head that should now stop
-  facing front (his first printed duck closed fine but the head ended up turned; the thread
-  clearance itself worked).
+  **2026-11-13:** the shark duck flexi (Bambu's joint, 3 strips): "it works well"; a fridge
+  magnet (glued magnet): works; filling a line drawing's areas with Bambu Studio's fill tool:
+  works as long as the areas are enclosed.
+- **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
+  poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
+  he found one on MakerWorld that can work and parked ours for the future. Don't work on them
+  unless he asks; the duck-head turn fix and the bigger windows are not printed.
+- **Prints to try (as of 2026-11-14):** a figurine clicker (separate glued post, new) and the short
+  sloped ring tab.
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
-  - **Flexi (built 2026-11-13, not printed):** a product of its own with its own card, like the
-    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy about 80 mm long (drawn
-    at the usual card scale, made 1.5 times bigger), 7 mm thick, cut into strips at least 9 mm
+  - **Flexi (built 2026-11-13; the shark duck printed and works well):** a product of its own with its own card, like the
+    keychain (Allen: not a tick box). The kid's drawing becomes a flat toy 80 mm long (drawn
+    at the usual card scale, made 1.5 times bigger; a smaller drawing is made bigger to 80 mm BEFORE the print fixes, so a tiny face keeps its shape; colors
+    are still read at the card's own scale), 7 mm thick, cut into strips at least 9 mm
     tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
     for size from Lawk3t's Pusheen Cat Flexi Toy (CC0) that Allen uploaded ("lets do the joint
     like this"): strips 1.5 mm apart, a 5.4 mm tab from the strip above in a 7.0 mm notch of the
@@ -46,7 +51,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
     around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test
     (Allen: don't test or reinvent joints). Cuts keep the face whole: never through a kept dot, a
     small round mark or a small closed mark (ring eyes, teeth); cut heights are chosen together,
-    with fewer strips if that is what it takes. Any card can be made a flexi with
+    with fewer strips if that is what it takes (only feature crossings count toward that, not plain ink, so
+    colored-in drawings keep their strips), and a cut that would leave a loose bit is refused. If a cut
+    still lands on a face, rerun that card with `--keep-whole flexi-01=0-40` (no cuts in the top 40%). Any card can be made a flexi with
     `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
     (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
     Pusheen's). The flexi card is in the normal card set (`cards`; alone: `cards --products
@@ -71,7 +78,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
-- **Party:** date and number of kids not set yet. AMS slots are left empty on purpose: Allen
+- **Party: 2026-11-14 or 15, 5:30-8 pm** (Allen, 2026-11-13: "get what we have ready"; creatures keep
+  developing after). Plan: printer tour, then cards (keychain for dad, necklace for mom, then 1-3 for
+  themselves), dinner while printing, done before they go home. Scan and upload the gift cards
+  first so printing starts early; reply fast with plates, maps and notes. Party cards: `cards --count 1 --products hair_clip keychain pendant magnet_figure clicker
+  flexi earrings --out output/party-cards`. Rehearsal on every real scan so far: 23 pieces, 4
+  plates, about a minute, no problems. Number of kids not set. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
   them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
@@ -138,7 +150,8 @@ When Allen says he swapped a spool ("pink is in slot 3 now"): run
 sessions start fresh and the slots only survive in git.
 
 Products that build today, for anyone: hair clip, keychain, necklace pendant, magnet
-figure (flat back, glued magnet), clicker keychain, flexi (the drawing in wiggly strips), and earrings for adults (one drawing makes a
+figure (a fridge magnet: flat back, glued magnet; Allen, 2026-11-13: no stand, so the card has no
+"stand here" line; only the stand was ever printed, in the fit test), clicker keychain, flexi (the drawing in wiggly strips), and earrings for adults (one drawing makes a
 mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm jump rings, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
@@ -166,6 +179,14 @@ balance point, or as near it as fits. Both use
 the fit-test values (`switch_cutout`, `stem_socket_clearance`, `keyring_hole_diameter`). The
 case preview shows the clicker assembled. `glue_on_fallback: true` under `products.clicker`
 makes a plain charm to glue onto a store-bought blank keycap instead.
+
+Coloring is optional (Allen, 2026-11-13): the cards say "Draw big and bold", "Close the lines",
+"Color it in, or we will" (`cards.kids_color: optional`; `yes` brings back "Use the colors in the
+printer ... Color it in", `no` says "Use a black marker"). A colored drawing works as always (every
+color its own part). A line drawing comes out as its lines plus white areas, and Allen fills the
+areas in Bambu Studio with the color-painting fill tool (no separate parts needed: the lines keep
+the fill in). Flat pieces print face-down, so he paints them from the bottom view. Tried
+2026-11-13: it works as long as the areas are enclosed (hence "Close the lines" on the cards).
 
 Card tick boxes: under the name line, every card (clicker too, since 2026-11-11) shows the five shapes, each
 with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
@@ -231,6 +252,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
 | Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
+| Keep a flexi's face whole | add `--keep-whole flexi-01=0-40` to `run`: no cuts in that band (percent from the top) |
 | A flexi creature from the parts | `python -m charm_maker creature --head cat --body regular --legs paws --tail cat --name mia` |
 | Picture of every creature part | `python -m charm_maker creature-library` (writes `output/creature-library/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |
@@ -259,8 +281,10 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `plates/plate-N-map.png`: who's who, each piece's name where it sits on the plate (send it
-  with the plate; it stops matching if Allen presses Arrange in Bambu Studio).
+- `plates/plate-N-<kind>.3mf` and `plates/plate-N-<kind>-map.png`: each plate, named by what is on it
+  (`plate-1-charms`, `plate-2-clicker-cases`, `figurines`, `everything` with `--one-plate`; Allen,
+  2026-11-14: two files both called "plate" hid the clicker case). The map is who's who, each piece's
+  name where it sits on the plate (send it with the plate; it stops matching if Allen presses Arrange).
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
@@ -275,8 +299,9 @@ plate, and the print notes say what goes in and out of which slot.
 
 ## Handing files over
 
-In a cloud session, send `output/.../plates/*.3mf`, the plate maps, the contact sheet and `PRINT_NOTES.md`
-with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
+In a cloud session, send every `output/.../plates/plate-*.3mf` (not the `-plain` copies), the plate maps,
+the contact sheet and `PRINT_NOTES.md` with the file tool, and name each plate in the reply (a clicker's
+case is always on its own `clicker-cases` plate). For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 
 ## Test drive
@@ -290,7 +315,7 @@ the parent page offers flat, puffy, raised outline and figurine), show the conta
 what his daughter liked and what looked wrong. Note which problems are real-world ones to
 fix (and add a regression test in `tests/test_real_world.py`).
 
-## Poop containers (party favors)
+## Poop containers (party favors, parked 2026-11-13)
 
 See-through containers kids fill with printer poop and twist shut. Everything prints with
 no supports and the lid closes in one turn (right-hand thread: clockwise to close). Head lids
@@ -302,6 +327,12 @@ the flat cut.
 ```bash
 python -m charm_maker poop-containers --kinds jar-round bear heart --sizes medium
 ```
+
+Windows (Allen, 2026-11-13, after filling his printed duck: the 4 mm diamond holes hid the
+poop): tall windows 8 mm wide with 1.8 mm bars and pointed 45-degree tops (no supports), a solid
+ring between rows on tall walls, and 10 mm diamond windows straight down through roofs. 40 to 75%
+more window than before; `poop_jar.windows: diamonds` brings the old mesh back. The duck's
+belly is taller for bigger windows; its sloped back stays mostly solid (little room there).
 
 Kinds: `jar-round`, `jar-hex`, `bear` (bear-head lid), `duck`, `heart`, `star`, `cloud`.
 Sizes: `small`, `medium`, `tall`. Each folder has the 3MF (body + lid parts), a preview

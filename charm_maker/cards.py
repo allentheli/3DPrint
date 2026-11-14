@@ -288,7 +288,9 @@ def _draw_card(pdf, cfg: dict, lay: CardLayout, dictionary, ImageReader):
         pdf.setLineWidth(c["guide_line_width"] * mm)
         pdf.setFont("Helvetica", 8)
         pdf.drawString((cx + d / 2 + 2) * mm, (cy - 1) * mm, "ring goes here")
-    if "ground_line" in lay.zones:
+    if "ground_line" in lay.zones and cfg["products"][lay.product].get("stand", True):
+        # Only drawn while figures go on the stand (Allen, 2026-11-13: fridge magnets only).
+        # The zone stays in the layout, so older cards with the line still read cleanly.
         x0, y0, x1, y1 = lay.zones["ground_line"]
         pdf.line(x0 * mm, y0 * mm, x1 * mm, y1 * mm)
         pdf.setFont("Helvetica", 8)
@@ -411,45 +413,85 @@ def _draw_options(pdf, cfg: dict, lay: CardLayout):
 
 def _draw_kid_rules(pdf, cfg: dict, lay: CardLayout):
     """Three small pictures with their words, in one line near the bottom, between the
-    check ruler and the shape boxes: use the colors in the printer, big and bold, color it
-    in. Clear of the corner markers (they need white around them)."""
+    check ruler and the shape boxes. `cards.kids_color` (Allen, 2026-11-13):
+    optional (default): draw big and bold, close the lines, color it in or we will (Allen fills
+    the colors of an uncolored drawing in Bambu Studio with the fill tool);
+    yes: use the colors in the printer, big and bold, color it in;
+    no: use a black marker, big and bold, close the lines.
+    Clear of the corner markers (they need white around them)."""
     from reportlab.lib.units import mm
 
     c = cfg["cards"]
+    mode = c.get("kids_color", "optional")
+    mode = {True: "yes", False: "no"}.get(mode, mode)
     y = c["margin"] + c["marker_size"] - 4.4               # above the check ruler's words
     x = c["margin"] + c["marker_size"] + 4.0
+    x2, x3 = x + 56, x + 92
     pdf.setStrokeColorRGB(0, 0, 0)
     pdf.setFillColorRGB(0, 0, 0)
     pdf.setFont("Helvetica", 7.5)
-
-    # 1. A small printer with four spools on top.
     pdf.setLineWidth(0.3 * mm)
-    pdf.roundRect(x * mm, y * mm, 11 * mm, 5 * mm, 0.8 * mm, stroke=1, fill=0)
-    pdf.line((x + 1.5) * mm, (y + 1.2) * mm, (x + 9.5) * mm, (y + 1.2) * mm)
-    pdf.rect((x + 4.3) * mm, (y + 2.6) * mm, 2.4 * mm, 1.4 * mm, stroke=1, fill=1)
-    for i, col in enumerate([(0.95, 0.95, 0.95), (0.1, 0.1, 0.1), (0.93, 0.3, 0.55), (0.2, 0.45, 0.9)]):
-        pdf.setFillColorRGB(*col)
-        pdf.circle((x + 1.8 + i * 2.5) * mm, (y + 6.4) * mm, 1.0 * mm, stroke=1, fill=1)
-    pdf.setFillColorRGB(0, 0, 0)
-    pdf.drawString((x + 13) * mm, (y + 2.2) * mm, "Use the colors in the printer")
 
-    # 2. Big and bold: one fat stroke.
-    x2 = x + 56
-    pdf.setLineCap(1)
-    pdf.setLineWidth(2.2 * mm)
-    pdf.line((x2 + 1.5) * mm, (y + 1.8) * mm, (x2 + 11) * mm, (y + 4.5) * mm)
-    pdf.setLineCap(0)
-    pdf.setLineWidth(0.3 * mm)
-    pdf.drawString((x2 + 14) * mm, (y + 2.2) * mm, "Big and bold")
+    def printer(px):            # a small printer with four spools on top
+        pdf.setLineWidth(0.3 * mm)
+        pdf.roundRect(px * mm, y * mm, 11 * mm, 5 * mm, 0.8 * mm, stroke=1, fill=0)
+        pdf.line((px + 1.5) * mm, (y + 1.2) * mm, (px + 9.5) * mm, (y + 1.2) * mm)
+        pdf.rect((px + 4.3) * mm, (y + 2.6) * mm, 2.4 * mm, 1.4 * mm, stroke=1, fill=1)
+        for i, col in enumerate([(0.95, 0.95, 0.95), (0.1, 0.1, 0.1), (0.93, 0.3, 0.55), (0.2, 0.45, 0.9)]):
+            pdf.setFillColorRGB(*col)
+            pdf.circle((px + 1.8 + i * 2.5) * mm, (y + 6.4) * mm, 1.0 * mm, stroke=1, fill=1)
+        pdf.setFillColorRGB(0, 0, 0)
 
-    # 3. Color it in: an outline with its inside filled.
-    x3 = x2 + 36
-    pdf.setFillColorRGB(0.93, 0.3, 0.55)
-    pdf.setLineWidth(0.8 * mm)
-    pdf.circle((x3 + 3.2) * mm, (y + 3.2) * mm, 3.0 * mm, stroke=1, fill=1)
-    pdf.setFillColorRGB(0, 0, 0)
-    pdf.setLineWidth(0.3 * mm)
-    pdf.drawString((x3 + 8) * mm, (y + 2.2) * mm, "Color it in")
+    def bold(px):               # one fat stroke
+        pdf.setLineCap(1)
+        pdf.setLineWidth(2.2 * mm)
+        pdf.line((px + 1.5) * mm, (y + 1.8) * mm, (px + 11) * mm, (y + 4.5) * mm)
+        pdf.setLineCap(0)
+        pdf.setLineWidth(0.3 * mm)
+
+    def marker(px):             # a black marker, lying on its side
+        pdf.roundRect(px * mm, (y + 1.6) * mm, 8.5 * mm, 3.0 * mm, 0.8 * mm, stroke=1, fill=1)
+        pdf.roundRect((px + 8.5) * mm, (y + 2.1) * mm, 2.0 * mm, 2.0 * mm, 0.4 * mm, stroke=1, fill=1)
+
+    def ring(px, fill=None, half=False):   # an outline that goes all the way round
+        pdf.setLineWidth(0.8 * mm)
+        if fill and half:
+            pdf.setFillColorRGB(*fill)
+            p = pdf.beginPath()
+            p.moveTo((px + 3.2) * mm, (y + 0.2) * mm)
+            p.arcTo((px + 0.2) * mm, (y + 0.2) * mm, (px + 6.2) * mm, (y + 6.2) * mm, -90, 180)
+            p.close()
+            pdf.drawPath(p, stroke=0, fill=1)
+            pdf.setFillColorRGB(0, 0, 0)
+        pdf.circle((px + 3.2) * mm, (y + 3.2) * mm, 3.0 * mm, stroke=1, fill=0)
+        if fill and not half:
+            pdf.setFillColorRGB(*fill)
+            pdf.circle((px + 3.2) * mm, (y + 3.2) * mm, 3.0 * mm, stroke=1, fill=1)
+            pdf.setFillColorRGB(0, 0, 0)
+        pdf.setLineWidth(0.3 * mm)
+
+    pink = (0.93, 0.3, 0.55)
+    if mode == "yes":
+        printer(x)
+        pdf.drawString((x + 13) * mm, (y + 2.2) * mm, "Use the colors in the printer")
+        bold(x2)
+        pdf.drawString((x2 + 14) * mm, (y + 2.2) * mm, "Big and bold")
+        ring(x3, pink)
+        pdf.drawString((x3 + 8) * mm, (y + 2.2) * mm, "Color it in")
+    elif mode == "no":
+        marker(x)
+        pdf.drawString((x + 13) * mm, (y + 2.2) * mm, "Use a black marker")
+        bold(x2)
+        pdf.drawString((x2 + 14) * mm, (y + 2.2) * mm, "Big and bold")
+        ring(x3)
+        pdf.drawString((x3 + 8) * mm, (y + 2.2) * mm, "Close the lines (we add colors)")
+    else:
+        bold(x)
+        pdf.drawString((x + 13) * mm, (y + 2.2) * mm, "Draw big and bold")
+        ring(x2)
+        pdf.drawString((x2 + 8) * mm, (y + 2.2) * mm, "Close the lines")
+        ring(x3, pink, half=True)
+        pdf.drawString((x3 + 8) * mm, (y + 2.2) * mm, "Color it in, or we will")
 
 
 def write_calibration_pdf(cfg: dict, palette, out_path: Path, number: int = 1) -> Path:

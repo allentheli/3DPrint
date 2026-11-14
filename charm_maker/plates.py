@@ -50,6 +50,21 @@ class Plate:
     shelf_y: float = 0.0
     shelf_h: float = 0.0
 
+    @property
+    def stem(self) -> str:
+        """The plate's file name says what is on it (Allen, 2026-11-14: two files both called
+        "plate" hid the clicker case): plate-2-clicker-cases, plate-1-charms."""
+        groups = {pp.piece.group for pp in self.pieces}
+        if groups == {"cases"}:
+            kind = "clicker-cases"
+        elif self.pieces and all(pp.piece.supports for pp in self.pieces):
+            kind = "figurines"
+        elif len(groups) > 1:
+            kind = "everything"
+        else:
+            kind = "charms"
+        return f"plate-{self.number}-{kind}"
+
     def slots(self) -> dict[Filament, int]:
         """Filament -> AMS slot. Loaded slots when known, else 1..N in order."""
         if self.slot_map:
@@ -278,7 +293,7 @@ def write_plates(cfg: dict, plates: list[Plate], out_dir: Path) -> dict[int, dic
     out_dir.mkdir(parents=True, exist_ok=True)
     result: dict[int, dict[str, Path]] = {}
     for plate in plates:
-        stem = f"plate-{plate.number}"
+        stem = plate.stem
         slots = plate.slots()
         objects = []
         plain: dict[str, m3d.Manifold] = {}

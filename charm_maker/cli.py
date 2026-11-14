@@ -172,7 +172,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
                        no_dots=set(args.no_dots or ()), sizes=per_card(args.scale),
-                       products=per_card(args.as_product))
+                       products=per_card(args.as_product), keep_whole=per_card(args.keep_whole))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -211,7 +211,7 @@ def cmd_poop_containers(args: argparse.Namespace) -> int:
     kinds = args.kinds or list(KINDS)
     for r in write_containers(cfg, Path(args.out), kinds=kinds, sizes=args.sizes or ["medium"]):
         con = r["container"]
-        print(f"{con.name}: {r['dir']}  (holes {con.info['holes']}, opening {con.info['opening_mm']:.0f} mm, "
+        print(f"{con.name}: {r['dir']}  (windows {con.info['holes']}, {con.info['open_cm2']:.0f} cm² open, opening {con.info['opening_mm']:.0f} mm, "
               f"about {con.info['volume_ml']:.0f} ml, rough {r['minutes']:.0f} min)")
     return 0
 
@@ -347,6 +347,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--scale", action="append", metavar="[CARD=]FACTOR",
                    help="make a piece bigger or smaller than drawn, before the print fixes: "
                         "'--scale fig-01=1.5' for one card (repeat for more), '--scale 1.5' for every card")
+    p.add_argument("--keep-whole", action="append", metavar="CARD=FROM-TO",
+                   help="flexis: no cuts in this band, in percent from the top, e.g. '--keep-whole flexi-01=0-40' keeps "
+                        "a face in the top 40%% whole (repeat for more cards)")
     p.add_argument("--as", dest="as_product", action="append", metavar="[CARD=]PRODUCT",
                    help="make a card's drawing into another product, e.g. '--as key-02=flexi' (repeat for more)")
     p.add_argument("--ask-colors", action="store_true",

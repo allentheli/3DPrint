@@ -104,7 +104,7 @@ fit:
     note: hole in a keychain's ring tab for a 25 mm split ring
   earring_hole_diameter:
     value: 1.8
-    tested: false
+    tested: true   # 2026-11-14
     candidates: [1.3, 1.5, 1.8]
     note: front-to-back hole in the earring's small top tab; a 4 mm jump ring goes through it (Allen, 2026-11-11; 1.5 looked small, so 1.8 with the same 1 mm to the edge)
   switch_cutout:
@@ -200,7 +200,10 @@ products:
       wall: 1.6                   # plastic between a notch and the piece's edge
       two_joints_from: 34         # a cut at least this wide gets two joints
       small_mark_area: 8.0        # separate ink marks smaller than this (mm²) are never cut (eyes, a nose)
-      closed_mark_area: 60.0      # nor closed marks around paper smaller than this (mm²): ring eyes, teeth
+      closed_mark_area: 60.0      # closed marks around paper smaller than this (mm²) are avoided (a foot, a pocket)...
+      closed_hard_area: 15.0      # ...and below this never cut (ring eyes, teeth)
+      soft_cost: 80               # how hard a cut avoids a bigger closed shape (a cut across 1 mm of ink costs 1)
+      strip_cost: 60              # one strip fewer is worth this much: fewer strips win over cuts across several small shapes
   keychain:
     label: Keychain
     file_word: keychain              # files are named keychain-jack after the kid
@@ -247,6 +250,7 @@ products:
     default_size: 45
     thickness: 3.2
     attachment: flat_back         # the magnet is glued onto the flat back
+    stand: false                  # Allen, 2026-11-13: fridge magnets only; no "stand here" line on new cards
     copies: 1
     card: magnet_figure
   earrings:
@@ -302,8 +306,15 @@ relief:
 poop_jar:
   wall: 1.8
   floor: 1.6
-  hole: 4.0                       # diamond hole, corner to corner (width and height)
-  strut: 1.4                      # plastic between holes
+  windows: slots                  # Allen, 2026-11-13: the 4 mm diamonds hid the poop. slots: tall windows with thin bars; diamonds: the old mesh
+  slot_width: 8.0                 # narrow enough that the poop stays in
+  slot_bar: 1.8                   # plastic between windows
+  slot_max_height: 30.0           # a taller wall gets a solid ring between rows of windows
+  slot_ring: 3.0
+  roof_hole: 10.0                 # diamond windows straight down through a roof or shoulder
+  roof_strut: 1.8
+  hole: 4.0                       # windows: diamonds only: diamond hole, corner to corner
+  strut: 1.4                      # windows: diamonds only: plastic between holes
   bottom_band: 6.0                # solid band above the floor
   top_band: 3.0                   # solid band between the mesh and the thread
   thread_height: 10.0
@@ -422,6 +433,7 @@ creature:
 
 # Design cards (the printable PDF). Lengths in mm on the card.
 cards:
+  kids_color: optional            # Allen, 2026-11-13: kids may color or just draw the lines (he fills colors in Bambu Studio); yes: "Color it in"; no: "Use a black marker"
   page_size: [215.9, 279.4]       # US Letter
   margin: 10
   marker_size: 20

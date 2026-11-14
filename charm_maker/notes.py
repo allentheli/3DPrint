@@ -12,7 +12,7 @@ FINISHING = {
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
     "clicker": "Clickers: push the switch down into the cup until it clicks into the square hole at the bottom (it only fits one way up, any of four turns), then push the keycap's post onto the switch's cross stem: the keycap sits in the cup's opening, a little above the rim. Thread a 25 mm split ring through the hole in the tab halfway up the side of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
     "clicker_post": "Puffy and figurine clicker keycaps come with their post as a separate small piece: glue its flat end into the round dent in the middle of the keycap's back with gel super glue (socket end out), and let it cure before pushing it onto the switch.",
-    "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
+    "magnet_figure": "Fridge magnets: glue a 10 x 2 mm magnet flat on the middle of the back with gel super glue (two-part epoxy if it pops off). Let it cure fully before it goes on the fridge.",
     "earrings": "Earrings: twist a 4 mm jump ring open sideways (don't pull it apart), slip it through the small hole at the top, hang the hook on it and twist it shut. If an earring faces sideways, turn the jump ring a quarter turn. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
     "flexi": "Flexis: they print as one piece of linked strips. Once the plate is cool, peel it off in one go, then gently bend and slide each strip side to side until it moves freely. If a strip is stuck, a firm twist frees it.",
@@ -34,9 +34,9 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
                       "matched to the spool colors. Scan it before the party for the best matching.", ""]
     products = set()
     for plate in plates:
-        lines.append(f"## Plate {plate.number}: `plates/plate-{plate.number}.3mf`")
+        lines.append(f"## Plate {plate.number}: `plates/{plate.stem}.3mf`")
         lines.append("")
-        lines.append(f"Who's who: `plates/plate-{plate.number}-map.png` shows each piece's name where it sits on the plate.")
+        lines.append(f"Who's who: `plates/{plate.stem}-map.png` shows each piece's name where it sits on the plate.")
         lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")
