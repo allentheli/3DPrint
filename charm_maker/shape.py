@@ -834,6 +834,75 @@ def _largest(geom) -> Polygon:
     return max(multi.geoms, key=lambda g: g.area)
 
 
+def _pieces(geom, min_area: float = 0.002) -> list[Polygon]:
+    return [g for g in _as_multi(geom).geoms if g.area > min_area]
+
+
+def round_sharp_tips(outline: Polygon, inks: list[InkRegion], radius: float,
+                     max_area: float = 0.12) -> tuple[list[InkRegion], int, float]:
+    """Where two lines meet, the paper between them narrows to a sharp point. A printed line
+    has a round end, so the nozzle can't reach into that point and the face is left with a pit
+    (the bee, 2026-11-14). Fill the last bit of each sharp tip of a color area, narrower than
+    2 x radius, with the one mark around it, and give a sharp ink tip to the area it pokes into.
+    A whole small area (a ring eye's white) and a narrow gap between two marks are never
+    touched, so separate marks stay separate, and a tip bigger than max_area (mm²) is a long
+    narrow gap she drew (a thumbnail's slit), not a corner, so it stays too (the slicer prints a
+    narrow gap as one thin line). Returns (inks, tips filled, mm² changed)."""
+    if radius <= 0 or not inks:
+        return inks, 0, 0.0
+    eps = 0.02
+    geoms = [unary_union(ink.geometry) for ink in inks]
+    edge = outline.exterior.buffer(eps)
+    count, area = 0, 0.0
+
+    def tips(region, rad, cap):
+        opened = region.buffer(-rad, join_style="round").buffer(rad, join_style="round")
+        for p in _pieces(region.difference(opened), 0.005):
+            if p.area > cap:
+                continue                 # a long narrow gap, not a sharp corner
+            grown = p.buffer(eps)
+            if grown.intersects(edge):
+                continue                 # the piece's own outer edge: already rounded
+            if len(_pieces(grown.intersection(opened), 1e-5)) != 1:
+                continue                 # a whole small area, or a gap between two marks
+            yield p, grown
+
+    def owner(grown, skip: int | None):
+        """The single mark (one connected piece of one color) a tip touches, if exactly one."""
+        hits = [(i, comp) for i, g in enumerate(geoms) if i != skip
+                for comp in _pieces(g, 0.0) if comp.intersects(grown)]
+        return hits[0][0] if len(hits) == 1 else None
+
+    # Corners first; then, in a long narrow gap she drew, only its needle-sharp end.
+    for rad, cap in ((radius, max_area), (radius / 2, max_area / 4)):
+        # Paper tips go to the mark around them.
+        paper = outline.difference(unary_union(geoms))
+        for p, grown in list(tips(paper, rad, cap)):
+            i = owner(grown, None)
+            if i is not None:
+                geoms[i] = geoms[i].union(p)
+                count, area = count + 1, area + p.area
+        # Ink tips go to the paper they poke into, or to the one mark they poke into.
+        for i in range(len(geoms)):
+            for p, grown in list(tips(geoms[i], rad, cap)):
+                others = unary_union([g for j, g in enumerate(geoms) if j != i])
+                if grown.intersection(others).area < 0.5 * grown.difference(geoms[i]).area:
+                    geoms[i] = geoms[i].difference(p)          # mostly paper around it
+                else:
+                    j = owner(grown, i)
+                    if j is None:
+                        continue
+                    geoms[j] = geoms[j].union(p)
+                    geoms[i] = geoms[i].difference(p)
+                count, area = count + 1, area + p.area
+    out = []
+    for ink, g in zip(inks, geoms):
+        g = _as_multi(MultiPolygon(_pieces(g.intersection(outline), 0.005)))
+        if not g.is_empty:
+            out.append(InkRegion(ink.name, ink.rgb, g, ink.slot, ink.off_palette))
+    return out, count, area
+
+
 def scale_design(design: Design, factor: float) -> Design:
     design.outline = affinity.scale(design.outline, factor, factor, origin=(0, 0))
     for ink in design.inks:
