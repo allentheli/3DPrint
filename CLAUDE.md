@@ -43,7 +43,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
   - **Flexi (built 2026-11-13; the shark duck printed and works well):** a product of its own with its own card, like the
     keychain (Allen: not a tick box). The kid's drawing becomes a flat toy 80 mm long (drawn
-    at the usual card scale, made 1.5 times bigger; a smaller drawing is scaled up to 80 mm), 7 mm thick, cut into strips at least 9 mm
+    at the usual card scale, made 1.5 times bigger; a smaller drawing is made bigger to 80 mm BEFORE the print fixes, so a tiny face keeps its shape; colors
+    are still read at the card's own scale), 7 mm thick, cut into strips at least 9 mm
     tall, printed flat and already linked. The joint is Bambu MakerLab's Flexi joint, copied size
     for size from Lawk3t's Pusheen Cat Flexi Toy (CC0) that Allen uploaded ("lets do the joint
     like this"): strips 1.5 mm apart, a 5.4 mm tab from the strip above in a 7.0 mm notch of the
@@ -51,7 +52,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
     around. It holds in every direction and slides 0.8 mm along the pin. Proven, so no fit test
     (Allen: don't test or reinvent joints). Cuts keep the face whole: never through a kept dot, a
     small round mark or a small closed mark (ring eyes, teeth); cut heights are chosen together,
-    with fewer strips if that is what it takes. Any card can be made a flexi with
+    with fewer strips if that is what it takes (only feature crossings count toward that, not plain ink, so
+    colored-in drawings keep their strips), and a cut that would leave a loose bit is refused. If a cut
+    still lands on a face, rerun that card with `--keep-whole flexi-01=0-40` (no cuts in the top 40%). Any card can be made a flexi with
     `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
     (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
     Pusheen's). The flexi card is in the normal card set (`cards`; alone: `cards --products
@@ -250,6 +253,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
 | Make a card into another product | add `--as key-02=flexi` to `run` (repeat for more cards) |
+| Keep a flexi's face whole | add `--keep-whole flexi-01=0-40` to `run`: no cuts in that band (percent from the top) |
 | A flexi creature from the parts | `python -m charm_maker creature --head cat --body regular --legs paws --tail cat --name mia` |
 | Picture of every creature part | `python -m charm_maker creature-library` (writes `output/creature-library/`) |
 | Reprint one fit-test group | `python -m charm_maker fit-test --only earring_hole_diameter --out output/fit-test-earrings` |

@@ -200,7 +200,10 @@ products:
       wall: 1.6                   # plastic between a notch and the piece's edge
       two_joints_from: 34         # a cut at least this wide gets two joints
       small_mark_area: 8.0        # separate ink marks smaller than this (mm²) are never cut (eyes, a nose)
-      closed_mark_area: 60.0      # nor closed marks around paper smaller than this (mm²): ring eyes, teeth
+      closed_mark_area: 60.0      # closed marks around paper smaller than this (mm²) are avoided (a foot, a pocket)...
+      closed_hard_area: 15.0      # ...and below this never cut (ring eyes, teeth)
+      soft_cost: 80               # how hard a cut avoids a bigger closed shape (a cut across 1 mm of ink costs 1)
+      strip_cost: 60              # one strip fewer is worth this much: fewer strips win over cuts across several small shapes
   keychain:
     label: Keychain
     file_word: keychain              # files are named keychain-jack after the kid

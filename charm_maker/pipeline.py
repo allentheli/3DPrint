@@ -65,10 +65,33 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
-        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
-                               guide_zone=_guide_zone(cfg, read))
+        zone = _guide_zone(cfg, read)
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore, guide_zone=zone)
+        grown = 1.0
+        prod = cfg["products"][product]
+        if prod.get("attachment") == "strips" and inks.layers:
+            # A flexi drawn small grows to the flexi's size BEFORE the print fixes, like --scale, so
+            # its lines, eyes and the paper between them grow too (2026-11-14: a small unicorn's face
+            # melted into a black blob when it was fixed at its drawn size and enlarged after).
+            union = np.zeros(inks.layers[0].mask.shape, bool)
+            for layer in inks.layers:
+                union |= layer.mask
+            ys, xs = np.nonzero(union)
+            if len(xs):
+                long_mm = (max(xs.max() - xs.min(), ys.max() - ys.min()) + 1) / px_per_mm
+                b = 2 * pr["border"] if border else 0.0
+                target = float(prod["default_size"])
+                if long_mm + b < target - 2.0:
+                    # The colors stay as read at the card's own scale (read at the bigger size, a thin
+                    # pen line splits into a dark middle and a gray edge); only the fixes see it bigger.
+                    grown = (target - b) / long_mm
+                    size *= grown
+                    px_per_mm = read.px_per_card_mm * pr["card_scale"] / size
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy,
                             keep_dots=keep_dots)
+        if grown != 1.0:
+            design.fixes.append(f"drawn small: made {grown:.2f} times bigger, to the flexi's {prod['default_size']:g} mm, "
+                                "before the print fixes, so the face keeps its shape")
         design.fixes[:0] = inks.fixes
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
@@ -76,8 +99,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         if product != read.layout.product:
             design.fixes.append(f"made into a {cfg['products'][product]['label'].lower()} (asked for; drawn on a "
                                 f"{cfg['products'][read.layout.product]['label'].lower()} card)")
-        if size != asked:
-            design.fixes.append(f"made {size / asked:g} times the drawn size (a {cfg['products'][product]['label'].lower()} "
+        if size / grown != asked:
+            design.fixes.append(f"made {size / grown / asked:g} times the drawn size (a {cfg['products'][product]['label'].lower()} "
                                 "is bigger than its card box)")
         if asked != 1.0:
             design.fixes.append(f"made {asked:g} times the drawn size (asked for)")
@@ -192,7 +215,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
               names: dict[str, str] | None = None, one_plate: bool = False,
               no_dots: set[str] | None = None, sizes: dict[str, float] | None = None,
-              products: dict[str, str] | None = None) -> BatchResult:
+              products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -227,6 +250,15 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     tidy = set(tidy or ())
     no_dots = set(no_dots or ())
     products = dict(products or {})
+    keep = {}
+    for key, span in (keep_whole or {}).items():
+        try:
+            a, b = (float(v) for v in str(span).split("-"))
+        except ValueError:
+            raise ValueError(f"--keep-whole {key}={span}: use FROM-TO in percent from the top, e.g. 0-40") from None
+        if not 0 <= a < b <= 100:
+            raise ValueError(f"--keep-whole {key}={span}: use FROM-TO in percent from the top, e.g. 0-40")
+        keep[key] = (a, b)
     for key, prod in products.items():
         if prod not in cfg["products"]:
             raise ValueError(f"--as {key}={prod}: no such product; use one of {', '.join(cfg['products'])}")
@@ -280,6 +312,10 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                                       product_override=next((products[c] for c in (name, base_name, "*")
                                                              if c in products), None))
             design.source = label
+            span = next((keep[c] for c in (name, base_name, "*") if c in keep), None)
+            if span:
+                design.extras["keep_whole"] = span
+                design.fixes.append(f"no cuts from {span[0]:g}% to {span[1]:g}% down the flexi (asked for, to keep the face whole)")
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
             slots = cfg["printer"]["ams_slots"]
