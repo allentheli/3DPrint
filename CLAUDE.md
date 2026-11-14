@@ -76,8 +76,10 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   wording, a glare check, a setting that turns off pencil detection, and duplicate names past `-z`.
 - **Open question for Allen:** his switch's length from the plate ledge to the pin tips (to
   trim the clicker by about 1.5 mm).
-- **Party: 2026-11-14 or 15** (Allen, 2026-11-13: "get what we have ready"; creatures keep developing
-  after). Party cards: `cards --count 1 --products hair_clip keychain pendant magnet_figure clicker
+- **Party: 2026-11-14 or 15, 5:30-8 pm** (Allen, 2026-11-13: "get what we have ready"; creatures keep
+  developing after). Plan: printer tour, then cards (keychain for dad, necklace for mom, then 1-3 for
+  themselves), dinner while printing, done before they go home. Scan and upload the gift cards
+  first so printing starts early; reply fast with plates, maps and notes. Party cards: `cards --count 1 --products hair_clip keychain pendant magnet_figure clicker
   flexi earrings --out output/party-cards`. Rehearsal on every real scan so far: 23 pieces, 4
   plates, about a minute, no problems. Number of kids not set. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
