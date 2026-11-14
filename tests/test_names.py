@@ -46,7 +46,7 @@ def test_named_run(cfg, tmp_path):
     names_in_3mf = "".join(zipfile.ZipFile(v["3mf"]).read(n).decode(errors="ignore")
                            for v in plate_files for n in zipfile.ZipFile(v["3mf"]).namelist() if n.endswith(".config"))
     assert "keychain-jack" in names_in_3mf and "clicker-jack-case" in names_in_3mf
-    assert "plate-1-map.png" in (out / "PRINT_NOTES.md").read_text()
+    assert "plate-1-charms-map.png" in (out / "PRINT_NOTES.md").read_text()
 
 
 def _assignments(res, name):

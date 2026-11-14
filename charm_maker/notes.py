@@ -34,9 +34,9 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
                       "matched to the spool colors. Scan it before the party for the best matching.", ""]
     products = set()
     for plate in plates:
-        lines.append(f"## Plate {plate.number}: `plates/plate-{plate.number}.3mf`")
+        lines.append(f"## Plate {plate.number}: `plates/{plate.stem}.3mf`")
         lines.append("")
-        lines.append(f"Who's who: `plates/plate-{plate.number}-map.png` shows each piece's name where it sits on the plate.")
+        lines.append(f"Who's who: `plates/{plate.stem}-map.png` shows each piece's name where it sits on the plate.")
         lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")

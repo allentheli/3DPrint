@@ -278,8 +278,10 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `plates/plate-N-map.png`: who's who, each piece's name where it sits on the plate (send it
-  with the plate; it stops matching if Allen presses Arrange in Bambu Studio).
+- `plates/plate-N-<kind>.3mf` and `plates/plate-N-<kind>-map.png`: each plate, named by what is on it
+  (`plate-1-charms`, `plate-2-clicker-cases`, `figurines`, `everything` with `--one-plate`; Allen,
+  2026-11-14: two files both called "plate" hid the clicker case). The map is who's who, each piece's
+  name where it sits on the plate (send it with the plate; it stops matching if Allen presses Arrange).
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit
@@ -294,8 +296,9 @@ plate, and the print notes say what goes in and out of which slot.
 
 ## Handing files over
 
-In a cloud session, send `output/.../plates/*.3mf`, the plate maps, the contact sheet and `PRINT_NOTES.md`
-with the file tool. For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
+In a cloud session, send every `output/.../plates/plate-*.3mf` (not the `-plain` copies), the plate maps,
+the contact sheet and `PRINT_NOTES.md` with the file tool, and name each plate in the reply (a clicker's
+case is always on its own `clicker-cases` plate). For the printer tour, send `output/chips/filament-chips.3mf` and `CHIPS.md`. Tell Allen: Bambu Studio, **File > Import > Import 3MF/STL/STEP/SVG/OBJ/AMF...**,
 pick the file, choose **Load geometry only** if asked.
 
 ## Test drive

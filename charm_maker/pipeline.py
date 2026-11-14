@@ -356,7 +356,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
             for plate in plates:
                 files["plates"][plate.number]["map"] = render_plate_map(
-                    cfg, plate, out_dir / "plates" / f"plate-{plate.number}-map.png")
+                    cfg, plate, out_dir / "plates" / f"{plate.stem}-map.png")
             for plate in plates:
                 slots = plate.slots()
                 for pp in plate.pieces:
