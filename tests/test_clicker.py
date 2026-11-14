@@ -173,7 +173,7 @@ def test_a_clicker_card_gives_a_keycap_plate_and_a_case_plate(cfg, tmp_path):
     cfg["fit"]["switch_cutout"]["tested"] = False          # the warning path, whatever the real results
     a = draw_blob_card(cfg, tmp_path, "clicker", 3, BLACK, PINK)
     b = draw_blob_card(cfg, tmp_path, "hair_clip", 4, BLACK, YELLOW)
-    r = run_batch(cfg, [a, b], tmp_path / "out")
+    r = run_batch(cfg, [a, b], tmp_path / "out", one_plate=False)      # --separate-plates
     assert r.problems == []
     names = {p.name: p for p in r.pieces}
     assert set(names) == {"click-03", "click-03-case", "clip-04"}

@@ -407,7 +407,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     else:
         try:
             if one_plate is None:                # Allen, 2026-11-14: the case on the same plate too
-                one_plate = cfg["printer"].get("one_plate", False)
+                # Swap plates (an optional extra) exist to keep a spool swap off the other plates.
+                one_plate = cfg["printer"].get("one_plate", False) and off_palette != "swap"
             if together is None:                 # Allen, 2026-11-14: each kid's things on a plate
                 together = not cfg["printer"].get("plate_per_kid", False)
             plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate, by_kid=not together)
