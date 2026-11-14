@@ -24,10 +24,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
 - **Fit test** (`output/fit-test`, printed 2026-11-10). Recorded on 2026-11-11: clip pocket
   piece 1 = 11.2 mm, keyring hole piece 4 = 4.5 mm, switch hole piece 10 = 13.9 mm, keycap
   socket piece 13 = 0.10 mm (all four the tightest candidate, so if any feels loose in real
-  pieces, add tighter candidates), necklace loop piece 17 = 3.5 mm. Still waiting on the earring
-  jump-ring hole only: Allen thought 1.5 mm looked small, so it is now 1.8 mm (piece 9's size),
-  same 1 mm of plastic to the edge; he tests it on real earrings. If the jump ring goes on and
-  closes, record 9. Until then earrings say so in a `check:` line.
+  pieces, add tighter candidates), necklace loop piece 17 = 3.5 mm. 2026-11-14: earring
+  jump-ring hole piece 9 = 1.8 mm (Allen printed the earring test plate). Every fit group is
+  now tested except the creatures' flexi joint gap (pieces 19-22).
 - **Printed and good (2026-11-11):** the cup-style clicker (printed with the full-height ring
   post; the short 45-degree tab is newer and not printed yet) and Alison's pendant with the
   rejoined yellow straw. The kids love the figurine shape ("super puffy"); keep all shapes.
@@ -38,8 +37,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
   he found one on MakerWorld that can work and parked ours for the future. Don't work on them
   unless he asks; the duck-head turn fix and the bigger windows are not printed.
-- **Prints to try (as of 2026-11-12):** the earrings with the 1.8 mm hole, a figurine clicker
-  (separate glued post, new) and the short sloped ring tab.
+- **Prints to try (as of 2026-11-14):** a figurine clicker (separate glued post, new) and the short
+  sloped ring tab.
 - **Flexi, two separate things (Allen, 2026-11-13; spec section 5):**
   - **Flexi (built 2026-11-13; the shark duck printed and works well):** a product of its own with its own card, like the
     keychain (Allen: not a tick box). The kid's drawing becomes a flat toy 80 mm long (drawn
