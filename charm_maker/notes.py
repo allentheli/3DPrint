@@ -56,7 +56,9 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         lines.append("")
         if estimates and plate.number in estimates:
             e = estimates[plate.number]
-            lines.append(f"Rough time: about {round(e['minutes'])} minutes, with {e['changes']} color changes "
+            from .printtime import duration
+
+            lines.append(f"Rough time: about {duration(e['minutes'])}, with {e['changes']} color changes "
                          "(my guess; Bambu Studio shows the real number after **Slice plate**).")
             lines.append("")
         if plate.swaps:

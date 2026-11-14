@@ -84,6 +84,15 @@ def quickest(cfg: dict, pieces: list, assignments: dict) -> dict[str, list[dict]
     return dict(sorted(out.items(), key=lambda kv: (kv[0] not in named, kv[0])))
 
 
+def duration(minutes: float) -> str:
+    """12 min, 1 h 10 min: easy to plan a party evening by."""
+    m = max(1, round(minutes))
+    if m < 60:
+        return f"{m} min"
+    h, m = divmod(5 * round(m / 5), 60)     # long prints to the nearest 5 minutes
+    return f"{h} h" + (f" {m} min" if m else "")
+
+
 def close_to_quickest(items: list[dict]) -> list[dict]:
     """The pieces about as quick as a kid's quickest (within 5 minutes or a quarter): Allen,
     2026-11-14: "if they r close, I will give kids the choice", so no piece is picked for them."""
@@ -95,7 +104,7 @@ def close_to_quickest(items: list[dict]) -> list[dict]:
 
 def quickest_lines(cfg: dict, table: dict[str, list[dict]]) -> list[str]:
     def m(it):
-        return f"{it['what']} {max(1, round(it['minutes']))} min"
+        return f"{it['what']} {duration(it['minutes'])}"
 
     lines = []
     for kid, items in table.items():

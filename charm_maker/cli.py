@@ -186,7 +186,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             print(f"    check: {w}")
     for n, paths in result.files.get("plates", {}).items():
         e = paths.get("estimate")
-        print(f"plate {n}: {paths['3mf']}" + (f" (rough {round(e['minutes'])} min, {e['changes']} color changes)" if e else ""))
+        from .printtime import duration
+
+        print(f"plate {n}: {paths['3mf']}" + (f" (rough {duration(e['minutes'])}, {e['changes']} color changes)" if e else ""))
     if result.files.get("take_out"):
         print("take these out of the kids' plates (they print on the quick plate):")
         for name, stem in result.files["take_out"]:

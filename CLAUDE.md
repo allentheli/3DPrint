@@ -321,8 +321,9 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
   clicker counts with its case, earrings as a pair), and each plate's rough total and color changes;
   `PRINT_NOTES.md` has both. The model (`printtime.py`, `print_time:` in config) counts plastic, a
   floor per layer and AMS color changes (1.5 min each), so flat one-color pieces are quickest and
-  multicolor figurines and puffy pieces slowest. It ranks well; the minutes are a guess until Allen
-  gives Bambu Studio's time for one plate, then tune `print_time`. Pieces within 5 minutes (or a quarter)
+  multicolor figurines and puffy pieces slowest. It ranks well; the minutes are a guess (Allen,
+  2026-11-14: "an estimate in terms of time will be fine", so no calibration needed; tune `print_time`
+  only if he gives Bambu Studio's time for a plate). Long ones read "1 h 10 min". Pieces within 5 minutes (or a quarter)
   of a kid's quickest are marked "close: let Jack pick".
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
