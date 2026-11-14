@@ -308,6 +308,14 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
   Allen prints a few before they go home: when he names them, run again with `--only` (kids or
   cards) to a new folder, for a plate of just those. The map is who's who, each piece's name where it
   sits on the plate (send it with the plate; it stops matching if Allen presses Arrange).
+- Rough print times (Allen, 2026-11-14: "estimate the time ... which each kid's print would be the
+  fastest"): the run prints "quickest first", each kid's pieces with rough minutes of printing (a
+  clicker counts with its case, earrings as a pair), and each plate's rough total and color changes;
+  `PRINT_NOTES.md` has both. The model (`printtime.py`, `print_time:` in config) counts plastic, a
+  floor per layer and AMS color changes (1.5 min each), so flat one-color pieces are quickest and
+  multicolor figurines and puffy pieces slowest. It ranks well; the minutes are a guess until Allen
+  gives Bambu Studio's time for one plate, then tune `print_time`. Before the kids go home: pick each
+  kid's quickest piece(s), run again with `--only` to a new folder, and give the plate's rough total.
 - `names.png`: from the `names` step, each card's name line.
 - `QUESTION.md`: only in strict mode (`--ask-colors`), written instead of plates.
 - Any `check:` line in the run output means something Allen should look at: an untested fit

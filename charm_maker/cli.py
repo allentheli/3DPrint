@@ -184,7 +184,14 @@ def cmd_run(args: argparse.Namespace) -> int:
         for w in piece.design.warnings:
             print(f"    check: {w}")
     for n, paths in result.files.get("plates", {}).items():
-        print(f"plate {n}: {paths['3mf']}")
+        e = paths.get("estimate")
+        print(f"plate {n}: {paths['3mf']}" + (f" (rough {round(e['minutes'])} min, {e['changes']} color changes)" if e else ""))
+    if result.files.get("quickest"):
+        from .printtime import quickest_lines
+
+        print("quickest first (rough minutes of printing each):")
+        for line in quickest_lines(cfg, result.files["quickest"]):
+            print("  " + line[2:].replace("**", ""))
     if result.files.get("contact_sheet"):
         print(f"contact sheet: {result.files['contact_sheet']}")
     if result.files.get("notes"):

@@ -20,7 +20,8 @@ FINISHING = {
 }
 
 
-def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Palette, problems: list[str]) -> Path:
+def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Palette, problems: list[str],
+                      estimates: dict | None = None, quick: dict | None = None) -> Path:
     pr = cfg["printer"]
     lines = ["# Print notes", ""]
     if not palette.ready:
@@ -32,12 +33,26 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         if not palette.calibrated:
             lines += ["The calibration card has not been scanned for every loaded marker yet, so ink was "
                       "matched to the spool colors. Scan it before the party for the best matching.", ""]
+    if quick:
+        from .printtime import quickest_lines
+
+        lines += ["## Quickest first", "",
+                  "Each kid's pieces, quickest to print first. Rough minutes of printing each, my guess, not "
+                  "Bambu Studio's (a plate adds about "
+                  f"{cfg['print_time']['startup_minutes']:.0f} minutes of start-up once). Color changes take the most "
+                  "time, so fewer colors and flat shapes print fastest.", ""]
+        lines += quickest_lines(cfg, quick) + [""]
     products = set()
     for plate in plates:
         lines.append(f"## Plate {plate.number}: `plates/{plate.stem}.3mf`")
         lines.append("")
         lines.append(f"Who's who: `plates/{plate.stem}-map.png` shows each piece's name where it sits on the plate.")
         lines.append("")
+        if estimates and plate.number in estimates:
+            e = estimates[plate.number]
+            lines.append(f"Rough time: about {round(e['minutes'])} minutes, with {e['changes']} color changes "
+                         "(my guess; Bambu Studio shows the real number after **Slice plate**).")
+            lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")
             lines.append("")

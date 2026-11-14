@@ -16,6 +16,15 @@ printer:
                                   # own plate, as before (run --separate-plates). Round figurines: always apart
   nozzle: 0.4
 
+# Rough print times (charm_maker/printtime.py), not the slicer's: they rank pieces well, and the
+# minutes get tuned once Allen compares one plate with Bambu Studio's estimate.
+print_time:
+  startup_minutes: 5.0            # heating, leveling, purge line: once per plate
+  flow_mm3_per_s: 4.0             # effective, for small detailed pieces at 0.12 mm layers
+  fill: 0.75                      # share of a piece's volume that is plastic (sparse infill inside)
+  min_layer_seconds: 8            # small layers slow down to cool
+  change_minutes: 1.5             # one AMS filament change, with its purge
+
 # Spools Allen owns. Fill in once. `color` is a hex code close to the real
 # filament color. Used to suggest a spool when a drawing needs a color that
 # isn't loaded.

@@ -370,6 +370,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             who = (kid[len(word) + 1:], word) if kid else (name, "")
             for pc in new:
                 pc.design.extras["who"] = who
+                pc.design.extras["card"] = name
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -451,7 +452,14 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, a, slot_labels[piece.name]), indent=2))
     files["contact_sheet"] = render_contact_sheet(previews, out_dir / "contact-sheet.png", title=batch_name or out_dir.name)
     if plates:
-        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems)
+        from .printtime import plate_estimate, quickest
+
+        for plate in plates:
+            files["plates"][plate.number]["estimate"] = plate_estimate(cfg, plate)
+        files["quickest"] = quickest(cfg, pieces, assignments)
+        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems,
+                                           estimates={p.number: files["plates"][p.number]["estimate"] for p in plates},
+                                           quick=files["quickest"])
     return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
 
 
