@@ -33,6 +33,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   **2026-11-13:** the shark duck flexi (Bambu's joint, 3 strips): "it works well"; a fridge
   magnet (glued magnet): works; filling a line drawing's areas with Bambu Studio's fill tool:
   works as long as the areas are enclosed.
+  **2026-11-14:** the thumbs-up earrings (face-down, 10 x 17 mm, gaps 0.6-1.5 mm): Bambu Studio's
+  default **Classic** wall generator left holes in the narrow gaps on the face; **Arachne** fixed most of
+  them (his bee charm too). A print with **Elephant foot compensation** 0 and a 0.42 mm **Initial layer**
+  line together came out worse (seams between every first-layer line, even in the wide border: likely the
+  thinner line), so keep both at the defaults. The print notes say this. Still open: bigger pieces when a drawing's gaps are too narrow (he has not chosen).
 - **Poop containers: parked (Allen, 2026-11-13).** His printed duck, filled, showed too little
   poop through the 4 mm diamonds; the windows were made much bigger (see Poop containers), then
   he found one on MakerWorld that can work and parked ours for the future. Don't work on them

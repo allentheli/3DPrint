@@ -110,7 +110,10 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         up = [pp.piece.name for pp in charms if pp.piece.face_up]
         down = [pp.piece.name for pp in charms if not pp.piece.face_up]
         if down:
-            lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
+            lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one. "
+                         "In the **Quality** tab set **Wall generator** to **Arachne**: the default (Classic) leaves "
+                         "holes on the face in the narrow gaps between lines. Leave **Elephant foot compensation** and the "
+                         "**Initial layer** line width at their defaults.")
         if up:
             lines.append(f"- Shaped pieces ({', '.join(up)}) print face-up with the colors on top, flat back on the bed, "
                          "no supports. Their colors change over more layers than flat ones, so they print slower and purge more. "
