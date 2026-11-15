@@ -316,27 +316,30 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     kid_names: dict[str, int] = {}
     only = {o.lower() for o in only or ()}
     for (label, path, read), (name, base_name) in zip(drawings, _card_names(drawings)):
+        # An option given for a card number means that card, not its later copies (-b, -c) from other
+        # uploads in the same run (2026-11-15: --only key-01 also picked key-01-b to key-01-e).
+        alias = base_name if name == base_name else name
         # --only: just these cards, for a plate printed first (Allen, 2026-11-14: a few pieces
         # before the kids go home, the rest after). Matched by card or by the kid's name.
-        if only and not (only & {name, base_name, *([names[name].lower()] if names.get(name) else [])}):
+        if only and not (only & {name, alias, *([names[name].lower()] if names.get(name) else [])}):
             continue
         try:
             from .options import read_options
 
             opts = read_options(cfg, read)                 # boxes the kid ticked on the card
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
-                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
-                                      keep_dots=not (no_dots & {name, base_name, "*"}),
-                                      pencil=not (no_pencil & {name, base_name, "*"}),
-                                      drop_strays=bool(set(drop_strays or ()) & {name, base_name, "*"}),
-                                      light=bool(set(light or ()) & {name, base_name, "*"}),
-                                      size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0),
-                                      product_override=next((products[c] for c in (name, base_name, "*")
+                                      tidy=bool(tidy & {name, alias, "*"}) or opts.get("tidy", False),
+                                      keep_dots=not (no_dots & {name, alias, "*"}),
+                                      pencil=not (no_pencil & {name, alias, "*"}),
+                                      drop_strays=bool(set(drop_strays or ()) & {name, alias, "*"}),
+                                      light=bool(set(light or ()) & {name, alias, "*"}),
+                                      size=next((sizes[c] for c in (name, alias, "*") if c in sizes), 1.0),
+                                      product_override=next((products[c] for c in (name, alias, "*")
                                                              if c in products), None))
             design.source = label
-            if no_pencil & {name, base_name, "*"}:
+            if no_pencil & {name, alias, "*"}:
                 design.fixes.append("pencil not read, only the marker (asked for: an erased pencil draft)")
-            span = next((keep[c] for c in (name, base_name, "*") if c in keep), None)
+            span = next((keep[c] for c in (name, alias, "*") if c in keep), None)
             if span:
                 design.extras["keep_whole"] = span
                 design.fixes.append(f"no cuts from {span[0]:g}% to {span[1]:g}% down the flexi (asked for, to keep the face whole)")
@@ -355,9 +358,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name, picked=opts.get("style")),
-                                    figurine_back=option_for(figurine_back, name, base_name),
-                                    figurine_base=option_for(figurine_base, name, base_name))
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, alias, picked=opts.get("style")),
+                                    figurine_back=option_for(figurine_back, name, alias),
+                                    figurine_base=option_for(figurine_base, name, alias))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)

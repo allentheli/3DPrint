@@ -202,6 +202,14 @@ def _pack_together(cfg: dict, pieces: list[Piece], palette: Palette,
               flexi,                       # thick and slow: their own plate, so quick pieces come off first
               [p for p in pieces if p.group == "cases"],
               [p for p in pieces if p.supports]]
+    if flexi and groups[0]:
+        # Flat pieces that spill past one plate ride along on the flexi plate (2026-11-15: Jack's
+        # magnet alone on a plate of its own) rather than starting another plate.
+        trial = _pack_group(cfg, groups[0], palette, assignments, one_plate=one_plate)
+        if len(trial) > 1:
+            spill = [pp.piece for pp in trial[-1].pieces]
+            groups[0] = [p for p in groups[0] if not any(p is q for q in spill)]
+            groups[1] = groups[1] + spill
     if one_plate:
         # Clicker cases join the charms (Allen, 2026-11-14). Round-back figurines keep a plate of
         # their own: they need supports, and supports on a shared plate also filled the hollow
