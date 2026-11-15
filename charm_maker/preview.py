@@ -353,8 +353,12 @@ def render_design_preview(cfg: dict, piece, assignments: dict, path: Path, *, pa
         lines_att = [f"Loop on top: {att['hole_diameter']} mm hole running left to right (dashed), "
                      f"{att['height']:.1f} mm tall on the back"]
     elif att.get("kind") == "flat_back":
-        lines_att = [f"Flat back: glue the magnet on, about {cfg['hardware']['magnet_height_above_bottom']:.0f} mm "
-                     "above the bottom to line up with the stand"]
+        # Fridge magnets have no stand (Allen, 2026-11-13); the old stand height only applies with one.
+        if cfg["products"].get(d.product, {}).get("stand", True):
+            lines_att = [f"Flat back: glue the magnet on, about {cfg['hardware']['magnet_height_above_bottom']:.0f} mm "
+                         "above the bottom to line up with the stand"]
+        else:
+            lines_att = ["Flat back: glue the magnet flat on the middle of the back (a fridge magnet)"]
     elif att.get("kind") == "stem_socket":
         lines_att = [f"Keycap post {att['post_diameter']} mm (dashed) with a cross socket, stem fit {att['clearance']} mm; "
                      f"clears the switch by {att['travel_clearance']:.1f} mm when pressed"]
