@@ -152,7 +152,7 @@ def test_cards_for_every_product(tmp_path):
                       "Clicker keychain", "Flexi"]
     assert "wiggly flexi" in doc[6].get_text(), "the flexi card shows what the drawing becomes"
     for i in range(doc.page_count):
-        assert "Use the colors in the printer" in doc[i].get_text()
+        assert "Color it in, or we will" in doc[i].get_text()
     one = ["Draw just ONE earring" in doc[i].get_text() for i in range(doc.page_count)]
     assert one == [t.startswith("Earrings") for t in titles], "one drawing makes the pair: only the earring card says so"
     assert not (tmp_path / "half-drawn-cards.pdf").exists(), "pre-set shapes only when asked"

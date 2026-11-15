@@ -55,9 +55,11 @@ def test_cards_show_the_choices(cfg, tmp_path):
     for word in ["Pick a shape", "Flat", "Puffy", "Raised lines", "Puffy + lines", "Figurine", "neat lines"]:
         assert word in key
     assert sum(im[5] == "DeviceRGB" for im in text[0].get_images()) == len(SHAPES), "a real picture of each shape"
-    # Clickers can be shaped too (a shaped keycap gets its post as a separate piece).
-    assert [k for k, *_ in card_layout(cfg, "clicker", 1).zones["shape_boxes"]] == [k for k, _ in SHAPES]
-    assert "Figurine" in click and "neat lines" in click
+    # Clickers are always flat (Allen, 2026-11-15): no shapes to pick, a line says what it becomes.
+    assert "shape_boxes" not in card_layout(cfg, "clicker", 1).zones
+    assert "Pick a shape" not in click and "Figurine" not in click
+    assert "button that clicks" in click and "neat lines" in click
+    assert not any(im[5] == "DeviceRGB" for im in text[1].get_images()), "no shape pictures on the clicker card"
 
 
 def test_reading_ticks(cfg, tmp_path):
@@ -88,3 +90,33 @@ def test_card_choice_and_command_line(cfg, tmp_path):
     assert any(f.startswith("tidy:") for f in got["key-06"].design.fixes)
     assert "neat lines ticked on the card" in got["key-06"].design.fixes
     assert not any(f.startswith("tidy:") for f in got["key-04"].design.fixes)
+
+
+def test_clickers_stay_flat_whatever_is_ticked(cfg, tmp_path):
+    """Allen, 2026-11-15: "The clicker should all be flat". The clicker card offers no shapes (a
+    line says what it becomes); a tick drawn where the boxes used to be is not read; a style named
+    for the card on the command line still wins."""
+    from PIL import ImageDraw
+
+    from charm_maker.options import SHAPES, STEP, option_zones
+    from tests.synthetic import BLACK, YELLOW, card_image, photograph
+
+    zones = option_zones(cfg, "clicker")
+    assert "shape_boxes" not in zones and "tidy_box" in zones
+    img, lay, ppm, P = card_image(cfg, "clicker", 2, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy, r = bx + bw / 2, by + bh / 2, bw * 0.3
+    d = ImageDraw.Draw(img)
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=YELLOW, outline=BLACK, width=int(4.5 * ppm))
+    c = cfg["cards"]
+    x, y = c["margin"] + 8.0 + STEP * [k for k, _ in SHAPES].index("puffy"), c["name_box"][1] - 19.0
+    s = 5.0
+    w = max(2, int(0.7 * ppm))
+    d.line([P(x + 1.0, y + 1.0), P(x + s - 1.0, y + s - 1.0)], fill=BLACK, width=w)
+    d.line([P(x + 1.0, y + s - 1.0), P(x + s - 1.0, y + 1.0)], fill=BLACK, width=w)
+    photo = photograph(img, tmp_path / "click-02.jpg", seed=2)
+    res = run_batch(cfg, [photo], tmp_path / "a")
+    keycap = next(p for p in res.pieces if p.name == "click-02")
+    assert keycap.style == "flat" and not any(p.name.endswith("-post") for p in res.pieces)
+    res = run_batch(cfg, [photo], tmp_path / "b", styles={"click-02": "puffy"})
+    assert next(p for p in res.pieces if p.name == "click-02").style == "puffy"

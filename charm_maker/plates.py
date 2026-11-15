@@ -49,6 +49,49 @@ class Plate:
     shelf_x: float = 0.0
     shelf_y: float = 0.0
     shelf_h: float = 0.0
+    suffix: str = ""                # -2, -3 when two plates in a batch would share a name
+    tag: str = ""                   # "quick" for the plate of pieces printed first
+
+    @property
+    def kind(self) -> str:
+        groups = {pp.piece.group for pp in self.pieces}
+        if groups == {"cases"}:
+            return "clicker-cases"
+        if self.pieces and all(pp.piece.supports for pp in self.pieces):
+            return "figurines"
+        return "everything" if len(groups) > 1 else "charms"
+
+    @property
+    def stem(self) -> str:
+        """The plate's file name says whose pieces are on it and what they are (Allen, 2026-11-14:
+        every upload's plate was plate-1; "just kid name and whatever stuff they made"):
+        jack-keychain-clicker_mia-necklace. A plate of only clicker cases or round figurines says so
+        (two files both called "plate" once hid the clicker case). Pieces not named after a kid go
+        by their card (key-01). Pieces built before names existed fall back to plate-1-charms."""
+        who: dict[str, list[str]] = {}
+        for pp in self.pieces:
+            kid, item = pp.piece.design.extras.get("who", (None, None))
+            if kid is None:
+                return f"plate-{self.number}-{self.kind}{self.suffix}"
+            items = who.setdefault(kid, [])
+            if item and item not in items:
+                items.append(item)
+        # Kids in name order, then pieces that go by their card number; each kid's pieces in name order.
+        order = sorted(who, key=lambda k: (not who[k], k))
+        parts = ["-".join([kid, *sorted(who[kid])]) for kid in order]
+        label, used = "", 0
+        for part in parts:
+            if label and len(label) + len(part) + 1 > 80:
+                break
+            label = f"{label}_{part}" if label else part
+            used += 1
+        if used < len(parts):
+            label += f"_and-{len(parts) - used}-more"
+        if self.kind in ("clicker-cases", "figurines"):
+            label += f"-{self.kind}"
+        if self.tag:
+            label = f"{self.tag}_{label}"
+        return label + self.suffix
 
     def slots(self) -> dict[Filament, int]:
         """Filament -> AMS slot. Loaded slots when known, else 1..N in order."""
@@ -121,18 +164,57 @@ def unanswered_off_palette(piece: Piece, assignments: dict[str, Filament]) -> li
     return [p for p, f in assignments.items() if f.name.endswith("(not loaded)")]
 
 
+def kid_of(piece: Piece) -> str:
+    """The kid a piece was named after, or "" for a card with no name read."""
+    kid, word = piece.design.extras.get("who", ("", ""))
+    return kid if word else ""
+
+
 def pack_plates(cfg: dict, pieces: list[Piece], palette: Palette,
-                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
+                assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False,
+                by_kid: bool = False) -> list[Plate]:
+    """With `by_kid`, each kid's pieces get plates of their own (Allen, 2026-11-14: "all Alison's
+    stuff on one plate"); cards with no name share theirs. Within each, as below."""
+    if by_kid:
+        kids: dict[str, list[Piece]] = {}
+        for p in pieces:
+            kids.setdefault(kid_of(p), []).append(p)
+        plates: list[Plate] = []
+        for kid in sorted(kids, key=lambda k: (not k, k)):
+            more = pack_plates(cfg, kids[kid], palette, assignments, one_plate=one_plate)
+            for pl in more:
+                pl.number += len(plates)
+            plates += more
+        return plates
+    return _pack_together(cfg, pieces, palette, assignments, one_plate=one_plate)
+
+
+def _pack_together(cfg: dict, pieces: list[Piece], palette: Palette,
+                   assignments: dict[str, dict[str, Filament]], *, one_plate: bool = False) -> list[Plate]:
     """Charms first (flat-back figurines and clicker keycaps included), then clicker cases
     (upright, thicker layers, one filament), then round-back figurines (they need supports
-    and a different layer height), each group on plates of its own. With `one_plate`,
-    everything shares a plate (as many as the bed needs, usually one), whatever the
-    layer heights and however many colors: Allen sets the spools in Bambu Studio."""
-    groups = [[p for p in pieces if not p.supports and p.group != "cases"],
+    and a different layer height), each group on plates of its own. With `one_plate` (the
+    default), the cases share the charms' plates (as many as the bed needs, usually one),
+    however many colors: Allen sets the spools in Bambu Studio. Round-back figurines always
+    get their own."""
+    flexi = [p for p in pieces if p.attachment.get("kind") == "strips"]
+    groups = [[p for p in pieces if not p.supports and p.group != "cases" and not any(p is f for f in flexi)],
+              flexi,                       # thick and slow: their own plate, so quick pieces come off first
               [p for p in pieces if p.group == "cases"],
               [p for p in pieces if p.supports]]
+    if flexi and groups[0]:
+        # Flat pieces that spill past one plate ride along on the flexi plate (2026-11-15: Jack's
+        # magnet alone on a plate of its own) rather than starting another plate.
+        trial = _pack_group(cfg, groups[0], palette, assignments, one_plate=one_plate)
+        if len(trial) > 1:
+            spill = [pp.piece for pp in trial[-1].pieces]
+            groups[0] = [p for p in groups[0] if not any(p is q for q in spill)]
+            groups[1] = groups[1] + spill
     if one_plate:
-        groups = [list(pieces)]
+        # Clicker cases join the charms (Allen, 2026-11-14). Round-back figurines keep a plate of
+        # their own: they need supports, and supports on a shared plate also filled the hollow
+        # inside his clicker case (2026-11-11).
+        groups = [[p for p in pieces if not p.supports], [p for p in pieces if p.supports]]
     plates: list[Plate] = []
     for group in groups:
         if not group:
@@ -278,7 +360,7 @@ def write_plates(cfg: dict, plates: list[Plate], out_dir: Path) -> dict[int, dic
     out_dir.mkdir(parents=True, exist_ok=True)
     result: dict[int, dict[str, Path]] = {}
     for plate in plates:
-        stem = f"plate-{plate.number}"
+        stem = plate.stem
         slots = plate.slots()
         objects = []
         plain: dict[str, m3d.Manifold] = {}
@@ -290,7 +372,7 @@ def write_plates(cfg: dict, plates: list[Plate], out_dir: Path) -> dict[int, dic
                 parts.append((name, solid, slots[f], f.rgb))
                 plain[name] = solid
             objects.append((pp.piece.name, parts))
-        paths = {"3mf": write_bambu_3mf(objects, out_dir / f"{stem}.3mf")}
+        paths = {"3mf": write_bambu_3mf(objects, out_dir / f"{stem}.3mf", plate_name=stem)}
         paths.update({f"plain-{k}": v for k, v in write_plate(plain, out_dir, f"{stem}-plain").items()})
         result[plate.number] = paths
     return result

@@ -47,10 +47,19 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None, tidy: bool = False,
-                     keep_dots: bool = True, size: float = 1.0, product_override: str | None = None) -> Design:
+                     keep_dots: bool = True, size: float = 1.0, product_override: str | None = None,
+                     pencil: bool = True, drop_strays: bool = False, light: bool = False) -> Design:
     """`size` makes the piece that many times the drawn size (Allen, 2026-11-12: a bigger
     butterfly so its tiny face keeps its shape). It is applied before the print fixes, so
     her lines and the gaps between them grow too and the 1 mm minimum has room."""
+    if light:
+        # Very light pencil (Avery's giraffe, 2026-11-15) came back as broken dashes: read lighter
+        # gray as ink for this card only.
+        cfg = {**cfg, "reader": {**cfg["reader"], "ink_value_max": cfg["reader"].get("light_ink_value_max", 0.80)}}
+    if not pencil:
+        # Kids may draft in pencil and erase it; a line still dark enough to read as pencil would
+        # print. --no-pencil reads only the marker for that card.
+        cfg = {**cfg, "reader": {**cfg["reader"], "pencil": False}}
     pr = cfg["process"]
     asked = size
     if border is None:
@@ -65,10 +74,35 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         px_per_mm = read.px_per_card_mm * scale        # real-size px per mm
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
-        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore,
-                               guide_zone=_guide_zone(cfg, read))
+        zone = _guide_zone(cfg, read)
+        # Colors are read as drawn; a --scale only changes the size the fixes see (read 3.9 times
+        # bigger, a pen line split into a black middle and a gray edge: Alison's dog keychain, 2026-11-15).
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm * asked, ignore=ignore, guide_zone=zone)
+        grown = 1.0
+        prod = cfg["products"][product]
+        if prod.get("attachment") == "strips" and inks.layers:
+            # A flexi drawn small grows to the flexi's size BEFORE the print fixes, like --scale, so
+            # its lines, eyes and the paper between them grow too (2026-11-14: a small unicorn's face
+            # melted into a black blob when it was fixed at its drawn size and enlarged after).
+            union = np.zeros(inks.layers[0].mask.shape, bool)
+            for layer in inks.layers:
+                union |= layer.mask
+            ys, xs = np.nonzero(union)
+            if len(xs):
+                long_mm = (max(xs.max() - xs.min(), ys.max() - ys.min()) + 1) / px_per_mm
+                b = 2 * pr["border"] if border else 0.0
+                target = float(prod["default_size"])
+                if long_mm + b < target - 2.0:
+                    # The colors stay as read at the card's own scale (read at the bigger size, a thin
+                    # pen line splits into a dark middle and a gray edge); only the fixes see it bigger.
+                    grown = (target - b) / long_mm
+                    size *= grown
+                    px_per_mm = read.px_per_card_mm * pr["card_scale"] / size
         design = fix_design(cfg, inks.layers, px_per_mm, border_on=border, name=name, product=product, tidy=tidy,
-                            keep_dots=keep_dots)
+                            keep_dots=keep_dots, drop_strays=drop_strays)
+        if grown != 1.0:
+            design.fixes.append(f"drawn small: made {grown:.2f} times bigger, to the flexi's {prod['default_size']:g} mm, "
+                                "before the print fixes, so the face keeps its shape")
         design.fixes[:0] = inks.fixes
         design.paper_rgb = inks.paper_rgb
         design.warnings.extend(inks.notes + read.notes)
@@ -76,8 +110,8 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         if product != read.layout.product:
             design.fixes.append(f"made into a {cfg['products'][product]['label'].lower()} (asked for; drawn on a "
                                 f"{cfg['products'][read.layout.product]['label'].lower()} card)")
-        if size != asked:
-            design.fixes.append(f"made {size / asked:g} times the drawn size (a {cfg['products'][product]['label'].lower()} "
+        if size / grown != asked:
+            design.fixes.append(f"made {size / grown / asked:g} times the drawn size (a {cfg['products'][product]['label'].lower()} "
                                 "is bigger than its card box)")
         if asked != 1.0:
             design.fixes.append(f"made {asked:g} times the drawn size (asked for)")
@@ -103,12 +137,15 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     size_mm = cfg["products"][product]["default_size"] * size
     target_ppm = cfg["reader"]["px_per_card_mm"] * scale
     resize = target_ppm * size_mm / longest_px
-    pad = 10
-    crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
+    # Room around the ink: the paper estimate needs plain paper at the edges, or ink that
+    # touches the crop is lost (2026-11-15: the antibody's outer tips came out cut flat).
+    pad = max(10, int(0.08 * longest_px))
+    crop = cv2.copyMakeBorder(small, pad, pad, pad, pad, cv2.BORDER_REPLICATE)
+    crop = crop[ys.min():ys.max() + 2 * pad, xs.min():xs.max() + 2 * pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy,
-                        keep_dots=keep_dots)
+                        keep_dots=keep_dots, drop_strays=drop_strays)
     design.fixes[:0] = inks.fixes
     design.paper_rgb = inks.paper_rgb
     design.warnings.extend(inks.notes + read.notes)
@@ -190,9 +227,13 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               config_path: Path | None = None, allow_uncalibrated: bool = True,
               styles: dict[str, str] | None = None, figurine_back: dict[str, str] | None = None,
               figurine_base: dict[str, str] | None = None, tidy: set[str] | None = None,
-              names: dict[str, str] | None = None, one_plate: bool = False,
-              no_dots: set[str] | None = None, sizes: dict[str, float] | None = None,
-              products: dict[str, str] | None = None) -> BatchResult:
+              names: dict[str, str] | None = None, one_plate: bool | None = None,
+              no_dots: set[str] | None = None, no_pencil: set[str] | None = None,
+              sizes: dict[str, float] | None = None,
+              products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None,
+              only: set[str] | None = None, together: bool | None = None,
+              quick: set[str] | None = None, drop_strays: set[str] | None = None,
+              light: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -226,7 +267,17 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
 
     tidy = set(tidy or ())
     no_dots = set(no_dots or ())
+    no_pencil = set(no_pencil or ())
     products = dict(products or {})
+    keep = {}
+    for key, span in (keep_whole or {}).items():
+        try:
+            a, b = (float(v) for v in str(span).split("-"))
+        except ValueError:
+            raise ValueError(f"--keep-whole {key}={span}: use FROM-TO in percent from the top, e.g. 0-40") from None
+        if not 0 <= a < b <= 100:
+            raise ValueError(f"--keep-whole {key}={span}: use FROM-TO in percent from the top, e.g. 0-40")
+        keep[key] = (a, b)
     for key, prod in products.items():
         if prod not in cfg["products"]:
             raise ValueError(f"--as {key}={prod}: no such product; use one of {', '.join(cfg['products'])}")
@@ -268,18 +319,41 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
     pieces: list[Piece] = []
     names = dict(names or {})
     kid_names: dict[str, int] = {}
+    only = {o.lower() for o in only or ()}
     for (label, path, read), (name, base_name) in zip(drawings, _card_names(drawings)):
+        # An option given for a card number means that card, not its later copies (-b, -c) from other
+        # uploads in the same run (2026-11-15: --only key-01 also picked key-01-b to key-01-e).
+        alias = base_name if name == base_name else name
+        # --only: just these cards, for a plate printed first (Allen, 2026-11-14: a few pieces
+        # before the kids go home, the rest after). Matched by card or by the kid's name.
+        if only and not (only & {name, alias, *([names[name].lower()] if names.get(name) else [])}):
+            continue
         try:
             from .options import read_options
 
             opts = read_options(cfg, read)                 # boxes the kid ticked on the card
+            fixed = cfg["products"].get(read.layout.product if read.layout else "", {}).get("always_style")
+            if fixed and opts.get("style") and opts["style"] != fixed:
+                # Clickers are always flat (Allen, 2026-11-15); a command-line style still wins.
+                opts.setdefault("notes", []).append(f"{opts['style'].replace('-', ' + ')} ticked, but this product is "
+                                                     f"always {fixed}")
+                opts["style"] = fixed
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
-                                      tidy=bool(tidy & {name, base_name, "*"}) or opts.get("tidy", False),
-                                      keep_dots=not (no_dots & {name, base_name, "*"}),
-                                      size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0),
-                                      product_override=next((products[c] for c in (name, base_name, "*")
+                                      tidy=bool(tidy & {name, alias, "*"}) or opts.get("tidy", False),
+                                      keep_dots=not (no_dots & {name, alias, "*"}),
+                                      pencil=not (no_pencil & {name, alias, "*"}),
+                                      drop_strays=bool(set(drop_strays or ()) & {name, alias, "*"}),
+                                      light=bool(set(light or ()) & {name, alias, "*"}),
+                                      size=next((sizes[c] for c in (name, alias, "*") if c in sizes), 1.0),
+                                      product_override=next((products[c] for c in (name, alias, "*")
                                                              if c in products), None))
             design.source = label
+            if no_pencil & {name, alias, "*"}:
+                design.fixes.append("pencil not read, only the marker (asked for: an erased pencil draft)")
+            span = next((keep[c] for c in (name, alias, "*") if c in keep), None)
+            if span:
+                design.extras["keep_whole"] = span
+                design.fixes.append(f"no cuts from {span[0]:g}% to {span[1]:g}% down the flexi (asked for, to keep the face whole)")
             design.fixes += opts.get("notes", [])
             design.warnings += opts.get("warnings", [])
             slots = cfg["printer"]["ams_slots"]
@@ -295,9 +369,9 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                 design.warnings.append(f"another {base_name} was already in this batch; renamed to {name}")
             new = []
             for copy_design in _copies(cfg, design):
-                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, base_name, picked=opts.get("style")),
-                                    figurine_back=option_for(figurine_back, name, base_name),
-                                    figurine_base=option_for(figurine_base, name, base_name))
+                piece = build_piece(cfg, copy_design, tab_position=tab, style=style_for(name, alias, picked=opts.get("style")),
+                                    figurine_back=option_for(figurine_back, name, alias),
+                                    figurine_base=option_for(figurine_base, name, alias))
                 _check_piece(piece)
                 _map_to_palette(cfg, piece, palette)
                 _set_base_slot(cfg, piece, palette)
@@ -313,6 +387,12 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                         _map_to_palette(cfg, more, palette)
                         _set_base_slot(cfg, more, palette)
                         new.append(more)
+            # Whose piece it is and what it is, for the plate's file name (jack-keychain-clicker).
+            word = cfg["products"][design.product].get("file_word", design.product)
+            who = (kid[len(word) + 1:], word) if kid else (name, "")
+            for pc in new:
+                pc.design.extras["who"] = who
+                pc.design.extras["card"] = name
         except Exception as e:  # noqa: BLE001
             problems.append(f"{label}: {e}")
             continue
@@ -347,16 +427,44 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         files["question"], question = write_question(off, out_dir / "QUESTION.md", uncalibrated)
     else:
         try:
-            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate)
+            if one_plate is None:                # Allen, 2026-11-14: the case on the same plate too
+                # Swap plates (an optional extra) exist to keep a spool swap off the other plates.
+                one_plate = cfg["printer"].get("one_plate", False) and off_palette != "swap"
+            if together is None:                 # Allen, 2026-11-14: each kid's things on a plate
+                together = not cfg["printer"].get("plate_per_kid", False)
+            plates = pack_plates(cfg, pieces, palette, assignments, one_plate=one_plate, by_kid=not together)
+            # The quick plate (Allen, 2026-11-14: "when I ask give the quick one for each on a separate
+            # plate and tell me which one I need to take out from the main plate"): the cards he names,
+            # together, after the kids' plates, which still hold everything.
+            quick = {q.lower() for q in quick or ()}
+            if quick:
+                cards = {p.design.extras.get("card", p.name) for p in pieces}
+                for q in sorted(quick - cards):
+                    problems.append(f"--quick {q}: no such card in this batch ({', '.join(sorted(cards))})")
+                picked = [p for p in pieces if p.design.extras.get("card", p.name) in quick]
+                if picked:
+                    main = list(plates)
+                    more = pack_plates(cfg, picked, palette, assignments, one_plate=True)
+                    for pl in more:
+                        pl.number += len(plates)
+                        pl.tag = "quick"
+                    plates += more
+                    files["take_out"] = [(pp.piece.name, pl) for pl in main for pp in pl.pieces
+                                         if any(pp.piece is p for p in picked)]
         except ValueError as e:
             problems.append(str(e))
         if plates:
+            seen: dict[str, int] = {}
+            for plate in plates:                 # two plates never share a file name
+                seen[plate.stem] = seen.get(plate.stem, 0) + 1
+                if seen[plate.stem] > 1:
+                    plate.suffix = f"-{seen[plate.stem]}"
             files["plates"] = write_plates(cfg, plates, out_dir / "plates")
             from .preview import render_plate_map
 
             for plate in plates:
                 files["plates"][plate.number]["map"] = render_plate_map(
-                    cfg, plate, out_dir / "plates" / f"plate-{plate.number}-map.png")
+                    cfg, plate, out_dir / "plates" / f"{plate.stem}-map.png")
             for plate in plates:
                 slots = plate.slots()
                 for pp in plate.pieces:
@@ -387,7 +495,16 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
         (d / f"{piece.name}.json").write_text(json.dumps(_piece_summary(piece, a, slot_labels[piece.name]), indent=2))
     files["contact_sheet"] = render_contact_sheet(previews, out_dir / "contact-sheet.png", title=batch_name or out_dir.name)
     if plates:
-        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems)
+        from .printtime import plate_estimate, quickest
+
+        for plate in plates:
+            files["plates"][plate.number]["estimate"] = plate_estimate(cfg, plate)
+        files["quickest"] = quickest(cfg, pieces, assignments)
+        if files.get("take_out"):
+            files["take_out"] = [(name, pl.stem) for name, pl in files["take_out"]]
+        files["notes"] = write_print_notes(cfg, plates, out_dir / "PRINT_NOTES.md", palette=palette, problems=problems,
+                                           estimates={p.number: files["plates"][p.number]["estimate"] for p in plates},
+                                           quick=files["quickest"], take_out=files.get("take_out"))
     return BatchResult(pieces, plates, files, palette.ready, problems, question, calibration_lines)
 
 

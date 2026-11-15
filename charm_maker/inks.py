@@ -95,7 +95,8 @@ def ink_mask(cfg: dict, rgb: np.ndarray, ignore: np.ndarray | None = None,
     strong &= ~guide
     if ignore is not None:
         strong &= ~ignore
-    strong |= _pencil(rd, lab, chroma, strong, guide, ignore)
+    if rd.get("pencil", True):       # off for a card whose erased pencil draft came back as lines
+        strong |= _pencil(rd, lab, chroma, strong, guide, ignore)
     # Drop isolated noise dots, but keep lines only 1-2 pixels wide.
     n, labels, stats, _ = cv2.connectedComponentsWithStats(strong.astype(np.uint8), connectivity=8)
     small = np.flatnonzero(stats[:, cv2.CC_STAT_AREA] < rd["min_blob_px"])

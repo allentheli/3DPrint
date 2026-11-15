@@ -268,6 +268,7 @@ Do not build these unless Allen asks:
 - More flat products: ornaments, gift tags, bookmarks, name plates, jigsaw puzzles, Play-Doh stamps and cutters (keep the config ready for them).
 - Printing a whole hair clip.
 - A web or iPad app version of this tool.
+- Poop (purge) containers (Allen, 2026-11-13: parked for the future; he found one on MakerWorld that can work). The tool still builds them, with the bigger windows.
 - Kids' own drawings on flexi creatures (Allen, 2026-11-13: the creature is the creative part). Painting a drawn face onto a head works and stays in the code, unused by the card; so does painting a kid's face onto a downloaded toy.
 
 ## 13. Files to keep in the repository

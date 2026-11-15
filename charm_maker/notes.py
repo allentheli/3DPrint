@@ -12,7 +12,7 @@ FINISHING = {
     "keychain": "Keychains: open a 25 mm split ring and thread it through the tab hole.",
     "clicker": "Clickers: push the switch down into the cup until it clicks into the square hole at the bottom (it only fits one way up, any of four turns), then push the keycap's post onto the switch's cross stem: the keycap sits in the cup's opening, a little above the rim. Thread a 25 mm split ring through the hole in the tab halfway up the side of the case (it runs left to right). A pen through the hole in the case's floor pushes the switch back out.",
     "clicker_post": "Puffy and figurine clicker keycaps come with their post as a separate small piece: glue its flat end into the round dent in the middle of the keycap's back with gel super glue (socket end out), and let it cure before pushing it onto the switch.",
-    "magnet_figure": "Magnet figures: glue a 10 x 2 mm magnet flat on the back with gel super glue, about 12 mm above the bottom edge so it lines up with the stand (two-part epoxy if it pops off). Let it cure fully.",
+    "magnet_figure": "Fridge magnets: glue a 10 x 2 mm magnet flat on the middle of the back with gel super glue (two-part epoxy if it pops off). Let it cure fully before it goes on the fridge.",
     "earrings": "Earrings: twist a 4 mm jump ring open sideways (don't pull it apart), slip it through the small hole at the top, hang the hook on it and twist it shut. If an earring faces sideways, turn the jump ring a quarter turn. Stud style: glue a post pad on the flat back.",
     "pendant": "Pendants: thread the chain straight through the loop, left to right, so the pendant faces forward.",
     "flexi": "Flexis: they print as one piece of linked strips. Once the plate is cool, peel it off in one go, then gently bend and slide each strip side to side until it moves freely. If a strip is stuck, a firm twist frees it.",
@@ -20,7 +20,9 @@ FINISHING = {
 }
 
 
-def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Palette, problems: list[str]) -> Path:
+def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Palette, problems: list[str],
+                      estimates: dict | None = None, quick: dict | None = None,
+                      take_out: list | None = None) -> Path:
     pr = cfg["printer"]
     lines = ["# Print notes", ""]
     if not palette.ready:
@@ -32,12 +34,33 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         if not palette.calibrated:
             lines += ["The calibration card has not been scanned for every loaded marker yet, so ink was "
                       "matched to the spool colors. Scan it before the party for the best matching.", ""]
+    if quick:
+        from .printtime import quickest_lines
+
+        lines += ["## Quickest first", "",
+                  "Each kid's pieces, quickest to print first. Rough minutes of printing each, my guess, not "
+                  "Bambu Studio's (a plate adds about "
+                  f"{cfg['print_time']['startup_minutes']:.0f} minutes of start-up once). Color changes take the most "
+                  "time, so fewer colors and flat shapes print fastest.", ""]
+        lines += quickest_lines(cfg, quick) + [""]
+    if take_out:
+        lines += ["## Quick plate: take these out of the kids' plates", "",
+                  "They print on the quick plate, so delete them from the kids' plates before printing those "
+                  "(in Bambu Studio click the piece, press **Delete**), or they print twice:", ""]
+        lines += [f"- `{name}` from `{stem}.3mf`" for name, stem in take_out] + [""]
     products = set()
     for plate in plates:
-        lines.append(f"## Plate {plate.number}: `plates/plate-{plate.number}.3mf`")
+        lines.append(f"## Plate {plate.number}: `plates/{plate.stem}.3mf`")
         lines.append("")
-        lines.append(f"Who's who: `plates/plate-{plate.number}-map.png` shows each piece's name where it sits on the plate.")
+        lines.append(f"Who's who: `plates/{plate.stem}-map.png` shows each piece's name where it sits on the plate.")
         lines.append("")
+        if estimates and plate.number in estimates:
+            e = estimates[plate.number]
+            from .printtime import duration
+
+            lines.append(f"Rough time: about {duration(e['minutes'])}, with {e['changes']} color changes "
+                         "(my guess; Bambu Studio shows the real number after **Slice plate**).")
+            lines.append("")
         if plate.swaps:
             lines.append("**Spool swap for this plate.** Print it after the plates without swaps.")
             lines.append("")
@@ -110,7 +133,10 @@ def write_print_notes(cfg: dict, plates: list[Plate], path: Path, *, palette: Pa
         up = [pp.piece.name for pp in charms if pp.piece.face_up]
         down = [pp.piece.name for pp in charms if not pp.piece.face_up]
         if down:
-            lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one.")
+            lines.append("- Flat pieces print face-down: smooth PEI gives a glossy face, textured PEI a matte, sparkly one. "
+                         "In the **Quality** tab set **Wall generator** to **Arachne**: the default (Classic) leaves "
+                         "holes on the face in the narrow gaps between lines. Leave **Elephant foot compensation** and the "
+                         "**Initial layer** line width at their defaults.")
         if up:
             lines.append(f"- Shaped pieces ({', '.join(up)}) print face-up with the colors on top, flat back on the bed, "
                          "no supports. Their colors change over more layers than flat ones, so they print slower and purge more. "

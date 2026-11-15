@@ -104,6 +104,32 @@ def _diamond_prism(size: float, depth: float) -> m3d.Manifold:
     return _xsection_along_x(Polygon([(0, -d), (d, 0), (0, d), (-d, 0)]), depth, -(depth - 1.0))
 
 
+def _window_shape(w: float, h: float) -> Polygon:
+    """A tall window with pointed (45 degree) top and bottom, so its top prints without
+    supports: a long hexagon w wide and h tall (a diamond when h is no taller than w)."""
+    d = w / 2.0
+    if h <= w + 0.5:
+        e = h / 2.0
+        return Polygon([(0, -e), (e, 0), (0, e), (-e, 0)])
+    return Polygon([(0, -h / 2), (d, -h / 2 + d), (d, h / 2 - d), (0, h / 2), (-d, h / 2 - d), (-d, -h / 2 + d)])
+
+
+class _Holes(list):
+    """Hole solids, plus how much window they open (mm², measured on the wall)."""
+    area = 0.0
+
+
+def _window_rows(c: dict, z_lo: float, z_hi: float) -> list[tuple[float, float]]:
+    """(middle height, window height) for each row of tall windows in a band; a tall band gets
+    a solid ring between rows so the bars stay short and stiff."""
+    band = z_hi - z_lo
+    if band < 4.0:
+        return []
+    rows = max(1, math.ceil((band + c["slot_ring"]) / (c["slot_max_height"] + c["slot_ring"])))
+    h = (band - (rows - 1) * c["slot_ring"]) / rows
+    return [(z_lo + h / 2 + i * (h + c["slot_ring"]), h) for i in range(rows)]
+
+
 def _rows(c: dict, z_lo: float, z_hi: float) -> list[tuple[float, int]]:
     pitch = c["hole"] + c["strut"] * math.sqrt(2)
     rows, z, k = [], z_lo + c["hole"] / 2, 0
@@ -114,14 +140,32 @@ def _rows(c: dict, z_lo: float, z_hi: float) -> list[tuple[float, int]]:
     return rows
 
 
-def _mesh_on_outline(c: dict, outline: Polygon, z_lo: float, z_hi: float) -> list[m3d.Manifold]:
-    """Diamond holes through a vertical wall that follows a smooth convex outline."""
-    pitch = c["hole"] + c["strut"] * math.sqrt(2)
+def _wall_pattern(c: dict, z_lo: float, z_hi: float, width: float | None = None):
+    """Rows of (height, shape, pitch along the wall, offset fraction) for the chosen windows;
+    `width` narrows the tall windows to fit a flat side exactly."""
+    from .products import _xsection_along_x
+
+    depth = c["wall"] + 2.0
+    if c.get("windows", "slots") == "diamonds":
+        pitch = c["hole"] + c["strut"] * math.sqrt(2)
+        shape = Polygon([(0, -c["hole"] / 2), (c["hole"] / 2, 0), (0, c["hole"] / 2), (-c["hole"] / 2, 0)])
+        proto = _xsection_along_x(shape, depth, -(depth - 1.0))
+        return [(z, proto, shape.area, pitch, 0.5 * parity) for z, parity in _rows(c, z_lo, z_hi)]
+    w = width or c["slot_width"]
+    pitch = w + c["slot_bar"]
+    out = []
+    for i, (z, h) in enumerate(_window_rows(c, z_lo, z_hi)):
+        shape = _window_shape(w, h)
+        out.append((z, _xsection_along_x(shape, depth, -(depth - 1.0)), shape.area, pitch, 0.5 * (i % 2)))
+    return out
+
+
+def _mesh_on_outline(c: dict, outline: Polygon, z_lo: float, z_hi: float) -> _Holes:
+    """Windows through a vertical wall that follows a smooth convex outline: tall windows with
+    thin bars between them (or the old small diamond mesh, `windows: diamonds`)."""
     ring = outline.exterior
     L = ring.length
-    n = max(6, int(L // pitch))
-    proto = _diamond_prism(c["hole"], c["wall"] + 2.0)
-    holes = []
+    holes = _Holes()
 
     def turning(s0):
         """Angle (degrees) between the wall directions 2.5 mm either side of s0."""
@@ -130,9 +174,10 @@ def _mesh_on_outline(c: dict, outline: Polygon, z_lo: float, z_hi: float) -> lis
         a2 = math.atan2(p2.y - p1.y, p2.x - p1.x)
         return abs(math.degrees((a2 - a1 + math.pi) % (2 * math.pi) - math.pi))
 
-    for z, parity in _rows(c, z_lo, z_hi):
+    for z, proto, area, pitch, shift in _wall_pattern(c, z_lo, z_hi):
+        n = max(6, int(L // pitch))
         for j in range(n):
-            s = (j + 0.5 * parity) / n * L
+            s = (j + shift) / n * L
             if turning(s) > 35.0:
                 continue                                          # a sharp corner: keep it solid
             p = ring.interpolate(s)
@@ -144,19 +189,22 @@ def _mesh_on_outline(c: dict, outline: Polygon, z_lo: float, z_hi: float) -> lis
                 nx, ny = -nx, -ny
             ang = math.degrees(math.atan2(ny, nx))
             holes.append(proto.rotate([0.0, 0.0, ang]).translate([p.x, p.y, z]))
+            holes.area += area
     return holes
 
 
 def _roof_holes(c: dict, region, z_lo: float, z_hi: float) -> list[m3d.Manifold]:
     """Straight-down diamond holes through a sloped roof or shoulder. Their sides are
     vertical, so they print with no supports, and kids can see in from above too."""
-    pitch = c["hole"] + c["strut"] * math.sqrt(2)
+    size, strut = ((c["hole"], c["strut"]) if c.get("windows", "slots") == "diamonds"
+                   else (c["roof_hole"], c["roof_strut"]))
+    pitch = size + strut * math.sqrt(2)
+    holes = _Holes()
     if region.is_empty:
-        return []
-    d = c["hole"] / 2.0
+        return holes
+    d = size / 2.0
     proto = Polygon([(0, -d), (d, 0), (0, d), (-d, 0)])
     minx, miny, maxx, maxy = region.bounds
-    holes = []
     row = 0
     y = miny + d
     while y <= maxy - d:
@@ -165,6 +213,7 @@ def _roof_holes(c: dict, region, z_lo: float, z_hi: float) -> list[m3d.Manifold]
             cell = Polygon([(x + px, y + py) for px, py in proto.exterior.coords])
             if region.contains(cell):
                 holes.append(m3d.Manifold.extrude(to_cross_section(cell), z_hi - z_lo).translate([0.0, 0.0, z_lo]))
+                holes.area += cell.area
             x += pitch
         y += pitch / 2
         row += 1
@@ -210,6 +259,7 @@ class Body:
     band_z: float      # thread band start
     H: float           # rim height
     holes: int
+    open_mm2: float = 0.0   # window area: how much of the poop you can see
 
 
 def body_round(cfg: dict, size: str) -> Body:
@@ -222,7 +272,7 @@ def body_round(cfg: dict, size: str) -> Body:
     holes = _mesh_on_outline(c, Point(0, 0).buffer(Rn, quad_segs=64), c["bottom_band"], band_z - c["top_band"])
     solid = solid + _neck_ridge(c, Rn, band_z, H) - cavity
     solid = solid - m3d.Manifold.compose(holes)
-    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes))
+    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes), holes.area)
 
 
 def body_hex(cfg: dict, size: str) -> Body:
@@ -245,23 +295,32 @@ def body_hex(cfg: dict, size: str) -> Body:
     cavity = (m3d.Manifold.extrude(to_cross_section(inner), top - floor).translate([0, 0, floor])
               + m3d.Manifold.batch_hull([_slab(inner, top - 0.01), _cyl(Rn - wall, band_z, band_z + 0.01)])
               + _cyl(Rn - wall, band_z - 0.01, H + 1.0))
-    pitch = c["hole"] + c["strut"] * math.sqrt(2)
     side = 2 * a * math.tan(math.pi / 6)
-    cols = max(1, int((side - 3.0 - c["hole"]) // pitch) + 1)
-    proto = _diamond_prism(c["hole"], wall + 2.0)
+    open_area = 0.0
     holes = []
+    usable = side - 3.0                                   # keep the hex corners solid
+    width = None
+    if c.get("windows", "slots") != "diamonds":           # as many full windows as fit each flat side
+        cols = max(1, math.ceil((usable + c["slot_bar"]) / (c["slot_width"] + c["slot_bar"])))
+        width = min(c["slot_width"], (usable - (cols - 1) * c["slot_bar"]) / cols)
     for f in range(6):
         normal = 30.0 + 60.0 * f
-        for z, parity in _rows(c, c["bottom_band"], top - c["top_band"]):
-            k = cols - parity
+        for z, proto, area, pitch, shift in _wall_pattern(c, c["bottom_band"], top - c["top_band"], width):
+            w = c["hole"] if width is None else width
+            cols = max(1, int((usable - w) // pitch) + 1) if width is None else \
+                max(1, round((usable + c["slot_bar"]) / pitch))
+            k = cols - (1 if shift else 0)
             for i in range(k):
                 u = (-(k - 1) / 2 + i) * pitch
                 holes.append(proto.translate([a, u, z]).rotate([0.0, 0.0, normal]))
+                open_area += area
     roof = outer.buffer(-(wall + 1.5)).difference(Point(0, 0).buffer(Rn + 2.5))
-    holes += _roof_holes(c, roof, top - 1.0, band_z - 0.5)
+    roof_holes = _roof_holes(c, roof, top - 1.0, band_z - 0.5)
+    holes += roof_holes
+    open_area += roof_holes.area
     solid = solid + _neck_ridge(c, Rn, band_z, H) - cavity
     solid = solid - m3d.Manifold.compose(holes)
-    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes))
+    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes), open_area)
 
 
 def body_duck(cfg: dict, size: str) -> Body:
@@ -271,7 +330,7 @@ def body_duck(cfg: dict, size: str) -> Body:
     k = cfg["poop_critters"]["duck"]["scale"][size]
     ax, ay = 32.0 * k, 25.0 * k                         # belly half-length, half-width
     foot = 5.0 * k                                      # 45 degree foot: inset == height
-    belly_top = foot + 24.0 * k
+    belly_top = foot + 30.0 * k                         # tall enough for big windows (Allen: see the poop)
     Rn = 14.0 * k
     cx = 7.0 * k                                        # neck toward the front (+x)
     wall, floor = c["wall"], c["floor"]
@@ -295,10 +354,12 @@ def body_duck(cfg: dict, size: str) -> Body:
     holes = _mesh_on_outline(c, belly, foot + c["bottom_band"] * 0.5, belly_top - c["top_band"])
     roof = (belly.buffer(-(wall + 1.5)).difference(Point(cx, 0).buffer(Rn + 2.5))
             .difference(Polygon([(-ax - 5, -ay), (-ax + 14.0 * k, -ay), (-ax + 14.0 * k, ay), (-ax - 5, ay)])))
-    holes += _roof_holes(c, roof, belly_top - 1.0, band_z - 0.5)
+    roof_holes = _roof_holes(c, roof, belly_top - 1.0, band_z - 0.5)
+    open_area = holes.area + roof_holes.area
+    holes += roof_holes
     solid = solid + _neck_ridge(c, Rn, band_z, H, cx) - cavity
     solid = solid - m3d.Manifold.compose(holes)
-    return Body(solid, cavity, Rn, cx, band_z, H, len(holes))
+    return Body(solid, cavity, Rn, cx, band_z, H, len(holes), open_area)
 
 
 def body_outline(cfg: dict, size: str, shape: str) -> Body:
@@ -335,10 +396,12 @@ def body_outline(cfg: dict, size: str, shape: str) -> Body:
     wall_top = band_z - (reach - Rn)
     holes = _mesh_on_outline(c, outline, c["bottom_band"], wall_top - c["top_band"])
     roof = outline.buffer(-(wall + 1.5)).difference(Point(0, 0).buffer(Rn + 2.5))
-    holes += _roof_holes(c, roof, wall_top - 1.0, band_z - 0.5)
+    roof_holes = _roof_holes(c, roof, wall_top - 1.0, band_z - 0.5)
+    open_area = holes.area + roof_holes.area
+    holes += roof_holes
     solid = solid + _neck_ridge(c, Rn, band_z, H) - cavity
     solid = solid - m3d.Manifold.compose(holes)
-    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes))
+    return Body(solid, cavity, Rn, 0.0, band_z, H, len(holes), open_area)
 
 
 def _ellipse(ax: float, ay: float, n: int = 160) -> Polygon:
@@ -549,7 +612,8 @@ def build_container(cfg: dict, kind: str = "duck", size: str = "medium") -> Cont
         body.solid = body.solid + _rim_stop(cfg["poop_jar"], body)
     vol = body.cavity.trim_by_plane([0.0, 0.0, -1.0], -body.H).volume()
     bb = np.asarray(body.solid.bounding_box())
-    info = {"holes": body.holes, "hole_size": cfg["poop_jar"]["hole"], "opening_mm": round(2 * (body.Rn - cfg["poop_jar"]["wall"]), 1),
+    info = {"holes": body.holes, "open_cm2": round(body.open_mm2 / 100.0, 1), "windows": cfg["poop_jar"].get("windows", "slots"),
+            "hole_size": cfg["poop_jar"]["hole"], "opening_mm": round(2 * (body.Rn - cfg["poop_jar"]["wall"]), 1),
             "volume_ml": round(vol / 1000.0, 1), "body_mm": [round(v, 1) for v in (bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2])]}
     return Container(kind, size, body, parts, flip, info)
 
@@ -648,7 +712,10 @@ def write_containers(cfg: dict, out_dir: Path, kinds=KINDS, sizes=("medium",)) -
                 f"# Poop container: {kind} ({size})",
                 "",
                 f"- Body about {con.info['body_mm'][0]:.0f} x {con.info['body_mm'][1]:.0f} x {con.info['body_mm'][2]:.0f} mm, holds about {con.info['volume_ml']:.0f} ml.",
-                f"- {con.info['holes']} diamond holes, {con.info['hole_size']} mm corner to corner: the poop shows but stays in.",
+                (f"- {con.info['holes']} windows, {cfg['poop_jar']['slot_width']:g} mm wide with thin bars between them, "
+                 f"about {con.info['open_cm2']:.0f} cm² of window: the poop shows but stays in."
+                 if con.info["windows"] == "slots" else
+                 f"- {con.info['holes']} diamond holes, {con.info['hole_size']} mm corner to corner: the poop shows but stays in."),
                 f"- The opening is {con.info['opening_mm']:.0f} mm across. The lid closes in about one turn.",
                 "- Body prints upright. " + ("The lid prints upside down." if con.cap_flip else
                                              "The head prints standing on its opening (that is why the socket has a pointed ceiling).")
