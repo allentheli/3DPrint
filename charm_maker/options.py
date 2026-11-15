@@ -92,11 +92,19 @@ def read_options(cfg: dict, read) -> dict:
     out: dict = {"style": None, "tidy": False, "notes": [], "warnings": []}
     found_any = False
     marks = []
-    for key, x, y, s in zones.get("shape_boxes", []):
-        if not _box_present(cfg, page, ppm, x, y, s):
-            continue
+    boxes = zones.get("shape_boxes", [])
+    # The boxes come all together or not at all (older cards have none). A big tick can cover a
+    # box's printed outline (2026-11-15: Jack's and Avery's Puffy ticks were skipped), so if any
+    # box is there, read them all.
+    # A faint scan can lose every outline (Clicker_keychain_6): one box clearly marked and the others
+    # clean is a tick too; an older card with pictures here would mark several.
+    fractions = [(_mark_fraction(cfg, page, ppm, x, y, s, paper_l), key) for key, x, y, s in boxes]
+    least = cfg["reader"]["option_mark_min"]
+    ticked = [f for f, _ in fractions if f >= least]
+    lone_tick = len(ticked) == 1 and all(f < least / 2 for f, _ in fractions if f < least)
+    if boxes and (lone_tick or any(_box_present(cfg, page, ppm, x, y, s) for _, x, y, s in boxes)):
         found_any = True
-        marks.append((_mark_fraction(cfg, page, ppm, x, y, s, paper_l), key))
+        marks = fractions
     picked = sorted([m for m in marks if m[0] >= cfg["reader"]["option_mark_min"]], reverse=True)
     if picked:
         out["style"] = picked[0][1]
@@ -105,7 +113,7 @@ def read_options(cfg: dict, read) -> dict:
             out["warnings"].append("more than one shape ticked on the card ("
                                    + ", ".join(WORDS[k] for _, k in picked) + f"); used {WORDS[picked[0][1]]}")
     x, y, s = zones["tidy_box"]
-    if _box_present(cfg, page, ppm, x, y, s):
+    if found_any or _box_present(cfg, page, ppm, x, y, s):   # a card with shape boxes has this one too
         found_any = True
         if _mark_fraction(cfg, page, ppm, x, y, s, paper_l) >= cfg["reader"]["option_mark_min"]:
             out["tidy"] = True

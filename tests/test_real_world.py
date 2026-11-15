@@ -638,3 +638,27 @@ def test_stray_marks_around_a_drawing_can_be_left_out(cfg, tmp_path):
     assert w < 2 * (bw * 0.28) / 3 + 6, "only the circle and its border are left"
     black = next(i for i in design.inks if i.name == "black")
     assert any(i.name == "pink" for i in design.inks) and len(black.geometry.geoms) >= 2, "the eye inside stays"
+
+
+def test_a_big_tick_over_the_box_outline_still_counts(cfg, tmp_path):
+    """2026-11-15: Jack and Avery ticked Puffy with a big marker tick that covered the box's
+    printed outline; the box was taken as missing and the card came out flat."""
+    from PIL import ImageDraw
+
+    from charm_maker.options import option_zones
+    from tests.synthetic import BLACK, PINK, card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 7, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.3
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=PINK, outline=BLACK, width=int(4.5 * ppm))
+    key, x, y, s = next(z for z in option_zones(cfg, "keychain")["shape_boxes"] if z[0] == "puffy")
+    # A fat brown tick from inside the box out over its outline and beyond.
+    pts = [P(x + 0.2 * s, y + 0.55 * s), P(x + 0.45 * s, y + 0.15 * s), P(x + 1.3 * s, y + 1.6 * s)]
+    d.line(pts, fill=(150, 80, 30), width=int(2.2 * ppm), joint="curve")
+    d.line([P(x - 0.3, y - 0.3), P(x + s + 0.3, y - 0.3)], fill=(150, 80, 30), width=int(1.5 * ppm))
+    photo = photograph(img, tmp_path / "keychain-7.jpg", seed=7)
+    res = run_batch(cfg, [photo], tmp_path / "out")
+    assert res.pieces[0].style == "puffy", res.pieces[0].design.fixes
