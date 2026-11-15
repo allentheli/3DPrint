@@ -232,9 +232,13 @@ one, run again with `--no-pencil <card>` (repeat for more, or `--no-pencil` for 
 Separate marks drawn around the drawing get joined to it with base-color bridges ("N separate pieces
 joined"); when Allen says they are nothing (Areen's cat clicker, 2026-11-15), run again with
 `--drop-strays <card>`: only the biggest piece is kept, with everything inside its outline.
-Very light pencil (Avery's giraffe, 2026-11-15) comes back as broken dashes: a copy of `config.yaml`
-with `reader.ink_value_max: 0.80` (instead of 0.60), passed as `--config`, read it whole (a card option
-for this is still to do).
+Very light pencil (Avery's giraffe, 2026-11-15) comes back as broken dashes: `--light-pencil <card>` reads
+it whole (`reader.light_ink_value_max` 0.80 instead of 0.60 for that card).
+Several uploads together (Allen at the party, 2026-11-15: "I'll need all of them together, can split into a
+few different plates, and give me the ETAs"): copy the PDFs into one folder, run `names` on it (the cards
+renumber: key-01, key-01-b, ...), redo every per-card fix under the new card names, and use
+`--separate-plates`: flat pieces, flexis and clicker cases each get plates of their own, so the quick flat
+pieces come off first; give each plate's rough time.
 A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
 1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
 gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.

@@ -476,6 +476,7 @@ reader:
   box_margin: 3                   # read this far outside the drawing box (card mm)
   edge_band: 1.5                  # ignore this band along the box edge (card mm)
   ink_value_max: 0.60             # darker than this is ink
+  light_ink_value_max: 0.80       # with run --light-pencil CARD: very light pencil read whole (Avery, 2026-11-15)
   ink_saturation_min: 0.40        # more colorful than this is ink
   faint_chroma_min: 10            # a faint pen line counts as ink if it is this colorful...
   faint_delta_min: 18             # ...and this different from the paper (Lab); gray shadows do not

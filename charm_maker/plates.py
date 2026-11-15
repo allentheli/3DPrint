@@ -197,7 +197,9 @@ def _pack_together(cfg: dict, pieces: list[Piece], palette: Palette,
     default), the cases share the charms' plates (as many as the bed needs, usually one),
     however many colors: Allen sets the spools in Bambu Studio. Round-back figurines always
     get their own."""
-    groups = [[p for p in pieces if not p.supports and p.group != "cases"],
+    flexi = [p for p in pieces if p.attachment.get("kind") == "strips"]
+    groups = [[p for p in pieces if not p.supports and p.group != "cases" and not any(p is f for f in flexi)],
+              flexi,                       # thick and slow: their own plate, so quick pieces come off first
               [p for p in pieces if p.group == "cases"],
               [p for p in pieces if p.supports]]
     if one_plate:

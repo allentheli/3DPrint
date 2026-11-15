@@ -48,10 +48,14 @@ def collect_inputs(paths: list[Path]) -> list[Path]:
 def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, border: bool | None,
                      name: str, palette: Palette | None = None, tidy: bool = False,
                      keep_dots: bool = True, size: float = 1.0, product_override: str | None = None,
-                     pencil: bool = True, drop_strays: bool = False) -> Design:
+                     pencil: bool = True, drop_strays: bool = False, light: bool = False) -> Design:
     """`size` makes the piece that many times the drawn size (Allen, 2026-11-12: a bigger
     butterfly so its tiny face keeps its shape). It is applied before the print fixes, so
     her lines and the gaps between them grow too and the 1 mm minimum has room."""
+    if light:
+        # Very light pencil (Avery's giraffe, 2026-11-15) came back as broken dashes: read lighter
+        # gray as ink for this card only.
+        cfg = {**cfg, "reader": {**cfg["reader"], "ink_value_max": cfg["reader"].get("light_ink_value_max", 0.80)}}
     if not pencil:
         # Kids may draft in pencil and erase it; a line still dark enough to read as pencil would
         # print. --no-pencil reads only the marker for that card.
@@ -223,7 +227,8 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
               sizes: dict[str, float] | None = None,
               products: dict[str, str] | None = None, keep_whole: dict[str, str] | None = None,
               only: set[str] | None = None, together: bool | None = None,
-              quick: set[str] | None = None, drop_strays: set[str] | None = None) -> BatchResult:
+              quick: set[str] | None = None, drop_strays: set[str] | None = None,
+              light: set[str] | None = None) -> BatchResult:
     """Photos in, plates out. Every distinct ink color is its own part; parts are
     pre-assigned to the nearest loaded spool as a head start, and Allen can change any
     of them in Bambu Studio. Strict mode (off_palette=None, allow_uncalibrated=False)
@@ -324,6 +329,7 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
                                       keep_dots=not (no_dots & {name, base_name, "*"}),
                                       pencil=not (no_pencil & {name, base_name, "*"}),
                                       drop_strays=bool(set(drop_strays or ()) & {name, base_name, "*"}),
+                                      light=bool(set(light or ()) & {name, base_name, "*"}),
                                       size=next((sizes[c] for c in (name, base_name, "*") if c in sizes), 1.0),
                                       product_override=next((products[c] for c in (name, base_name, "*")
                                                              if c in products), None))

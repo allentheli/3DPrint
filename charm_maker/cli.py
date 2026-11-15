@@ -176,7 +176,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                        products=per_card(args.as_product), keep_whole=per_card(args.keep_whole),
                        only={o.lower() for o in args.only or ()}, together=args.together,
                        quick={q.lower() for q in args.quick or ()},
-                       drop_strays=set(args.drop_strays or ()))
+                       drop_strays=set(args.drop_strays or ()), light=set(args.light_pencil or ()))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -373,6 +373,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
                    help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
                         "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
+    p.add_argument("--light-pencil", action="append", nargs="?", const="*", metavar="CARD",
+                   help="read very light pencil whole, for a card that came back as broken dashes")
     p.add_argument("--drop-strays", action="append", nargs="?", const="*", metavar="CARD",
                    help="keep only the main drawing: separate marks around it are left out, e.g. "
                         "'--drop-strays click-01-c' (repeat for more, alone for every card)")
