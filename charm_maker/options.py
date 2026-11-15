@@ -101,7 +101,10 @@ def read_options(cfg: dict, read) -> dict:
     fractions = [(_mark_fraction(cfg, page, ppm, x, y, s, paper_l), key) for key, x, y, s in boxes]
     least = cfg["reader"]["option_mark_min"]
     ticked = [f for f, _ in fractions if f >= least]
-    lone_tick = len(ticked) == 1 and all(f < least / 2 for f, _ in fractions if f < least)
+    # ...and a tick or X fills only part of its box (about 0.4 on tonight's cards); a box filled
+    # solid there (0.7 in the old-card test) is more likely an older card's picture.
+    lone_tick = (len(ticked) == 1 and ticked[0] <= 0.6
+                 and all(f < least / 2 for f, _ in fractions if f < least))
     if boxes and (lone_tick or any(_box_present(cfg, page, ppm, x, y, s) for _, x, y, s in boxes)):
         found_any = True
         marks = fractions
