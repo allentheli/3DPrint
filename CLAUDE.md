@@ -171,7 +171,9 @@ figure (a fridge magnet: flat back, glued magnet; Allen, 2026-11-13: no stand, s
 mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm jump rings, or `style: stud` for a flat back). A drawing without card markers needs
 `--product`.
 
-Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): each clicker card gives two
+Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): clickers are always flat (Allen,
+2026-11-15: "The clicker should all be flat"; `products.clicker.always_style: flat`: a shape ticked on a
+clicker card is noted and not used, a command-line `--style` for that card still wins). Each clicker card gives two
 pieces. The keycap `click-NN` is the drawing as a flat charm with a 5.5 mm post and cross socket
 on the back, filled out behind to at least the switch's 15.6 mm square, printed face-down with
 the charms. A shaped keycap (puffy, raised lines, figurine: ticked on the card or `--style`)

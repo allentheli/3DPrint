@@ -88,3 +88,28 @@ def test_card_choice_and_command_line(cfg, tmp_path):
     assert any(f.startswith("tidy:") for f in got["key-06"].design.fixes)
     assert "neat lines ticked on the card" in got["key-06"].design.fixes
     assert not any(f.startswith("tidy:") for f in got["key-04"].design.fixes)
+
+
+def test_clickers_stay_flat_whatever_is_ticked(cfg, tmp_path):
+    """Allen, 2026-11-15: "The clicker should all be flat". A shape ticked on a clicker card is
+    noted, not used; a style named for the card on the command line still wins."""
+    from tests.synthetic import BLACK, PINK, YELLOW, card_image, photograph
+    from charm_maker.options import option_zones
+    from PIL import ImageDraw
+
+    img, lay, ppm, P = card_image(cfg, "clicker", 2, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy, r = bx + bw / 2, by + bh / 2, bw * 0.3
+    d = ImageDraw.Draw(img)
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=YELLOW, outline=BLACK, width=int(4.5 * ppm))
+    key, x, y, s = next(z for z in option_zones(cfg, "clicker")["shape_boxes"] if z[0] == "puffy")
+    w = max(2, int(0.7 * ppm))
+    d.line([P(x + 1.5, y + 1.5), P(x + s - 1.5, y + s - 1.5)], fill=BLACK, width=w)
+    d.line([P(x + 1.5, y + s - 1.5), P(x + s - 1.5, y + 1.5)], fill=BLACK, width=w)
+    photo = photograph(img, tmp_path / "click-02.jpg", seed=2)
+    res = run_batch(cfg, [photo], tmp_path / "a")
+    keycap = next(p for p in res.pieces if p.name == "click-02")
+    assert keycap.style == "flat" and not any(p.name.endswith("-post") for p in res.pieces)
+    assert any("always flat" in f for f in keycap.design.fixes)
+    res = run_batch(cfg, [photo], tmp_path / "b", styles={"click-02": "puffy"})
+    assert next(p for p in res.pieces if p.name == "click-02").style == "puffy"

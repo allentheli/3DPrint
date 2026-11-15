@@ -230,6 +230,7 @@ products:
     card: keychain
   clicker:
     label: Clicker keychain
+    always_style: flat            # Allen, 2026-11-15: "The clicker should all be flat" (a card's shape tick is noted, not used)
     file_word: clicker
     size_min: 16                  # the keycap covers the switch at least
     size_max: 40                  # Allen: no tight limit; bigger keycaps wobble more on one switch

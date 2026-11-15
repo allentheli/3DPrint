@@ -330,6 +330,12 @@ def run_batch(cfg: dict, inputs: list[Path], out_dir: Path, *, product_hint: str
             from .options import read_options
 
             opts = read_options(cfg, read)                 # boxes the kid ticked on the card
+            fixed = cfg["products"].get(read.layout.product if read.layout else "", {}).get("always_style")
+            if fixed and opts.get("style") and opts["style"] != fixed:
+                # Clickers are always flat (Allen, 2026-11-15); a command-line style still wins.
+                opts.setdefault("notes", []).append(f"{opts['style'].replace('-', ' + ')} ticked, but this product is "
+                                                     f"always {fixed}")
+                opts["style"] = fixed
             design = design_from_read(cfg, read, product_hint=product_hint, border=border, name=name, palette=palette,
                                       tidy=bool(tidy & {name, alias, "*"}) or opts.get("tidy", False),
                                       keep_dots=not (no_dots & {name, alias, "*"}),
