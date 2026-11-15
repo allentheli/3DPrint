@@ -172,11 +172,11 @@ mirror-image pair, a small top tab with a front-to-back hole for Allen's 4 mm ju
 `--product`.
 
 Clicker (Allen's switch: MX-style blue clicky, photo 2026-11-10): clickers are always flat (Allen,
-2026-11-15: "The clicker should all be flat"; `products.clicker.always_style: flat`: a shape ticked on a
-clicker card is noted and not used, a command-line `--style` for that card still wins). Each clicker card gives two
+2026-11-15: "The clicker should all be flat"; `products.clicker.always_style: flat`: the clicker card has no shape boxes, a shape ticked on
+an older clicker card is not read, a command-line `--style` for that card still wins). Each clicker card gives two
 pieces. The keycap `click-NN` is the drawing as a flat charm with a 5.5 mm post and cross socket
 on the back, filled out behind to at least the switch's 15.6 mm square, printed face-down with
-the charms. A shaped keycap (puffy, raised lines, figurine: ticked on the card or `--style`)
+the charms. A shaped keycap (puffy, raised lines, figurine: only with `--style` for that card)
 prints face-up, so its post is a third piece `click-NN-post` (prints standing, socket up) that
 Allen glues into a round dent in the keycap's back. The case `click-NN-case` is a cup (Allen, after the first print on
 2026-11-11: the switch showed and the keycap floated over a gap): the switch snaps into a plate
@@ -207,7 +207,8 @@ areas in Bambu Studio with the color-painting fill tool (no separate parts neede
 the fill in). Flat pieces print face-down, so he paints them from the bottom view. Tried
 2026-11-13: it works as long as the areas are enclosed (hence "Close the lines" on the cards).
 
-Card tick boxes: under the name line, every card (clicker too, since 2026-11-11) shows the five shapes, each
+Card tick boxes: under the name line, every card except the clicker and the flexi (clickers are always flat since
+2026-11-15: their card says "Your drawing becomes a button that clicks!" instead) shows the five shapes, each
 with a real render of a sample heart, and a tick box: Flat, Puffy, Raised lines, Puffy + lines,
 Figurine. A "neat lines" box beside the name turns on tidy. The run reads the ticks itself and
 says so in the fixes ("shape ticked on the card: Puffy"); no tick means flat; two ticks use the

@@ -403,6 +403,14 @@ def _draw_options(pdf, cfg: dict, lay: CardLayout):
         pdf.drawString((x0 + w + 6) * mm, (y0 + 15) * mm, "Your drawing becomes a wiggly flexi!")
         pdf.setFont("Helvetica", 10)
         pdf.drawString((x0 + w + 6) * mm, (y0 + 9) * mm, "Draw it big and tall. We cut it into strips that wiggle.")
+    if not boxes and cfg["products"][lay.product].get("always_style"):
+        # A clicker: always flat (Allen, 2026-11-15), so no shapes to pick; say what it becomes.
+        x0, y0 = c["margin"] + 8.0, lay.zones["tidy_box"][1] - 27.0
+        pdf.setFillColorRGB(0, 0, 0)
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(x0 * mm, (y0 + 15) * mm, "Your drawing becomes a button that clicks!")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawString(x0 * mm, (y0 + 9) * mm, "Cover the square and draw it big and bold.")
     x, y, s = lay.zones["tidy_box"]
     box(x, y, s)
     pdf.setFillColorRGB(0, 0, 0)

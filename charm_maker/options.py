@@ -31,7 +31,9 @@ def option_zones(cfg: dict, product: str) -> dict:
     nx, ny, nw, nh = c["name_box"]
     zones = {"tidy_box": (nx + nw + 6.0, ny + 0.5, BOX)}
     x0, y = c["margin"] + 8.0, ny - 19.0              # every card, clicker too (Allen: figurine clickers)
-    if cfg["products"].get(product, {}).get("attachment") != "strips":    # flexis are flat for now
+    prod = cfg["products"].get(product, {})
+    # Flexis are flat for now; clickers always (Allen, 2026-11-15), so their cards offer no shapes.
+    if prod.get("attachment") != "strips" and not prod.get("always_style"):
         zones["shape_boxes"] = [(key, x0 + i * STEP, y, BOX) for i, (key, _) in enumerate(SHAPES)]
     return zones
 
