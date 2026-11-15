@@ -14,8 +14,8 @@ printer:
   layer_height_cases: 0.20        # clicker cases and figure stands
   one_plate: true                 # Allen, 2026-11-14: clicker cases share the charms' plate; false = their
                                   # own plate, as before (run --separate-plates). Round figurines: always apart
-  plate_per_kid: true             # Allen, 2026-11-14: each kid's things on a plate of their own (run --together
-                                  # packs all kids onto shared plates)
+  plate_per_kid: false            # Allen, 2026-11-15 at the party: "I need everything on one plate, its becoming too
+                                  # many files" (true = a plate per kid, his 2026-11-14 wish; run --per-kid)
   nozzle: 0.4
 
 # Rough print times (charm_maker/printtime.py), not the slicer's: they rank pieces well, and the

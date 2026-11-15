@@ -229,6 +229,12 @@ Pencil drafts (Allen, 2026-11-14: kids may draft in pencil and erase before the 
 purpose (test drive 4 was drawn in pencil). A well-erased line is too faint to read; one still clearly
 visible after erasing reads as a line and prints. Look for stray lines on the contact sheet; if a card has
 one, run again with `--no-pencil <card>` (repeat for more, or `--no-pencil` for all): only the marker is read.
+Separate marks drawn around the drawing get joined to it with base-color bridges ("N separate pieces
+joined"); when Allen says they are nothing (Areen's cat clicker, 2026-11-15), run again with
+`--drop-strays <card>`: only the biggest piece is kept, with everything inside its outline.
+Very light pencil (Avery's giraffe, 2026-11-15) comes back as broken dashes: a copy of `config.yaml`
+with `reader.ink_value_max: 0.80` (instead of 0.60), passed as `--config`, read it whole (a card option
+for this is still to do).
 A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
 1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
 gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.
@@ -264,10 +270,11 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Kids' names first | `python -m charm_maker names photos/ --out output/<batch>` (writes `names.png`) |
 | Photos to plates | `python -m charm_maker run photos/ --out output/<batch> [--names key-01=Jack ...]` |
 | Ignore an erased pencil draft | add `--no-pencil key-03` to `run` (repeat for more cards; alone, every card) |
+| Leave out stray marks around a drawing | add `--drop-strays click-01-c` to `run`: only the main drawing (everything inside its outline stays) |
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
 | Clicker cases on their own plate | add `--separate-plates` to `run` (the default puts the cases with the charms, as many plates as the bed needs; `printer.one_plate` in config; round-back figurines always get their own plate) |
 | Quick plate (when Allen asks) | add `--quick key-03 ear-01` to `run`: those cards also on a quick plate; the run lists what to delete from the kids' plates |
-| All kids on shared plates | add `--together` to `run` (default: a plate per kid) |
+| A plate per kid | add `--per-kid` to `run` (default: everything on one plate) |
 | Just some pieces | add `--only mia key-03` to `run`: only those kids (by the name read) or cards |
 | Build the fit-test plate | `python -m charm_maker fit-test` (writes `output/fit-test/`) |
 | Flexi joint test plate | `python -m charm_maker fit-test --only flexi_joint_gap --out output/fit-test-flexi` (pieces 19-22) |
@@ -301,21 +308,22 @@ Piece numbers map to groups in config order: 1-3 clip pocket, 4-6 keyring hole,
 - `designs/<card>-preview.png`: the same per design, plus the name crop from the card.
 - `designs/<card>.json`: sizes, filament per part, fixes and warnings, for your own checks.
 - `PRINT_NOTES.md`: filament per AMS slot for each plate, layer height, plate type, finishing.
-- `plates/<kid>-<pieces>.3mf` and `...-map.png`: a plate per kid with all their things, clicker case
-  included (Allen, 2026-11-14: "organize the plate file by names (ie all Alison's stuff on one plate)"),
-  named after the kid and what they made: `alison-clicker-earrings.3mf`; cards with no name read share
-  one plate (`key-01_clip-02`). Bambu Studio shows the same name on the plate. Round-back figurines get
-  a `-figurines` plate (supports); `--separate-plates` gives clicker cases a `-clicker-cases` plate;
-  `--together` packs all kids onto shared plates. Two plates in one run never share a name (`-2`). The
+- `plates/<kids-and-pieces>.3mf` and `...-map.png`: everything from an upload on one plate, clicker cases
+  included (Allen, 2026-11-15 at the party: "I need everything on one plate, its becoming too many files
+  for me to keep track"; a second plate only when the bed is full), named after the kids and what they
+  made: `alison-clicker-earrings_madison-necklace.3mf` (past about 80 letters `_and-3-more`). Bambu Studio
+  shows the same name on the plate. Round-back figurines get a `-figurines` plate (supports);
+  `--separate-plates` gives clicker cases a `-clicker-cases` plate; `--per-kid` gives each kid a plate
+  (his 2026-11-14 wish, since replaced). Two plates in one run never share a name (`-2`). The
   map is who's who, each piece's name where it sits on the plate (send it with the plate; it stops
   matching if Allen presses Arrange).
 - **Quick plate, only when Allen asks** ("when I ask give the quick one for each on a separate plate and
   tell me which one I need to take out from the main plate"). Never pick for him: kids choose when
   times are close ("if they r close, I will give kids the choice"). When he names the pieces, run the
   same upload again with `--quick <cards>` (cards from the quickest-first list) to a new folder: the
-  kids' plates come out the same as before and a `quick_<kids-and-pieces>.3mf` plate is added; send
+  main plate comes out the same as before and a `quick_<kids-and-pieces>.3mf` plate is added; send
   only the quick plate and its map, and pass on the run's "take these out" lines (which piece to delete
-  from which kid's plate in Bambu Studio, so nothing prints twice).
+  from the main plate in Bambu Studio, so nothing prints twice).
 - Rough print times (Allen, 2026-11-14: "estimate the time ... which each kid's print would be the
   fastest"): the run prints "quickest first", each kid's pieces with rough minutes of printing (a
   clicker counts with its case, earrings as a pair), and each plate's rough total and color changes;

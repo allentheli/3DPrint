@@ -28,7 +28,7 @@ def test_named_run(cfg, tmp_path):
 
     names = {"key-03": "Jack", "key-04": "Mia", "key-05": "jack", "click-01": "Jack"}   # key-06: name left blank
     res = run_batch(cfg, inputs, tmp_path / "out", names=names, styles={"key-03": "puffy"},
-                    overrides=["key-04 pink=Black"])
+                    overrides=["key-04 pink=Black"], together=False)           # --per-kid
     got = {p.name: p for p in res.pieces}
     assert set(got) == {"keychain-jack", "keychain-mia", "keychain-jack-2", "key-06", "clicker-jack", "clicker-jack-case"}
     assert got["keychain-jack"].style == "puffy", "flags still go by the card number"
@@ -76,6 +76,7 @@ def test_only_some_cards_or_kids(cfg, tmp_path):
     names = {"key-03": "Jack", "key-04": "Mia"}
     res = run_batch(cfg, inputs, tmp_path / "a", names=names, only={"Mia", "key-05"})
     assert sorted(p.name for p in res.pieces) == ["key-05", "keychain-mia"]
-    assert [v["3mf"].name for v in res.files["plates"].values()] == ["mia-keychain.3mf", "key-05.3mf"]
-    together = run_batch(cfg, inputs, tmp_path / "b", names=names, only={"Mia", "key-05"}, together=True)
-    assert [v["3mf"].name for v in together.files["plates"].values()] == ["mia-keychain_key-05.3mf"]
+    # Everything on one plate by default (Allen, 2026-11-15: "too many files for me to keep track").
+    assert [v["3mf"].name for v in res.files["plates"].values()] == ["mia-keychain_key-05.3mf"]
+    per_kid = run_batch(cfg, inputs, tmp_path / "b", names=names, only={"Mia", "key-05"}, together=False)
+    assert [v["3mf"].name for v in per_kid.files["plates"].values()] == ["mia-keychain.3mf", "key-05.3mf"]

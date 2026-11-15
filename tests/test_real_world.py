@@ -605,3 +605,36 @@ def test_an_erased_pencil_draft_can_be_left_out(cfg, tmp_path):
     # Read with pencil, only the half-erased line comes back (the ghost is too faint);
     # with --no-pencil it is gone too.
     assert 0.6 * line_mm2 < extra < 1.6 * line_mm2, (extra, line_mm2)
+
+
+def test_stray_marks_around_a_drawing_can_be_left_out(cfg, tmp_path):
+    """Allen, 2026-11-15 (Areen's cat clicker): "the 2 extra dots outside r nothing, just keep the cat".
+    --drop-strays keeps the main drawing; marks inside it (the eye) stay."""
+    from PIL import ImageDraw
+
+    from tests.synthetic import BLACK, PINK, card_image, photograph
+
+    photos = tmp_path / "photos"
+    photos.mkdir()
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 2, photos)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.28
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=PINK, outline=BLACK, width=int(4.5 * ppm))
+    d.ellipse([P(cx - 3, cy + 3), P(cx + 3, cy - 3)], fill=BLACK)                      # an eye, inside
+    for dx in (-1, 1):                                                                 # two marks outside
+        x = cx + dx * (r + 12)
+        d.ellipse([P(x - 4, cy + r + 4), P(x + 4, cy + r - 4)], outline=BLACK, width=int(2.5 * ppm))
+    photograph(img, photos / "keychain-2.jpg", seed=2)
+    res = run_batch(cfg, [photos / "keychain-2.jpg"], tmp_path / "a")
+    assert any("separate pieces joined" in f for f in res.pieces[0].design.fixes)
+    res = run_batch(cfg, [photos / "keychain-2.jpg"], tmp_path / "b", drop_strays={"key-02"})
+    design = res.pieces[0].design
+    assert any("2 separate mark(s) outside the main drawing left out" in f for f in design.fixes)
+    assert not any("separate pieces joined" in f for f in design.fixes)
+    w, h = res.pieces[0].size()
+    assert w < 2 * (bw * 0.28) / 3 + 6, "only the circle and its border are left"
+    black = next(i for i in design.inks if i.name == "black")
+    assert any(i.name == "pink" for i in design.inks) and len(black.geometry.geoms) >= 2, "the eye inside stays"

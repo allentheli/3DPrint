@@ -175,7 +175,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                        sizes=per_card(args.scale),
                        products=per_card(args.as_product), keep_whole=per_card(args.keep_whole),
                        only={o.lower() for o in args.only or ()}, together=args.together,
-                       quick={q.lower() for q in args.quick or ()})
+                       quick={q.lower() for q in args.quick or ()},
+                       drop_strays=set(args.drop_strays or ()))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -349,8 +350,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--quick", action="extend", nargs="+", metavar="CARD",
                    help="also put these cards together on a quick plate, to print first; the run says which "
                         "pieces to delete from the kids' plates")
-    p.add_argument("--together", action="store_true", default=None,
-                   help="pack all kids' pieces onto shared plates instead of a plate per kid")
+    p.add_argument("--together", dest="together", action="store_true", default=None,
+                   help="all kids' pieces on shared plates (the default, config printer.plate_per_kid)")
+    p.add_argument("--per-kid", dest="together", action="store_false",
+                   help="a plate per kid instead")
     p.add_argument("--separate-plates", dest="one_plate", action="store_false",
                    help="clicker cases on a plate of their own")
     p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",
@@ -370,6 +373,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
                    help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
                         "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
+    p.add_argument("--drop-strays", action="append", nargs="?", const="*", metavar="CARD",
+                   help="keep only the main drawing: separate marks around it are left out, e.g. "
+                        "'--drop-strays click-01-c' (repeat for more, alone for every card)")
     p.add_argument("--no-pencil", action="append", nargs="?", const="*", metavar="CARD",
                    help="read only the marker, not pencil, for a card whose erased pencil draft came back as "
                         "extra lines: '--no-pencil key-03' for one card (repeat for more), '--no-pencil' for all")

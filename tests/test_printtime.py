@@ -35,7 +35,8 @@ def test_a_quick_plate_and_what_to_take_out(cfg, tmp_path):
     draw_blob_card(cfg, photos, "clicker", 1, BLACK, YELLOW)
     draw_blob_card(cfg, photos, "keychain", 4, BLACK, PINK)
     res = run_batch(cfg, sorted(photos.glob("*.jpg")), tmp_path / "out",
-                    names={"key-03": "Jack", "click-01": "Jack", "key-04": "Mia"}, quick={"key-03", "key-04"})
+                    names={"key-03": "Jack", "click-01": "Jack", "key-04": "Mia"}, quick={"key-03", "key-04"},
+                    together=False)
     assert not res.problems, res.problems
     names = [v["3mf"].name for v in res.files["plates"].values()]
     assert names == ["jack-clicker-keychain.3mf", "mia-keychain.3mf", "quick_jack-keychain_mia-keychain.3mf"]
