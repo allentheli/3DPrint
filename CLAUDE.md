@@ -66,7 +66,10 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
     still lands on a face, rerun that card with `--keep-whole flexi-01=0-40` (no cuts in the top 40%). Also
     check arms and wings in the preview: a cut across the tip of an arm leaves the tip on the next strip
     (Areen's bunny, printed 2026-11-15: "the tip of it was free flowing and the left over part is sharp");
-    move the cut past the arms with `--keep-whole` (her bunny: `30-68`, 2 strips, arms whole). Any card can be made a flexi with
+    move the cut past the arms with `--keep-whole` (her bunny: `30-68`, 2 strips, arms whole). Allen
+    preferred 3 strips with the arm moved down: on a copy of the card image the arm was shifted 150 px
+    (about 4.5 mm on the flexi) and its two lines rejoined to the body line; only with his say-so. Moving
+    the clipped tip to the other strip was tried and dropped (the tip above the cut is a ~1.3 mm sliver). Any card can be made a flexi with
     `--as key-02=flexi`; the shark duck (keychain-3, key-02) gives 3 strips, 4 joints, 49 x 65 mm
     (the joint is too big to fit between its eyes and teeth, so the head is one strip, like the
     Pusheen's). The flexi card is in the normal card set (`cards`; alone: `cards --products
