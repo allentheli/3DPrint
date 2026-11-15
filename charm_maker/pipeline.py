@@ -135,8 +135,11 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
     size_mm = cfg["products"][product]["default_size"] * size
     target_ppm = cfg["reader"]["px_per_card_mm"] * scale
     resize = target_ppm * size_mm / longest_px
-    pad = 10
-    crop = small[max(ys.min() - pad, 0):ys.max() + pad, max(xs.min() - pad, 0):xs.max() + pad]
+    # Room around the ink: the paper estimate needs plain paper at the edges, or ink that
+    # touches the crop is lost (2026-11-15: the antibody's outer tips came out cut flat).
+    pad = max(10, int(0.08 * longest_px))
+    crop = cv2.copyMakeBorder(small, pad, pad, pad, pad, cv2.BORDER_REPLICATE)
+    crop = crop[ys.min():ys.max() + 2 * pad, xs.min():xs.max() + 2 * pad]
     crop = cv2.resize(crop, (int(crop.shape[1] * resize), int(crop.shape[0] * resize)), interpolation=cv2.INTER_CUBIC)
     inks = separate_colors(cfg, crop, px_per_mm=target_ppm)
     design = fix_design(cfg, inks.layers, target_ppm, border_on=border, name=name, product=product, tidy=tidy,
