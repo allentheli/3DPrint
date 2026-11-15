@@ -74,8 +74,15 @@ def _mark_fraction(cfg: dict, page: np.ndarray, ppm: float, x: float, y: float, 
         return 0.0
     rgb = cv2.cvtColor(inner, cv2.COLOR_BGR2RGB).reshape(-1, 3).astype(np.float64)
     lab = _srgb_to_lab(rgb)
+    # The paper right around this box, not the whole card: a phone photo is darker on one side.
+    around = _crop(page, ppm, x - 4.0, y - 4.0, s + 8.0, s + 8.0)
+    if around.size:
+        near = _srgb_to_lab(cv2.cvtColor(around, cv2.COLOR_BGR2RGB).reshape(-1, 3).astype(np.float64))[:, 0]
+        paper_l = min(paper_l, float(np.percentile(near, 95)))
     chroma = np.hypot(lab[:, 1], lab[:, 2])
-    ink = (lab[:, 0] < paper_l - 28.0) | ((chroma > 25.0) & (lab[:, 0] < paper_l - 6.0))
+    # A pencil tick counts too (Areen's Puffy + lines, 2026-11-15: a light gray tick about 30 lighter than
+    # marker); paper grain and a clean box stay well within 10 of the paper.
+    ink = (lab[:, 0] < paper_l - 14.0) | ((chroma > 25.0) & (lab[:, 0] < paper_l - 6.0))
     ink &= ~_guide_pixels(cfg, inner).reshape(-1)
     return float(ink.mean())
 
