@@ -1,5 +1,15 @@
 # Changelog
 
+## Party days (2026-11-14 and 15)
+
+- Plates are named after the kids and what they made (`alison-clicker-earrings_madison-necklace.3mf`), and everything from an upload goes on one plate, clicker cases included (`--separate-plates` splits flat pieces, flexis and cases).
+- Rough print times: each kid's pieces quickest first (close ones marked so the kid can pick), each plate's total; `--quick` makes a quick plate and lists what to take off the main one.
+- Reading fixes from real party scans: ticks over a box outline or in faint pencil, `--no-pencil` for erased drafts, `--light-pencil` for very light pencil, `--drop-strays` for marks around a drawing that are nothing, `--only` for some kids or cards.
+- Clickers are always flat; their card has no shape boxes now.
+- Flat pieces: the print notes say to use Arachne walls (fewer holes on the face).
+- Several drawings on one card can each become their own piece (`tools/split_card.py`; Alison's eight keychains). `--scale` reads colors at the drawn size, so a pen line no longer splits into black and gray when made much bigger.
+- Antibody earrings for Allen's wife (`tools/antibody_earrings.py`).
+
 ## Party prep (2026-11-13)
 
 - Magnet figures are fridge magnets: new cards drop the "stand here" line; the print notes say to glue the magnet in the middle of the back.

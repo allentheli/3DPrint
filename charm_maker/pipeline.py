@@ -75,7 +75,9 @@ def design_from_read(cfg: dict, read: CardRead, *, product_hint: str | None, bor
         # Ignore a thin band along the printed box edge (the guide line lives there).
         ignore = _box_edge_band(cfg, read)
         zone = _guide_zone(cfg, read)
-        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm, ignore=ignore, guide_zone=zone)
+        # Colors are read as drawn; a --scale only changes the size the fixes see (read 3.9 times
+        # bigger, a pen line split into a black middle and a gray edge: Alison's dog keychain, 2026-11-15).
+        inks = separate_colors(cfg, read.box_image, px_per_mm=px_per_mm * asked, ignore=ignore, guide_zone=zone)
         grown = 1.0
         prod = cfg["products"][product]
         if prod.get("attachment") == "strips" and inks.layers:

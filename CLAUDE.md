@@ -250,7 +250,13 @@ renumber: key-01, key-01-b, ...), redo every per-card fix under the new card nam
 pieces come off first; give each plate's rough time.
 A drawing too small for its details (the butterfly's 4 mm face: its U-shaped smile filled in at the
 1 mm line width) can be made bigger: `--scale fig-01=1.5` (before the print fixes, so lines and
-gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly.
+gaps grow too; `--scale 1.5` for every card). Allen said yes to 1.5 for that butterfly. Colors are read at the
+drawn size (read 3.9 times bigger, a pen line split into a black middle and a gray edge: Alison's dog, 2026-11-15).
+Several drawings on one card, each its own piece (Alison, 2026-11-15: "Make each drawing into individual key
+chains"): `python tools/split_card.py <card.pdf> photos/<batch>/cards` writes one card copy per drawing (the
+others painted over in paper color; eyes, mouths and nearby loose marks stay with their drawing) and prints a
+`--scale` for each copy that makes it about 40 mm (`--target`); then `names` and `run` on that folder with
+those scales. Her eight doodles were 10-18 mm at the card's scale and became 40-52 mm keychains, one plate.
 Ring eyes and little closed shapes (a beak, a small heart) keep the white inside them, widened
 to 0.4 mm where she drew a hairline (the bird hair clip, 2026-11-12), so they no longer print as
 black blobs; the fixes say "small hole(s) inside little closed marks kept".
@@ -285,6 +291,7 @@ plates (`--off-palette swap`), and the filament chip plate (`chips`).
 | Ignore an erased pencil draft | add `--no-pencil key-03` to `run` (repeat for more cards; alone, every card) |
 | Leave out stray marks around a drawing | add `--drop-strays click-01-c` to `run`: only the main drawing (everything inside its outline stays) |
 | One piece bigger than drawn | add `--scale fig-01=1.5` to `run` (any factor from 0.25 to 4; repeat for more cards) |
+| Each drawing on a card its own piece | `python tools/split_card.py <card> photos/<batch>/cards` (prints the `--scale` flags) |
 | Clicker cases on their own plate | add `--separate-plates` to `run` (the default puts the cases with the charms, as many plates as the bed needs; `printer.one_plate` in config; round-back figurines always get their own plate) |
 | Quick plate (when Allen asks) | add `--quick key-03 ear-01` to `run`: those cards also on a quick plate; the run lists what to delete from the kids' plates |
 | A plate per kid | add `--per-kid` to `run` (default: everything on one plate) |
