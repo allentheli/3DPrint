@@ -101,6 +101,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   flexi earrings --out output/party-cards`. Rehearsal on every real scan so far: 23 pieces, 4
   plates, about a minute, no problems. Number of kids not set. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
+- **Treasure chest (2026-11-17, Allen's daughter's own design, not a card):** `python tools/treasure_chest.py
+  [--width 120]` writes `output/treasure-chest/`: box + lid on one plate (0.20 mm, no supports, about 230 g), two
+  heart gems on another (snug and 0.1 mm looser: the gem fit is untested). Her labels: C wooden base, planks with
+  round holes, D domed lid, A short lock plate, B heart gem that fits in A; read as a heart that locks the lid
+  across the seam and otherwise sits in a setting on top. Hinge: printed knuckles with 1.75 mm filament pins,
+  stops at about 96 degrees; a back foot rail keeps the open chest from tipping. Not printed yet.
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
   them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
 
