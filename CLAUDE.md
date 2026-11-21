@@ -102,11 +102,13 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   plates, about a minute, no problems. Number of kids not set. AMS slots are left empty on purpose: Allen
   changes spools at will and assigns colors in Bambu Studio.
 - **Treasure chest (2026-11-17, Allen's daughter's own design, not a card):** `python tools/treasure_chest.py
-  [--width 120]` writes `output/treasure-chest/`: box + lid on one plate (0.20 mm, no supports, about 230 g), two
-  heart gems on another (snug and 0.1 mm looser: the gem fit is untested). Her labels: C wooden base, planks with
+  [--width 120]` writes `output/treasure-chest/`: box + lid on one plate (0.20 mm, no supports, about 230 g), four
+  heart gems on another (two snug, two 0.1 mm looser: the gem fit is untested; both heart holes take the same gem,
+  so one can sit in the lock and one on top, Allen 2026-11-21). Her labels: C wooden base, planks with
   round holes, D domed lid, A short lock plate, B heart gem that fits in A; read as a heart that locks the lid
   across the seam and otherwise sits in a setting on top. Hinge: printed knuckles with 1.75 mm filament pins,
-  stops at about 96 degrees; a back foot rail keeps the open chest from tipping. Not printed yet.
+  stops at about 96 degrees; a back foot rail keeps the open chest from tipping. Allen started printing the chest
+  on 2026-11-21 (so its holes are fixed now).
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
   them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
 

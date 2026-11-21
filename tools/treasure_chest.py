@@ -421,6 +421,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Allen's daughter's treasure chest")
     ap.add_argument("--out", default=str(ROOT / "output" / "treasure-chest"))
     ap.add_argument("--width", type=float, default=120.0, help="outside width, mm (the rest follows)")
+    ap.add_argument("--gems-each", type=int, default=2,
+                    help="gems of each fit on the gem plate (2: one for the lock and one for the top heart)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -443,7 +445,7 @@ def main() -> None:
     print(f"open, the chest's balance point is {tip:.0f} mm in front of the back edge of its bottom (above 0: it stays put)")
     if tip < 5:
         print("PROBLEM: the open chest could tip backward")
-    write_files(ch, base, lid, gem, gem2, stop, out)
+    write_files(ch, base, lid, gem, gem2, stop, out, args.gems_each)
 
 
 def centroid(s: M) -> np.ndarray:
@@ -466,7 +468,7 @@ def tipping(ch: Chest, base: M, lid: M, deg: float) -> float:
     return ch.p["D"] + ch.p["rail"] - cy        # from the back edge of the foot rail
 
 
-def write_files(ch: Chest, base: M, lid: M, gem: M, gem2: M, stop: float, out: Path) -> None:
+def write_files(ch: Chest, base: M, lid: M, gem: M, gem2: M, stop: float, out: Path, each: int = 2) -> None:
     from charm_maker.bambu3mf import write_bambu_3mf
     from charm_maker.preview import render_shaded
 
@@ -488,7 +490,16 @@ def write_files(ch: Chest, base: M, lid: M, gem: M, gem2: M, stop: float, out: P
     # Plate 2: the heart gems (one to use, one spare).
     g = gem.bounding_box()
     gw = g[3] - g[0]
-    gems = [("heart-gem", gem.translate([128 - gw * 0.75, 128, 0])), ("heart-gem-looser", gem2.translate([128 + gw * 0.75, 128, 0]))]
+    # Each heart hole (the lock A and the setting on top) takes the same gem; `each` of each fit, so both holes
+    # can hold a gem at once whichever fit works (Allen, 2026-11-21, printing the chest: "can we make a gem to
+    # fit that too?"). Snug ones in the front row, looser ones behind.
+    gh = g[4] - g[1]
+    gems = []
+    for row, (name, solid) in enumerate((("heart-gem", gem), ("heart-gem-looser", gem2))):
+        for i in range(each):
+            x = 128 + (i - (each - 1) / 2) * gw * 1.5
+            y = 128 + (row - 0.5) * gh * 1.5
+            gems.append((name + (f"-{i + 1}" if each > 1 else ""), solid.translate([x - (g[0] + g[3]) / 2, y - (g[1] + g[4]) / 2, 0])))
     write_bambu_3mf([(n, [(n, s, 1, RED)]) for n, s in gems], out / "treasure-chest-gems.3mf", plate_name="treasure-chest-gems")
     # Pictures: closed with the gem in the lock, open with the gem on top, and the gem.
     lock_gem = gem.rotate([90, 0, 0]).translate([0, -p["plate_t"] + p["plug"], ch.heart_center_z()])
@@ -501,6 +512,8 @@ def write_files(ch: Chest, base: M, lid: M, gem: M, gem2: M, stop: float, out: P
     render_shaded({"base": base, "lid": ch.lid_opened(lid, opened), "gem": ch.lid_opened(top_gem, opened)},
                   out / "chest-open.png", view=(32.0, -28.0), px_per_mm=4.0, labels=False,
                   colors={"base": WOOD, "lid": WOOD, "gem": RED})
+    render_shaded({"base": base, "lid": lid, "gem": lock_gem, "gem2": top_gem}, out / "chest-two-gems.png", view=(20.0, -28.0),
+                  px_per_mm=5.0, labels=False, colors={"base": WOOD, "lid": WOOD, "gem": RED, "gem2": RED})
     render_shaded({"base": base, "lid": lid}, out / "chest-back.png", view=(20.0, 152.0), px_per_mm=5.0, labels=False,
                   colors={"base": WOOD, "lid": WOOD})
     render_shaded({"gem": gem.rotate([90, 0, 0])}, out / "gem.png", view=(15.0, -20.0), px_per_mm=12.0, labels=False,
@@ -529,13 +542,15 @@ Size: {p['W']:.0f} mm wide, {p['D']:.0f} mm deep, about {tall:.0f} mm tall to th
 - The lid prints open side down, beside the box, as placed. Don't flip it or press **Arrange**.
 - Rough guess: 5 to 7 hours and about 230 g of filament. Bambu Studio shows the real time after **Slice plate**.
 
-## Plate 2: `treasure-chest-gems.3mf` (two heart gems)
+## Plate 2: `treasure-chest-gems.3mf` (heart gems)
 
-- One filament for the gem: red or pink (on its own plate so the chest needs no color changes).
-- Layer height 0.12 mm, supports off. About 15 minutes.
-- Two gems: `heart-gem` fits snug, `heart-gem-looser` is 0.1 mm smaller all around. Try `heart-gem` in the
-  lock first; if it is too hard to push in or pull out, use the looser one. (The snug fit uses the gap that
-  grips your clicker's switch, but a gem this shape has not been printed yet.)
+- One filament for the gems: red or pink (on its own plate so the chest needs no color changes).
+- Layer height 0.12 mm, supports off. About 25 minutes.
+- Both heart holes, the lock (A) on the front and the heart on top of the lid, take the same gem, so a gem can sit
+  in each at once.
+- Front row `heart-gem-1`, `heart-gem-2`: snug. Back row `heart-gem-looser-1`, `-2`: 0.1 mm smaller all around.
+  Try a snug one first; if it is too hard to push in or pull out, use the looser ones. (The snug fit uses the gap
+  that grips your clicker's switch, but a gem this shape has not been printed yet.)
 
 ## Putting it together
 
