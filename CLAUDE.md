@@ -113,7 +113,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   nicer", the first chest "took a while to print"):** `python tools/treasure_box.py` writes `output/treasure-box-2/`:
   100 x 74 x 94 mm, flat tray lid (about half the plastic of the first chest, whose domed lid was mostly solid),
   her bread cat, two heart-pad paw prints and smiling star with feet raised on the lid top in the box color (Allen:
-  "not colored but raised"; the lid prints right side up with 3 thin dividers inside so its top bridges only ~22 mm;
+  "not colored but raised"; the lid prints right side up with 2 thin 0.9 mm dividers inside so its top bridges only ~31 mm, Allen's pick over
+  supports;
   `top_style: color` in the script gives the inlaid, upside-down version), puppy hearts, lattice heart, stars and small paws raised in the box
   color on the fronts, an ice cream gem as the lock across the seam (snug + looser), the same filament-pin hinge.
   If Allen wants the front pictures in color: flat colored pieces glued into shallow spots (not built). Not printed.

@@ -42,7 +42,7 @@ P = dict(
     fit=0.10, plug=4.0,            # the ice cream gem: gap in its pocket (as the heart gems), depth
     k_r=4.0, k_w=6.0, k_gap=0.4, pin_d=2.2, hinge_x=28.0, stop_shelf=4.0, rail=0.0,
     top_style="raised",            # "raised" (Allen, 2026-11-22: "not colored but raised") or "color" (inlaid, lid upside down)
-    ribs=(-24.0, 0.0, 24.0), rib_t=1.6,   # raised: dividers inside the lid hold its top up while printing (short bridges)
+    ribs=(-16.0, 16.0), rib_t=0.9,   # raised: 2 thin dividers inside the lid hold its top up while printing (31 mm bridges)
 )
 
 
@@ -243,8 +243,8 @@ class TreasureBox:
         body = body - self.lock_pocket()
         raised = p["top_style"] == "raised"
         if raised:
-            # The lid prints right side up, so its flat top is bridged: thin dividers from the rim to the top keep
-            # each bridge about 22 mm.
+            # The lid prints right side up, so its flat top is bridged: two thin dividers (two lines of plastic) from
+            # the rim to the top keep each bridge about 31 mm (Allen chose these over supports, 2026-11-22).
             for x in p["ribs"]:
                 body = body + box(x - p["rib_t"] / 2, x + p["rib_t"] / 2, t - 0.2, D - t + 0.2, H, top - p["top"] + 0.2)
             body = body - self.lock_pocket()        # the middle divider runs past the ice cream's pocket
@@ -418,7 +418,8 @@ PLATE1_RAISED = """## Plate 1: `treasure-box.3mf` (the box and the lid)
 - The pictures on the lid are raised like the ones on the front, with the faces cut in. They are separate parts
   (`bread-cat`, `paw-prints`, `star`) set to the same filament; to color them later, pick another filament for
   them in Bambu Studio (a few color changes on the top layers only).
-- Inside the lid, three thin dividers hold up its top while it prints (short bridges instead of one 7 cm one).
+- Inside the lid, two thin dividers hold up its top while it prints (3 cm bridges instead of one 7 cm one), so
+  no supports are needed.
 - Layer height **0.20 mm**, supports **off**.
 - The lid is a thin tray, so it prints much faster than the first chest's domed lid (that lid was mostly solid
   plastic inside). Bambu Studio shows the real time after **Slice plate**.
