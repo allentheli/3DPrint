@@ -413,7 +413,7 @@ PLATE1_COLOR = """## Plate 1: `treasure-box.3mf` (the box and the lid)
 
 PLATE1_RAISED = """## Plate 1: `treasure-box.3mf` (the box and the lid)
 
-- One filament for everything (purple in the pictures). The lid prints right side up beside the box, as placed.
+- One filament for everything: **light blue**. The lid prints right side up beside the box, as placed.
   Don't press **Arrange**.
 - The pictures on the lid are raised like the ones on the front, with the faces cut in. They are separate parts
   (`bread-cat`, `paw-prints`, `star`) set to the same filament; to color them later, pick another filament for
@@ -432,7 +432,7 @@ def write_files(tb: TreasureBox, base: M, lid_parts: dict, gem: M, gem2: M, stop
     from charm_maker.preview import render_shaded
 
     p = tb.p
-    BOX, TAN, PINK, YELLOW, GEM = (150, 118, 205), (224, 178, 118), (240, 120, 165), (250, 205, 50), (245, 150, 185)
+    BOX, TAN, PINK, YELLOW, GEM = (150, 200, 238), (224, 178, 118), (240, 120, 165), (250, 205, 50), (245, 150, 185)
     raised = p["top_style"] == "raised"
     colors = {"lid": BOX, "bread-cat": TAN, "paw-prints": PINK, "star": YELLOW}
     slots = {"lid": 1, "bread-cat": 2, "paw-prints": 3, "star": 4}
@@ -485,7 +485,7 @@ Size: {p['W']:.0f} mm wide, {p['D']:.0f} mm deep, {p['Hb'] + p['Hl']:.0f} mm tal
 
 {plate1}## Plate 2: `treasure-box-ice-cream.3mf` (the ice cream lock)
 
-- One filament (pink in the pictures), layer height 0.12 mm, supports off. About 15 minutes.
+- **Pink**, on its own plate (like the heart gems on the first chest). Layer height 0.12 mm, supports off. About 15 minutes.
 - `ice-cream` fits snug, `ice-cream-looser` is 0.1 mm smaller all around. Try the snug one first. If the heart
   gems on the first chest fit well, the snug ice cream will too (same gap).
 
