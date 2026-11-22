@@ -109,6 +109,13 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   across the seam and otherwise sits in a setting on top. Hinge: printed knuckles with 1.75 mm filament pins,
   stops at about 96 degrees; a back foot rail keeps the open chest from tipping. Allen started printing the chest
   on 2026-11-21 (so its holes are fixed now).
+- **Second treasure box (2026-11-22, the other daughter's drawing; Allen: "Don't need to be faithful ... make it
+  nicer", the first chest "took a while to print"):** `python tools/treasure_box.py` writes `output/treasure-box-2/`:
+  100 x 74 x 94 mm, flat tray lid printed upside down (about half the plastic of the first chest, whose domed lid
+  was mostly solid), her bread cat, two heart-pad paw prints and smiling star with feet inlaid in color on the lid
+  top (colors only in the first 3 layers), puppy hearts, lattice heart, stars and small paws raised in the box
+  color on the fronts, an ice cream gem as the lock across the seam (snug + looser), the same filament-pin hinge.
+  If Allen wants the front pictures in color: flat colored pieces glued into shallow spots (not built). Not printed.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
