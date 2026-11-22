@@ -111,9 +111,10 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   on 2026-11-21 (so its holes are fixed now).
 - **Second treasure box (2026-11-22, the other daughter's drawing; Allen: "Don't need to be faithful ... make it
   nicer", the first chest "took a while to print"):** `python tools/treasure_box.py` writes `output/treasure-box-2/`:
-  100 x 74 x 94 mm, flat tray lid printed upside down (about half the plastic of the first chest, whose domed lid
-  was mostly solid), her bread cat, two heart-pad paw prints and smiling star with feet inlaid in color on the lid
-  top (colors only in the first 3 layers), puppy hearts, lattice heart, stars and small paws raised in the box
+  100 x 74 x 94 mm, flat tray lid (about half the plastic of the first chest, whose domed lid was mostly solid),
+  her bread cat, two heart-pad paw prints and smiling star with feet raised on the lid top in the box color (Allen:
+  "not colored but raised"; the lid prints right side up with 3 thin dividers inside so its top bridges only ~22 mm;
+  `top_style: color` in the script gives the inlaid, upside-down version), puppy hearts, lattice heart, stars and small paws raised in the box
   color on the fronts, an ice cream gem as the lock across the seam (snug + looser), the same filament-pin hinge.
   If Allen wants the front pictures in color: flat colored pieces glued into shallow spots (not built). Not printed.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma

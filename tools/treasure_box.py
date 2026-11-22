@@ -41,6 +41,8 @@ P = dict(
     relief=1.5, engrave=0.9,       # raised pictures on the fronts; faces cut into them
     fit=0.10, plug=4.0,            # the ice cream gem: gap in its pocket (as the heart gems), depth
     k_r=4.0, k_w=6.0, k_gap=0.4, pin_d=2.2, hinge_x=28.0, stop_shelf=4.0, rail=0.0,
+    top_style="raised",            # "raised" (Allen, 2026-11-22: "not colored but raised") or "color" (inlaid, lid upside down)
+    ribs=(-24.0, 0.0, 24.0), rib_t=1.6,   # raised: dividers inside the lid hold its top up while printing (short bridges)
 )
 
 
@@ -228,7 +230,7 @@ class TreasureBox:
         for i in range(n):                                     # 45-degree chamfer round the top edge
             body = body + prism_xy(self.footprint(c * (i + 1) / n), top - c + c * i / n, top - c + c * (i + 1) / n)
         body = body - prism_xy(self.footprint(t), H - 1, top - p["top"])
-        # Boss inside the front wall behind the scoop: its top slopes at 45 degrees (it prints upside down).
+        # Boss inside the front wall behind the scoop: its top slopes at 45 degrees (prints either way up).
         hs = 15.5
         boss = poly([(t - 0.2, H), (t + 5.0, H), (t + 5.0, H + hs), (t - 0.2, H + hs + 5.2)])
         body = body + prism_yz(boss, -10.0, 10.0)
@@ -239,26 +241,40 @@ class TreasureBox:
                 pics.append(paw(11.5).rotate(side * 14.0).translate([side * x, H + z]))
         body = body + self.relief(pics, [])
         body = body - self.lock_pocket()
+        raised = p["top_style"] == "raised"
+        if raised:
+            # The lid prints right side up, so its flat top is bridged: thin dividers from the rim to the top keep
+            # each bridge about 22 mm.
+            for x in p["ribs"]:
+                body = body + box(x - p["rib_t"] / 2, x + p["rib_t"] / 2, t - 0.2, D - t + 0.2, H, top - p["top"] + 0.2)
+            body = body - self.lock_pocket()        # the middle divider runs past the ice cream's pocket
         body = body + self.knuckles("lid")
         body = body - self.pin_holes("lid")
-        # Her lid pictures on top, in color: bread cat, two paw prints, the star with a face and feet.
+        # Her lid pictures on top: bread cat, two paw prints, the star with a face and feet.
         cat, cat_face = bread_cat(29.0)
         st, st_face = happy_star(14.5)
         y0 = D / 2 + 1.0
+        paws = paw(15.0).rotate(12).translate([-4.0, y0 - 9.0]) + paw(15.0).rotate(-8).translate([6.0, y0 + 10.0])
         layout = {
-            "bread-cat": (cat - cat_face).translate([-28.5, y0]),
-            "paw-prints": (paw(15.0).rotate(12).translate([-4.0, y0 - 9.0]) + paw(15.0).rotate(-8).translate([6.0, y0 + 10.0])),
-            "star": (st - st_face).translate([29.0, y0 + 1.0]),
+            "bread-cat": (cat.translate([-28.5, y0]), cat_face.translate([-28.5, y0])),
+            "paw-prints": (paws, None),
+            "star": (st.translate([29.0, y0 + 1.0]), st_face.translate([29.0, y0 + 1.0])),
         }
         flat = self.footprint(c + 1.0)
         parts = {}
-        for name, cs in layout.items():
-            assert (cs - flat).area() < 1e-3, f"{name} runs off the lid's flat top"
-            inl = prism_xy(cs, top - p["inlay"], top)
-            parts[name] = inl
-            body = body - inl
-        parts = {"lid": body, **parts}
-        return parts
+        for name, (shape, lines) in layout.items():
+            assert (shape - flat).area() < 1e-3, f"{name} runs off the lid's flat top"
+            if raised:
+                # Raised like the front pictures; faces, whiskers and the crust line cut into them.
+                pic = prism_xy(shape, top - 0.3, top + p["relief"])
+                if lines is not None:
+                    pic = pic - prism_xy(lines, top + p["relief"] - p["engrave"], top + p["relief"] + 1)
+                parts[name] = pic - body
+            else:
+                inl = prism_xy(shape - lines if lines is not None else shape, top - p["inlay"], top)
+                parts[name] = inl
+                body = body - inl
+        return {"lid": body, **parts}
 
     def knuckles(self, which: str) -> M:
         p = self.p
@@ -270,6 +286,9 @@ class TreasureBox:
             shelf = za + p["stop_shelf"]        # the open lid's back comes down on this
             prof = CS.batch_hull([circle, dot(D + 0.5, H - 9.0), dot(D + 0.5, H), dot(ya + 7.0, shelf - 0.01), dot(ya + 7.0, shelf - 0.6)])
             prof = prof + CS.square([1.6, 9.0]).translate([D - 1.1, H - 9.0])
+        elif p["top_style"] == "raised":
+            # The lid prints right side up: the knuckle stands on the plate with a flat bottom.
+            prof = CS.batch_hull([circle, dot(D - 0.5, H), dot(ya + r, H), dot(D - 0.5, za + r + 2.0)])
         else:
             # The lid prints upside down, so its knuckle's slope (toward the lid's top) must be 45 degrees or steeper.
             prof = CS.batch_hull([circle, dot(D - 0.5, H), dot(D - 0.5, H + 2 * r + 8.0)])
@@ -288,7 +307,8 @@ class TreasureBox:
         p = self.p
         ya, za = self.axis
         rr = p["pin_d"] / 2
-        tip = rr * math.sqrt(2) * (1 if which == "base" else -1)
+        upside_down = which == "lid" and p["top_style"] != "raised"
+        tip = rr * math.sqrt(2) * (-1 if upside_down else 1)
         drop = CS.batch_hull([CS.circle(rr, 32), CS.square([0.01, 0.01]).translate([-0.005, tip])]).translate([ya, za])
         w, g = p["k_w"], p["k_gap"]
         out = None
@@ -377,17 +397,51 @@ def main() -> None:
     write_files(tb, base, lid_parts, gem, gem2, stop, out)
 
 
+PLATE1_COLOR = """## Plate 1: `treasure-box.3mf` (the box and the lid)
+
+- The lid prints **upside down** beside the box (its top on the plate), as placed. Don't press **Arrange**.
+- Colors: slot 1 the box color (the box and the lid; purple in the pictures), slot 2 tan (bread cat), slot 3 pink
+  (paw prints), slot 4 yellow (star). Change any of them in Bambu Studio. The colors are only in the first 3 layers
+  (the lid's top), so there are just a few color changes; the rest prints in one color.
+- Layer height **0.20 mm**, supports **off**. Smooth plate gives a shiny lid top; textured gives a matte one.
+- Use **Arachne** walls (Quality tab, **Wall generator**), as for the flat charms: the faces on the lid top are
+  thin lines.
+- This lid is a thin tray, so it prints much faster than the first chest's domed lid (that lid was mostly solid
+  plastic inside). Bambu Studio shows the real time after **Slice plate**.
+
+"""
+
+PLATE1_RAISED = """## Plate 1: `treasure-box.3mf` (the box and the lid)
+
+- One filament for everything (purple in the pictures). The lid prints right side up beside the box, as placed.
+  Don't press **Arrange**.
+- The pictures on the lid are raised like the ones on the front, with the faces cut in. They are separate parts
+  (`bread-cat`, `paw-prints`, `star`) set to the same filament; to color them later, pick another filament for
+  them in Bambu Studio (a few color changes on the top layers only).
+- Inside the lid, three thin dividers hold up its top while it prints (short bridges instead of one 7 cm one).
+- Layer height **0.20 mm**, supports **off**.
+- The lid is a thin tray, so it prints much faster than the first chest's domed lid (that lid was mostly solid
+  plastic inside). Bambu Studio shows the real time after **Slice plate**.
+
+"""
+
+
 def write_files(tb: TreasureBox, base: M, lid_parts: dict, gem: M, gem2: M, stop: float, out: Path) -> None:
     from charm_maker.bambu3mf import write_bambu_3mf
     from charm_maker.preview import render_shaded
 
     p = tb.p
     BOX, TAN, PINK, YELLOW, GEM = (150, 118, 205), (224, 178, 118), (240, 120, 165), (250, 205, 50), (245, 150, 185)
+    raised = p["top_style"] == "raised"
     colors = {"lid": BOX, "bread-cat": TAN, "paw-prints": PINK, "star": YELLOW}
     slots = {"lid": 1, "bread-cat": 2, "paw-prints": 3, "star": 4}
+    if raised:                     # one filament; the pictures stay separate parts in case she wants them colored
+        colors = {k: BOX for k in colors}
+        slots = {k: 1 for k in slots}
     # Plate 1: the box upright, the lid upside down beside it.
     bb = base.bounding_box()
-    flipped = {k: v.rotate([180, 0, 0]) for k, v in lid_parts.items()}
+    flip = p["top_style"] != "raised"           # colored top: the lid prints upside down; raised: right side up
+    flipped = {k: (v.rotate([180, 0, 0]) if flip else v) for k, v in lid_parts.items()}
     lb = M.batch_boolean(list(flipped.values()), m3d.OpType.Add).bounding_box()
     flipped = {k: v.translate([0, 0, -lb[2]]) for k, v in flipped.items()}
     gap = 12.0
@@ -409,7 +463,8 @@ def write_files(tb: TreasureBox, base: M, lid_parts: dict, gem: M, gem2: M, stop
     cols = {"box": BOX, **colors, "gem": GEM}
     render_shaded(scene, out / "box-closed.png", view=(24.0, -28.0), px_per_mm=6.0, labels=False, colors=cols)
     render_shaded(scene, out / "box-front.png", view=(8.0, -10.0), px_per_mm=6.0, labels=False, colors=cols)
-    render_shaded({k: v for k, v in lid_parts.items()}, out / "lid-top.png", view=(88.0, 0.0), px_per_mm=6.0, labels=False,
+    render_shaded({k: v for k, v in lid_parts.items()}, out / "lid-top.png", view=(45.0 if raised else 88.0, -20.0 if raised else 0.0),
+                  px_per_mm=6.0, labels=False,
                   colors=colors)
     opened = {k: tb.lid_opened(v, min(stop - 4, 100)) for k, v in lid_parts.items()}
     render_shaded({"box": base, **opened}, out / "box-open.png", view=(30.0, -30.0), px_per_mm=5.0, labels=False,
@@ -419,26 +474,15 @@ def write_files(tb: TreasureBox, base: M, lid_parts: dict, gem: M, gem2: M, stop
     w, g_ = p["k_w"], p["k_gap"]
     pin = 3 * w + 2 * g_ - 1.5
     inside = (p["W"] - 2 * p["wall"]) * (p["D"] - 2 * p["wall"]) * (p["Hb"] - p["floor"]) / 1000
+    plate1 = PLATE1_RAISED if raised else PLATE1_COLOR
     (out / "PRINT_NOTES.md").write_text(f"""# Treasure box (the second one): print notes
 
-Her pictures: the bread cat, two paw prints and the star with a face and feet in color on the lid; puppy hearts,
+Her pictures: the bread cat, two paw prints and the star with a face and feet on the lid; puppy hearts,
 a lattice heart and stars on the front; little paw prints on the lid's front; the ice cream is the lock.
 
 Size: {p['W']:.0f} mm wide, {p['D']:.0f} mm deep, {p['Hb'] + p['Hl']:.0f} mm tall. The box holds about {inside:.0f} ml.
 
-## Plate 1: `treasure-box.3mf` (the box and the lid)
-
-- The lid prints **upside down** beside the box (its top on the plate), as placed. Don't press **Arrange**.
-- Colors: slot 1 the box color (the box and the lid; purple in the pictures), slot 2 tan (bread cat), slot 3 pink
-  (paw prints), slot 4 yellow (star). Change any of them in Bambu Studio. The colors are only in the first 3 layers
-  (the lid's top), so there are just a few color changes; the rest prints in one color.
-- Layer height **0.20 mm**, supports **off**. Smooth plate gives a shiny lid top; textured gives a matte one.
-- Use **Arachne** walls (Quality tab, **Wall generator**), as for the flat charms: the faces on the lid top are
-  thin lines.
-- This lid is a thin tray, so it prints much faster than the first chest's domed lid (that lid was mostly solid
-  plastic inside). Bambu Studio shows the real time after **Slice plate**.
-
-## Plate 2: `treasure-box-ice-cream.3mf` (the ice cream lock)
+{plate1}## Plate 2: `treasure-box-ice-cream.3mf` (the ice cream lock)
 
 - One filament (pink in the pictures), layer height 0.12 mm, supports off. About 15 minutes.
 - `ice-cream` fits snug, `ice-cream-looser` is 0.1 mm smaller all around. Try the snug one first. If the heart
