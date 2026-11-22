@@ -109,6 +109,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   across the seam and otherwise sits in a setting on top. Hinge: printed knuckles with 1.75 mm filament pins,
   stops at about 96 degrees; a back foot rail keeps the open chest from tipping. Allen started printing the chest
   on 2026-11-21 (so its holes are fixed now).
+- **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
+  Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
+  side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
+  11 mm), a raised heart in the middle, a raised border; raised parts are separate parts (one color change). A cone
+  mount (tree tips 9-26 mm) prints standing beside it; the star's tab is glued into its slot. Not printed yet.
 - Uploaded scans and downloaded models are not in git (private). A new session that needs
   them asks Allen to upload again (the duck model: `screw-top ... --cut 50`).
 
