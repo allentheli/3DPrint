@@ -40,7 +40,8 @@ P = dict(
     inlay=0.6,                     # colors on the lid top: 3 layers at 0.2 mm
     relief=1.5, engrave=0.9,       # raised pictures on the fronts; faces cut into them
     fit=0.10, plug=4.0,            # the ice cream gem: gap in its pocket (as the heart gems), depth
-    k_r=4.0, k_w=6.0, k_gap=0.4, pin_d=2.2, hinge_x=28.0, stop_shelf=4.0, rail=0.0,
+    k_r=4.0, k_w=6.0, k_gap=0.4, pin_d=2.2, hinge_x=28.0, stop_shelf=4.2, rail=0.0,
+    round_r=1.5, edge=0.6,         # rounded hinge corners and bevelled hinge edges (Allen, 2026-11-22: "sharp")
     top_style="raised",            # "raised" (Allen, 2026-11-22: "not colored but raised") or "color" (inlaid, lid upside down)
     ribs=(-16.0, 16.0), rib_t=0.9,   # raised: 2 thin dividers inside the lid hold its top up while printing (31 mm bridges)
 )
@@ -184,10 +185,11 @@ class TreasureBox:
         for i in range(4):                          # 0.8 mm chamfer at the bottom edge (no elephant foot)
             body = body + prism_xy(self.footprint(0.8 - 0.2 * i), 0.2 * i, 0.2 * (i + 1))
         body = body - prism_xy(self.footprint(t), p["floor"], H + 1)
+        body = body - self.rim_bevel(H, top_edge=True)
         # Boss inside the front wall behind the cone of the lock, its underside at 45 degrees.
         bz = H - 21.0
-        boss = poly([(t - 0.2, bz - 5.0), (t + 5.0, bz), (t + 5.0, H), (t - 0.2, H)])
-        body = body + prism_yz(boss, -9.0, 9.0)
+        boss = poly([(t - 0.2, bz - 5.0), (t + 5.0, bz), (t + 5.0, H - 1.0), (t + 4.0, H), (t - 0.2, H)])
+        body = body + self.rounded_boss(boss, 9.0)
         # Her lower pictures: puppy hearts left and right, a lattice heart in the middle, stars at the bottom.
         pics, faces = [], []
         for x, z in ((-31.0, 41.0), (31.0, 41.0)):
@@ -230,10 +232,11 @@ class TreasureBox:
         for i in range(n):                                     # 45-degree chamfer round the top edge
             body = body + prism_xy(self.footprint(c * (i + 1) / n), top - c + c * i / n, top - c + c * (i + 1) / n)
         body = body - prism_xy(self.footprint(t), H - 1, top - p["top"])
+        body = body - self.rim_bevel(H, top_edge=False)
         # Boss inside the front wall behind the scoop: its top slopes at 45 degrees (prints either way up).
         hs = 15.5
-        boss = poly([(t - 0.2, H), (t + 5.0, H), (t + 5.0, H + hs), (t - 0.2, H + hs + 5.2)])
-        body = body + prism_yz(boss, -10.0, 10.0)
+        boss = poly([(t - 0.2, H), (t + 4.0, H), (t + 5.0, H + 1.0), (t + 5.0, H + hs), (t - 0.2, H + hs + 5.2)])
+        body = body + self.rounded_boss(boss, 10.0)
         # Little paw prints walking across the lid's front toward the lock.
         pics = []
         for side in (-1, 1):
@@ -276,16 +279,42 @@ class TreasureBox:
                 body = body - inl
         return {"lid": body, **parts}
 
+    def rim_bevel(self, H: float, top_edge: bool, c: float = 0.8, n: int = 4) -> M:
+        """A 45-degree bevel on the inside edge of the rim where box and lid meet (no sharp edge to the touch)."""
+        t = self.p["wall"]
+        out = None
+        for j in range(1, n + 1):
+            reach = c * (n - j + 1) / n
+            z0, z1 = (H - reach, H + 1.0) if top_edge else (H - 1.0, H + reach)
+            step = prism_xy(self.footprint(t - c * j / n), z0, z1)
+            out = step if out is None else out + step
+        return out
+
+    def rounded_boss(self, profile: CS, half_w: float) -> M:
+        """The block behind the lock (inside the wall), its two corners facing into the box rounded."""
+        t = self.p["wall"]
+        plan = rounded_rect(-half_w, half_w, t - 6.0, t + 5.0, 3.0)
+        return prism_yz(profile, -half_w, half_w) ^ prism_xy(plan, -1.0, 200.0)
+
+    def knuckle(self, prof: CS, x0: float, x1: float) -> M:
+        """One hinge knuckle: its outline's corners rounded and its side edges bevelled (no sharp edges)."""
+        p = self.p
+        rr, e = p["round_r"], p["edge"]
+        prof = prof.offset(-rr, R, circular_segments=SEG).offset(rr, R, circular_segments=SEG)
+        return M.batch_hull([prism_yz(prof.offset(-e, R, circular_segments=SEG), x0, x1), prism_yz(prof, x0 + e, x1 - e)])
+
     def knuckles(self, which: str) -> M:
         p = self.p
         ya, za = self.axis
         D, H, r = p["D"], p["Hb"], p["k_r"]
         circle = CS.circle(r, SEG).translate([ya, za])
         dot = lambda y, z: CS.square([0.01, 0.01]).translate([y, z])
+        clear = None
         if which == "base":
             shelf = za + p["stop_shelf"]        # the open lid's back comes down on this
-            prof = CS.batch_hull([circle, dot(D + 0.5, H - 9.0), dot(D + 0.5, H), dot(ya + 7.0, shelf - 0.01), dot(ya + 7.0, shelf - 0.6)])
-            prof = prof + CS.square([1.6, 9.0]).translate([D - 1.1, H - 9.0])
+            # Reaches into the wall below the seam; above it, kept 0.5 mm behind the lid's back (cut below).
+            prof = CS.batch_hull([circle, dot(D - 1.1, H - 9.6), dot(D - 1.1, H), dot(ya + 7.0, shelf - 0.01), dot(ya + 7.0, shelf - 0.6)])
+            clear = (D + 0.5, H)
         elif p["top_style"] == "raised":
             # The lid prints right side up: the knuckle stands on the plate with a flat bottom.
             prof = CS.batch_hull([circle, dot(D - 0.5, H), dot(ya + r, H), dot(D - 0.5, za + r + 2.0)])
@@ -298,7 +327,9 @@ class TreasureBox:
             spans = ([(xc - 1.5 * w - g, xc - 0.5 * w - g), (xc + 0.5 * w + g, xc + 1.5 * w + g)] if which == "base"
                      else [(xc - 0.5 * w, xc + 0.5 * w)])
             for x0, x1 in spans:
-                k = prism_yz(prof, x0, x1)
+                k = self.knuckle(prof, x0, x1)
+                if clear is not None:
+                    k = k - box(x0 - 1, x1 + 1, clear[0] - 10.0, clear[0], clear[1], clear[1] + 30.0)
                 out = k if out is None else out + k
         return out
 

@@ -117,7 +117,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   supports;
   `top_style: color` in the script gives the inlaid, upside-down version), puppy hearts, lattice heart, stars and small paws raised in the box
   color on the fronts, an ice cream gem as the lock across the seam (snug + looser), the same filament-pin hinge.
-  Light blue box, pink ice cream on its own plate (Allen). Colored front pictures (glued-in pieces) not built. Not printed.
+  Light blue box, pink ice cream on its own plate (Allen). No sharp edges (Allen, 2026-11-22): hinge knuckles with
+  rounded outlines and bevelled sides, the block behind the lock rounded, rim inner edges bevelled. Colored front pictures (glued-in pieces) not built. Not printed.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
