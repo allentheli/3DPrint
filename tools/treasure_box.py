@@ -232,7 +232,12 @@ class TreasureBox:
         for i in range(n):                                     # 45-degree chamfer round the top edge
             body = body + prism_xy(self.footprint(c * (i + 1) / n), top - c + c * i / n, top - c + c * (i + 1) / n)
         body = body - prism_xy(self.footprint(t), H - 1, top - p["top"])
-        body = body - self.rim_bevel(H, top_edge=False)
+        if p["top_style"] == "raised":
+            # The lid prints right side up, standing on its rim: a sloped foot inside the rim makes the strip that
+            # touches the plate about 4.5 mm wide instead of 2 (Allen's first lid came loose overnight, 2026-11-23).
+            body = body + self.inner_foot(H)
+        else:
+            body = body - self.rim_bevel(H, top_edge=False)
         # Boss inside the front wall behind the scoop: its top slopes at 45 degrees (prints either way up).
         hs = 15.5
         boss = poly([(t - 0.2, H), (t + 4.0, H), (t + 5.0, H + 1.0), (t + 5.0, H + hs), (t - 0.2, H + hs + 5.2)])
@@ -287,6 +292,17 @@ class TreasureBox:
             reach = c * (n - j + 1) / n
             z0, z1 = (H - reach, H + 1.0) if top_edge else (H - 1.0, H + reach)
             step = prism_xy(self.footprint(t - c * j / n), z0, z1)
+            out = step if out is None else out + step
+        return out
+
+    def inner_foot(self, H: float, w: float = 2.5, n: int = 5) -> M:
+        """A ring inside the lid's rim, `w` wide on the plate and sloping back into the wall at 45 degrees."""
+        t = self.p["wall"]
+        out = None
+        for j in range(n):
+            wj = w * (n - j) / n
+            ring = self.footprint(t - 0.2) - self.footprint(t + wj)
+            step = prism_xy(ring, H + w * j / n, H + w * (j + 1) / n)
             out = step if out is None else out + step
         return out
 
@@ -451,6 +467,10 @@ PLATE1_RAISED = """## Plate 1: `treasure-box.3mf` (the box and the lid)
   them in Bambu Studio (a few color changes on the top layers only).
 - Inside the lid, two thin dividers hold up its top while it prints (3 cm bridges instead of one 7 cm one), so
   no supports are needed.
+- The lid stands on its rim while it prints, so help it stick (no glue needed): a sloped foot inside the rim
+  widens what touches the plate, and turn on a brim: on the right, **Others** tab, **Brim type**: **Outer and
+  inner brim**, **Brim width** 5 mm. Peel the brim off after printing. Wash the plate with dish soap and warm
+  water first, rinse, let it dry, and don't touch the printing surface.
 - Layer height **0.20 mm**, supports **off**.
 - The lid is a thin tray, so it prints much faster than the first chest's domed lid (that lid was mostly solid
   plastic inside). Bambu Studio shows the real time after **Slice plate**.
