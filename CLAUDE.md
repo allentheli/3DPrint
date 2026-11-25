@@ -160,9 +160,16 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   there (45-degree flare from the column, beaded lip and rim, 18 ruby/sapphire/emerald jewels). "Make the tip of each of
   the turkey feather tails into gems too": each back-row feather ends in a jewel in a gold setting (mirrored colors;
   the pearls are gone). "Make the gems like gem shaped hexagonal": every jewel is a hexagonal cut gem (girdle, star facets,
-  flat table) in a hexagonal gold setting, the feather-tip ones a little longer along the feather. Allen: the scepter need not match the file exactly. Whole scepter about 60 cm, fan 22 cm wide.
-  Mock-ups sent; not printable yet (next: a hidden peg from the turkey into the base, the base onto the column, overhangs,
-  plates).
+  flat table) in a hexagonal gold setting, the feather-tip ones a little longer along the feather. Allen: the scepter
+  need not match the file exactly. Whole scepter about 60 cm, fan 22 cm wide.
+  **Print files (2026-11-25, Allen: one color, the kids color it with acrylic markers; "print it in parts if you must";
+  "mindful of the time"):** `turkey-scepter-1-turkey.3mf` (the turkey on its back: everything in front of the fan has a
+  tapered wall back to the flat back, so no supports; a 24 x 12 x 10 mm tab under the belly; the toes moved onto the
+  turkey) and `turkey-scepter-2-shaft.3mf` (the base fused to the top of the column, upside down on the base's flat top,
+  plus the original middle and bottom ball as the file prints them). The tab is glued into a slot in the base top
+  (0.25 mm gap, untested; pointed slot end, no bridge). 0.24mm Draft, 10% infill, no supports, outer brim on plate 2.
+  My rough estimate: 4 h + 7 h (Bambu Studio's is the real one); leaving out the middle saves about 1.5 h (46 cm long).
+  Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
