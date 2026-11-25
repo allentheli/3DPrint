@@ -146,7 +146,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   head as is (43 cm round inside; Allen: "as is is fine"); two 5 mm teardrop holes low on the band, opposite, just
   behind the sides (98.6 and 278.6 degrees, between gems) for a chin elastic; the turkey fused in (solid filled in
   behind its whole outline, 12.6 cm3 into the wall, trimmed flush with the crown's real inside), so the parts are now
-  crown-with-turkey (one solid) and gems. Not printed yet.
+  crown-with-turkey (one solid) and gems. Allen's Bambu Studio screenshot (from below) still showed a gap behind the
+  butt and the lowest tail feathers (they sit in front of the fan's back): the turkey's back half is now pushed
+  straight back into the crown (swept 16 mm), head, neck and chest untouched. Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:

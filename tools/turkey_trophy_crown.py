@@ -98,6 +98,7 @@ def trophy(crown: M, turkey: M, cx: float, cy: float, cut: float, scale: float) 
     necessary need a plaque, but the turkey tail fan is important")."""
     t = turkey.simplify(0.03)
     b = t.bounding_box()
+    fan_back, body_mid = b[4], 131.0                                                  # turkey's own y: back of the fan, middle of the body
     t = t.translate([-(b[0] + b[3]) / 2, -b[4], -cut]).trim_by_plane([0, 0, 1], 0.0)   # fan's back at y = 0
     t = t.scale([scale, scale, scale])
     # Solid behind the turkey's whole outline, 8 mm back into the crown (the crown's faceted front leaves gaps
@@ -105,7 +106,13 @@ def trophy(crown: M, turkey: M, cx: float, cy: float, cut: float, scale: float) 
     # it to be fused so its secure").
     sil = t.rotate([-90, 0, 0]).project().offset(-0.4, m3d.JoinType.Round, circular_segments=24)
     backfill = sil.extrude(8.0).rotate([90, 0, 0]).translate([0, 8.0, 0])
-    t = (t + backfill).refine_to_length(1.5)
+    # The tail's lowest feathers and the rear of the body sit in front of the fan's back, so fill from every part
+    # of the turkey's back straight into the crown: the turkey pushed back on itself, 0.6 mm at a time, 16 mm
+    # (Allen's screenshot, 2026-11-25: "fuse the tail and the butt to the crown completely").
+    # Only the back half (rear of the body, the butt, the tail): the head, neck and chest stay as drawn.
+    rear = t ^ M.cube([400, 400, 400]).translate([-200, -0.45 * (fan_back - body_mid) * scale - 6.0, -1])
+    swept = M.batch_boolean([rear.translate([0, 0.6 * k, 0]) for k in range(27)], m3d.OpType.Add)
+    t = (t + backfill + swept).refine_to_length(1.5)
     top = t.bounding_box()[5]
     zs, rs = front_radius(crown, cx, cy, top)
     embed = 1.5
