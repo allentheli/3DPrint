@@ -154,10 +154,14 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   eagle's place: `python -I tools/turkey_scepter.py <SPQR .3mf>` writes `output/turkey-scepter/mockup.glb` (scepter stacked
   as screwed together, thunderbolts in the plaque's side slots). The turkey: fan 235 mm wide like the eagle's wings (bands,
   gold band, gold pearls), bronze scalloped breast, barred wings, red head with snood and wattle, googly eyes looking
-  different ways, a crooked gold crown; flat back, relief like the eagle. No legs (Allen: a weak spot): the turkey is
-  lowered so its body sits on a round gold base (66 mm, beaded rim, 12 ruby and sapphire jewels round the side), its toes
-  peeking out onto it. Allen: the scepter need not match the file exactly. Whole scepter about 60 cm. Mock-ups sent; not
-  printable yet (next: a hidden peg from the turkey into the base, the base fixed to the plaque, overhangs, plates).
+  different ways, a crooked gold crown; flat back, relief like the eagle. No legs (Allen: a weak spot): the body sits on
+  a round gold base, its toes peeking out onto it. Allen circled the SPQR plaque and thunderbolts: "make the circular base
+  larger and replace the circled red part", so the top piece is cut just above the column's top ring and a 10 cm base sits
+  there (45-degree flare from the column, beaded lip and rim, 18 ruby/sapphire/emerald jewels). "Make the tip of each of
+  the turkey feather tails into gems too": each back-row feather ends in a faceted jewel in a gold setting (mirrored colors;
+  the pearls are gone). Allen: the scepter need not match the file exactly. Whole scepter about 60 cm, fan 22 cm wide.
+  Mock-ups sent; not printable yet (next: a hidden peg from the turkey into the base, the base onto the column, overhangs,
+  plates).
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:

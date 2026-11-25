@@ -11,7 +11,8 @@ printing only); neither it nor the output goes into git. The turkey is our own d
   (two rows of banded feathers, gold tips and pearls), a bronze breast with a beard, drooping wings,
 - a bare red head with a dangly snood, a wattle, and big googly eyes looking two different ways,
 - a little gold crown sitting crooked on its head; no legs (Allen: a weak spot): its body sits on a round gold base
-  with jewels round the side, its toes peeking out from under the belly.
+  with jewels round the side, its toes peeking out from under the belly,
+- the base takes the place of the SPQR plaque and its thunderbolts, right on top of the column.
 
 The turkey is a relief with a flat back (like a plaque), so it can print back-down.
 
@@ -51,6 +52,7 @@ COLORS = {
     "orange": ("#E8820E", False),
     "ruby": ("#B3122E", False),
     "sapphire": ("#1E4DB5", False),
+    "emerald": ("#13834A", False),
 }
 
 ZB = -14.0          # the turkey's flat back (the plaque's mid-plane is z = 0, its faces z = +-17.5)
@@ -117,29 +119,18 @@ def _solid(v: np.ndarray, f: np.ndarray) -> M:
 # Measured on the model (each piece lies along y, plaque end up; the front faces +z):
 # the threaded peg's shoulder of each piece meets the top of the piece below it.
 STACK = {"Lower_ball.stl": 0.0, "Middle.stl": 73.7 + 52.65, "SPQR_upper.stl": 73.7 + 52.65 + 68.3 + 66.72}
-PLAQUE_TOP = STACK["SPQR_upper.stl"] + 82.3
-PLAQUE_HALF_W = 61.5
+# Allen (2026-11-25, circling the SPQR plaque and its thunderbolts): "make the circular base larger and replace the
+# circled red part". The top piece is cut where the plaque starts, just above the column's top ring (radius 17.2), and
+# the round base sits there instead.
+PLAQUE_START = 42.25
+COLUMN_TOP = STACK["SPQR_upper.stl"] + PLAQUE_START
 
 
 def scepter(objs: dict[str, M]) -> dict[str, M]:
     out = {k.split(".")[0]: objs[k].translate([0, dy, 0]) for k, dy in STACK.items()}
-    # The thunderbolts: each piece's joint (its end with the little hooks) goes into the slot in the side of the
-    # plaque, bolts pointing outward. Arrows_LH has its joint at -x, so it goes on the right (+x) side.
-    plaque_mid = PLAQUE_TOP - 20.0
-    for k, side in (("Arrows_LH.stl", 1), ("Arrows_RH.stl", -1)):
-        a = objs[k]
-        b = a.bounding_box()
-        joint_x = b[0] if side > 0 else b[3]
-        ys = _joint_y(a, joint_x, side)
-        out[k.split(".")[0]] = a.translate([side * (PLAQUE_HALF_W - 3.0) - joint_x, plaque_mid - ys, 0])
+    below = M.cube([400, 400, 400]).translate([-200, COLUMN_TOP - 400, -200])
+    out["SPQR_upper"] = out["SPQR_upper"] ^ below
     return out
-
-
-def _joint_y(a: M, x: float, side: int) -> float:
-    """Height of the arrow piece's joint: the middle of its slice 1.5 mm in from its joint end."""
-    s = a.rotate([0, 90, 0]).slice(-(x + side * 1.5))      # cut across x
-    b = s.bounds()
-    return (b[1] + b[3]) / 2
 
 
 # ---------------------------------------------------------------- shapes
@@ -180,8 +171,8 @@ def union(parts) -> M:
 # ---------------------------------------------------------------- the turkey
 
 P = dict(
-    base_r=33.0, base_h=17.0,     # round gold base on the plaque (the turkey's body sits on it; no legs)
-    gems=12,
+    seat=17.0,                    # where the turkey's body ends flat (in its own coordinates); it sits on the base
+    base_r=47.0, gems=18,         # round gold base on the column: band radius, jewels round it
     fan_c=(0.0, 67.0), fan_r=112.0, fan_n=15, fan_span=(-12.0, 192.0), fan_tip=14.5, fan_thick=4.2,
     row2_r=80.0, row2_tip=12.5, row2_thick=11.0,
     body=(0.0, 57.0, 39.0, 46.0, 31.0),          # center x, y; radii x, y, z (dome on the back plane)
@@ -194,7 +185,8 @@ def turkey(p: dict = P) -> dict[str, M]:
     cx, cy = p["fan_c"]
     C = np.array([cx, cy])
 
-    # Tail fan, back row: long banded feathers with a gold band, buff tips and a gold pearl on each.
+    # Tail fan, back row: long banded feathers whose tips are jewels in gold settings (Allen: "make the tip of each of
+    # the turkey feather tails into gems too"); ruby, sapphire, emerald, mirrored left to right.
     R, n = p["fan_r"], p["fan_n"]
     angs = np.linspace(*p["fan_span"], n)
     back = []
@@ -203,9 +195,11 @@ def turkey(p: dict = P) -> dict[str, M]:
         b0, b1 = C + 28 * u, C + (R - p["fan_tip"]) * u
         f = M.batch_hull([ball([*b0, ZB], [6, 6, 3.5]), ball([*b1, ZB], [p["fan_tip"], p["fan_tip"], p["fan_thick"]])])
         back.append(front_half(f))
-        parts["gold"].append(ball([*(C + (R + 1.5) * u), ZB + 3.0], 4.0))
+        k = abs(int(round((a - angs[0]) / (angs[1] - angs[0]))) - (n - 1) // 2)
+        gem = M.sphere(1.0, 10).scale([10.5, 9.3, 4.2]).rotate([0, 0, a]).translate([*(C + (R - 13.5) * u), ZB + p["fan_thick"] - 0.8])
+        parts[("ruby", "sapphire", "emerald")[k % 3]].append(gem)
     back = union(back)
-    bands = [("bronze", 0, 0.52), ("tan", 0.52, 0.59), ("bronze", 0.59, 0.78), ("gold", 0.78, 0.87), ("tan", 0.87, 2)]
+    bands = [("bronze", 0, 0.52), ("tan", 0.52, 0.59), ("bronze", 0.59, 0.74), ("gold", 0.74, 2)]
     for col, r0, r1 in bands:
         parts[col].append(back ^ ring_band(C, r0 * R, r1 * R))
 
@@ -269,28 +263,35 @@ def turkey(p: dict = P) -> dict[str, M]:
     parts["red"].append(place(ball([0, 4.0, 12.0], 2.2)))
 
     # No legs (Allen: a weak spot): the body sits on the round base; the turkey ends flat at the base's top.
-    above = M.cube([1000, 1000, 1000]).translate([-500, p["base_h"], -500])
+    above = M.cube([1000, 1000, 1000]).translate([-500, p["seat"], -500])
     return {k: union(v) ^ above for k, v in parts.items() if v}
 
 
+BASE_TOP = 63.0
+
+
 def base(turkey_parts: dict[str, M], p: dict = P) -> dict[str, M]:
-    """A round gold base on the plaque, jewels round its side, a beaded rim, and the turkey's toes peeking out from
-    under its belly onto it."""
-    r, h = p["base_r"], p["base_h"]
-    prof = [(0, 0), (r + 2.5, 0), (r + 3.5, 1.2), (r + 3.5, 2.8), (r + 2.0, 3.8), (r, 4.2), (r, h - 4.2),
-            (r + 2.0, h - 3.8), (r + 3.5, h - 2.8), (r + 3.5, h - 1.2), (r + 2.5, h), (0, h)]
-    drum = M.revolve(m3d.CrossSection([np.array(prof, float)]), 96).rotate([-90, 0, 0])   # axis z -> y
+    """The round gold base on top of the column (its bottom at y = 0): it flares out from the column's top ring at
+    45 degrees (no supports standing up), a beaded lip, a band of jewels, a beaded top rim; the turkey's toes peek out
+    from under its belly onto the top. `turkey_parts` are already in place on it."""
+    r, h = p["base_r"], BASE_TOP
+    prof = [(0, 0), (17.2, 0), (17.2, 3.0), (r - 3, 3.0 + r - 20.2), (r + 3, 9.0 + r - 20.2), (r + 3, 10.5 + r - 20.2),
+            (r, 13.2 + r - 20.2), (r, h - 6.0), (r + 3, h - 3.0), (r + 3, h - 1.5), (r + 1.5, h), (0, h)]
+    drum = M.revolve(m3d.CrossSection([np.array(prof, float)]), 120).rotate([-90, 0, 0])   # axis z -> y
     gold = [drum]
-    for k in range(48):                                   # beads round the top rim
-        a = math.radians(k * 7.5)
-        gold.append(ball([(r + 3.3) * math.sin(a), h - 0.2, (r + 3.3) * math.cos(a)], 1.5))
-    gems = {"ruby": [], "sapphire": []}
+    lip_y = 9.75 + r - 20.2
+    for k in range(72):                                   # beads round the lip and the top rim
+        a = math.radians(k * 5.0)
+        for rr, y in ((r + 2.4, h - 0.9), (r + 3.2, lip_y)):
+            gold.append(ball([rr * math.sin(a), y, rr * math.cos(a)], 1.7))
+    band_mid = (13.2 + r - 20.2 + h - 6.0) / 2
+    gems = {"ruby": [], "sapphire": [], "emerald": []}
     for k in range(p["gems"]):
         a = 360.0 * k / p["gems"]
-        place = lambda s: s.translate([0, 0, r]).rotate([0, a, 0]).translate([0, h / 2, 0])
-        gold.append(place(M.cylinder(2.0, 6.0, 5.4, 32).translate([0, 0, -0.5])))        # bezel
-        gem = M.sphere(1.0, 8).scale([4.6, 4.6, 2.6]).translate([0, 0, 1.6])
-        gems["ruby" if k % 2 == 0 else "sapphire"].append(place(gem))
+        place = lambda s: s.translate([0, 0, r]).rotate([0, a, 0]).translate([0, band_mid, 0])
+        gold.append(place(M.cylinder(2.2, 7.0, 6.2, 40).translate([0, 0, -0.5])))        # bezel
+        gem = M.sphere(1.0, 8).scale([5.6, 5.6, 3.0]).translate([0, 0, 1.8])
+        gems[("ruby", "sapphire", "emerald")[k % 3]].append(place(gem))
     out = {"gold": union(gold), **{k: union(v) for k, v in gems.items()}}
     # Toes: lying on the base, from under the belly forward; never inside the turkey.
     toes, claws = [], []
@@ -322,7 +323,8 @@ def crown() -> M:
 
 def disjoint(parts: dict[str, M]) -> dict[str, M]:
     """Make the colored parts not overlap: what is in front (later in this list) wins."""
-    order = ["gold", "bronze", "chestnut", "tan", "dark", "red", "darkred", "orange", "white", "black"]
+    order = ["gold", "bronze", "chestnut", "tan", "dark", "red", "darkred", "orange", "white", "black",
+             "ruby", "sapphire", "emerald"]
     order = [k for k in order if k in parts]
     out = {}
     for i, k in enumerate(order):
@@ -355,15 +357,16 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     objs = read_objects(args.scepter)
     sc = scepter(objs)
-    tk = disjoint(turkey())
+    lift = BASE_TOP - P["seat"]
+    tk = {k: s.translate([0, lift, 0]) for k, s in disjoint(turkey()).items()}
     bs = base(tk)
     for k, s in list(tk.items()) + list(bs.items()):
         assert s.status() == m3d.Error.NoError, k
     b = union(list(tk.values())).bounding_box()
     print(f"turkey {b[3] - b[0]:.0f} wide x {b[4] - b[1]:.0f} tall x {b[5] - b[2]:.0f} deep mm")
     scene = {k: (s.simplify(0.02), "gold") for k, s in sc.items()}
-    scene.update({f"turkey-{k}": (s.translate([0, PLAQUE_TOP, 0]), k) for k, s in tk.items()})
-    scene.update({f"base-{k}": (s.translate([0, PLAQUE_TOP, 0]), k) for k, s in bs.items()})
+    scene.update({f"turkey-{k}": (s.translate([0, COLUMN_TOP, 0]), k) for k, s in tk.items()})
+    scene.update({f"base-{k}": (s.translate([0, COLUMN_TOP, 0]), k) for k, s in bs.items()})
     to_glb(scene, args.out / "mockup.glb")
     print("wrote", args.out / "mockup.glb")
 
