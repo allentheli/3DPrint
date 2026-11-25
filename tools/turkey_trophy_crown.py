@@ -51,7 +51,9 @@ def hollow(crown: M, cx: float, cy: float, band_top: float) -> M:
         inner = min(polys, key=lambda p: np.hypot(p[:, 0] - cx, p[:, 1] - cy).mean())
         for zz in ([z, -5.0] if z < 0.1 else [z, band_top + 60.0] if z > band_top - 0.3 else [z]):
             pts += [(x, y, zz) for x, y in inner]
-    return M.hull_points(np.array(pts))
+    h = M.hull_points(np.array(pts))
+    # 0.35 mm bigger than the inside, so a cut with it ends inside the wall, never on the crown's own surface.
+    return h.translate([-cx, -cy, 0]).scale([1.005, 1.005, 1.0]).translate([cx, cy, 0])
 
 
 def crown_axis(crown: M) -> tuple[float, float]:
@@ -218,12 +220,13 @@ def build(crown_path: Path, turkey_path: Path, cut: float, scale: float):
     # Two holes for a chin elastic: opposite each other, just behind the sides, low on the band, between gems.
     crown = crown - elastic_holes(cx, cy)
     tro = tro - elastic_holes(cx, cy)
-    tro = tro - crown
     keep = [c for c in tro.decompose() if c.volume() > 1.0]          # zero-size slivers from trimming against the wall
     tro = keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
+    # Overlapping solids joined in one go (no face lies on another, so no slivers along the seam).
     fused = crown + tro
     keep = [c for c in fused.decompose() if c.volume() > 1.0]
     fused = keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
+    gems = gems - fused
     print(f"turkey sunk into the crown: {overlap / 1000:.1f} cm3 of overlap, now one solid ({len(fused.decompose())} piece)")
     return {"crown-with-turkey": fused, "gems": gems}, (cx, cy)
 
