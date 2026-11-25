@@ -130,6 +130,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   orange gem; a cartoon turkey medallion (banded tail fan, googly eyes, wattle, its own tiny crown); drumstick, pie,
   pumpkin and corn on the points; GOBBLE GOBBLE on the back. Face-up, colors only in the raised layers (gold,
   brown, orange, red in slots 1-4; about 18 color changes, roughly 2 h, 40 g). Not printed yet.
+- **Imperial turkey crown (2026-11-25, from a MakerWorld photo Allen sent as inspiration; our own design):**
+  `python tools/turkey_crown_3d.py` writes `output/turkey-crown-3d/`: one piece printed standing, 177 x 177 x 188 mm,
+  open band 167 mm inside (sits on top of the head), pearl rows, domed jewels, scrolls, crossed-drumstick crests,
+  turkey-feather fleurs, maple leaves, pearl-tipped spikes, four beaded gothic arches (never past 50 degrees from
+  upright, so no supports) to an orb, a turkey on a flat platform on top (brown in slot 2: one color change). Brim
+  recommended (tall piece on a thin ring). Roughly 5 h, 120 g. Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
