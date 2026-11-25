@@ -123,7 +123,9 @@ def _solid(v: np.ndarray, f: np.ndarray) -> M:
 
 # Measured on the model (each piece lies along y, plaque end up; the front faces +z):
 # the threaded peg's shoulder of each piece meets the top of the piece below it.
-STACK = {"Lower_ball.stl": 0.0, "Middle.stl": 73.7 + 52.65, "SPQR_upper.stl": 73.7 + 52.65 + 68.3 + 66.72}
+STACK = {"Lower_ball.stl": 0.0, "Middle.stl": 73.7 + 52.75, "SPQR_upper.stl": 73.7 + 52.75 + 68.3 + 66.72}
+# (52.75, not the 52.65 first measured: at 52.65 the middle's shoulder sat 0.1 mm into the bottom ball; checked by
+# turning the pieces: the screws mesh with no overlap at the right turn.)
 # Allen (2026-11-25, circling the SPQR plaque and its thunderbolts): "make the circular base larger and replace the
 # circled red part". The top piece is cut where the plaque starts, just above the column's top ring (radius 17.2), and
 # the round base sits there instead.
@@ -195,7 +197,9 @@ P = dict(
 )
 
 
-def turkey(p: dict = P) -> dict[str, M]:
+def turkey(p: dict = P, colors: bool = True) -> dict[str, M]:
+    """The turkey as parts by color (for the mock-up). colors=False: no color bands on the fan (the print is one color,
+    and band edges meeting on the surface would show up as non-manifold edges in the slicer)."""
     parts: dict[str, list[M]] = {k: [] for k in COLORS}
     cx, cy = p["fan_c"]
     C = np.array([cx, cy])
@@ -217,8 +221,8 @@ def turkey(p: dict = P) -> dict[str, M]:
         parts[("ruby", "sapphire", "emerald")[k % 3]].append(at(gem))
     back = union(back)
     bands = [("bronze", 0, 0.52), ("tan", 0.52, 0.59), ("bronze", 0.59, 0.74), ("gold", 0.74, 2)]
-    for col, r0, r1 in bands:
-        parts[col].append(back ^ ring_band(C, r0 * R, r1 * R))
+    for col, r0, r1 in bands if colors else [("bronze", 0, 2)]:
+        parts[col].append(back ^ ring_band(C, r0 * R, r1 * R) if colors else back)
 
     # Front row: shorter chestnut feathers between them.
     R2 = p["row2_r"]
@@ -230,8 +234,9 @@ def turkey(p: dict = P) -> dict[str, M]:
         f = M.batch_hull([ball([*b0, ZB], [5, 5, 5]), ball([*b1, ZB], [p["row2_tip"], p["row2_tip"], p["row2_thick"]])])
         front.append(front_half(f))
     front = union(front)
-    for col, r0, r1 in [("chestnut", 0, 0.62), ("tan", 0.62, 0.71), ("chestnut", 0.71, 0.88), ("dark", 0.88, 2)]:
-        parts[col].append(front ^ ring_band(C, r0 * R2, r1 * R2))
+    for col, r0, r1 in [("chestnut", 0, 0.62), ("tan", 0.62, 0.71), ("chestnut", 0.71, 0.88), ("dark", 0.88, 2)] \
+            if colors else [("chestnut", 0, 2)]:
+        parts[col].append(front ^ ring_band(C, r0 * R2, r1 * R2) if colors else front)
 
     # Body: a bronze breast with scalloped feathers.
     bx, by, rx, ry, rz = p["body"]
@@ -323,7 +328,7 @@ def base(p: dict = P) -> dict[str, M]:
     lip_y = 9.75 + r - 20.2
     for k in range(72):                                   # beads round the lip and the top rim (flush with the top)
         a = math.radians(k * 5.0)
-        for rr, y in ((r + 2.6, h - 1.7), (r + 2.6, lip_y)):
+        for rr, y in ((r + 1.7, h - 1.7), (r + 2.6, lip_y)):     # top ones join the base on the first layer
             gold.append(ball([rr * math.sin(a), y, rr * math.cos(a)], 1.7))
     band_mid = (13.2 + r - 20.2 + h - 6.0) / 2
     gems = {"ruby": [], "sapphire": [], "emerald": []}
@@ -412,13 +417,28 @@ def print_pieces(objs: dict[str, M]) -> dict[str, M]:
     the turkey on its back; the base and the top of the column in one piece, upside down (the base's flat top on the
     plate, the screw peg up); the middle and the bottom ball of the shaft as the original file prints them."""
     sc = scepter(objs)
-    tk = union(list(turkey().values()))
+    tk = union(list(turkey(colors=False).values()))
     tk = union([c for c in tk.decompose() if c.volume() > 1.0])      # drop zero-volume slivers from the booleans
     b = tk.bounding_box()
     tk = tk.translate([-(b[0] + b[3]) / 2, -(b[1] + b[4]) / 2, -ZB])
     top = sc["SPQR_upper"] + union(list(base().values())).translate([0, COLUMN_TOP - 0.1, 0])
     return {"turkey": tk, "base-and-column-top": _upside_down(top),
-            "middle": _upside_down(sc["Middle"]), "bottom-ball": _upside_down(sc["Lower_ball"])}
+            "middle": _roof_socket(_upside_down(sc["Middle"])), "bottom-ball": _roof_socket(_upside_down(sc["Lower_ball"]))}
+
+
+def _roof_socket(s: M) -> M:
+    """The screw hole opens on the plate; its flat ceiling would print over air and sit only 0.3-0.8 mm past the
+    peg's tip, so a little sag could stop the screw short. A 45-degree cone above it: no bridge, and room for the peg."""
+    z = 10.0
+    while z < 30.0 and any(_area(p) < 0 for p in s.slice(z).to_polygons()):
+        z += 0.05
+    r = 10.4                                   # just past the thread's outer radius (10.3)
+    return s - M.cylinder(r + 0.5, r, 0.0, 64).translate([0, 0, z - 0.5])
+
+
+def _area(p) -> float:
+    p = np.asarray(p)
+    return 0.5 * float(np.sum(p[:, 0] * np.roll(p[:, 1], -1) - np.roll(p[:, 0], -1) * p[:, 1]))
 
 
 def unsupported(s: M, step: float = 0.2, max_from_upright: float = 55.0) -> list:
@@ -516,8 +536,10 @@ Printed in one color; the kids color it in afterwards with acrylic markers. **Wh
 
 - Three pieces standing up: the base with the top of the column (upside down, the base's flat top on the plate),
   the bottom ball and the middle section (as the original file prints them).
-- Profile **0.24mm Draft**. **Sparse infill density 10%**. **Supports off**. **Others > Brim type: Outer brim only**
+- Profile **0.24mm Draft**. On the Strength tab: **Wall loops 3** and **Sparse infill density 15%** (the original
+  designer's settings: they keep the screw pegs strong). **Supports off**. **Others > Brim type: Outer brim only**
   (the two thin pieces are tall).
+- The screw holes have a pointed roof now (no flat ceiling to sag), so the pieces screw down flush.
 - Roughly {h2:.0f} hours, {g2:.0f} g (rough guess again).
 - Short on time? Delete the middle section from the plate (saves about {mid['hours']:.1f} hours): the base's screw
   goes straight into the bottom ball, and the scepter is 14 cm shorter (about 46 cm).
@@ -525,8 +547,9 @@ Printed in one color; the kids color it in afterwards with acrylic markers. **Wh
 ## Putting it together
 
 1. Screw the bottom ball onto the middle section, then the middle section onto the screw under the base.
-2. Put a little glue (gel super glue or 5-minute epoxy) on the turkey's tab and push it into the slot on top of the
-   base. It only fits facing the front. Hold it a minute and let the glue set before anyone waves it around.
+2. Put glue (gel super glue or 5-minute epoxy) on the turkey's tab **and on its flat belly underside**, and push the
+   tab into the slot on top of the base. It only fits facing the front. Hold it a minute and let the glue set
+   before anyone waves it around.
    The slot has 0.25 mm of room round the tab (not test-printed): if it is tight, sand the tab a little.
 3. Color with acrylic markers; let it dry.
 """)

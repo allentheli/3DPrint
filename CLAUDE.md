@@ -169,6 +169,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   plus the original middle and bottom ball as the file prints them). The tab is glued into a slot in the base top
   (0.25 mm gap, untested; pointed slot end, no bridge). 0.24mm Draft, 10% infill, no supports, outer brim on plate 2.
   My rough estimate: 4 h + 7 h (Bambu Studio's is the real one); leaving out the middle saves about 1.5 h (46 cm long).
+  Double-checked before printing (Allen: "we only got one shot"): files reloaded closed (the fan is built without color
+  bands for the print, which had left 46 non-manifold edges; one edge in the designer's own middle piece remains), no
+  spot over air at 45 degrees, one first-layer patch per piece (rim beads moved in: they were 72 loose dots), tab gap
+  0.25 mm, screws mesh with no overlap (stack offset corrected 0.1 mm), and the screw holes of the middle and bottom ball
+  got a 45-degree roof (flat 18 mm ceilings sat 0.3 mm past the peg tip). Plate 2: 3 walls, 15% infill (the designer's).
   Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
