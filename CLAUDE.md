@@ -142,7 +142,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (x1.2) cut flat at the belly with its whole tail fan wrapped round the crown's front (following the crown's
   curve and flare, 1.5 mm into it) under the front point, like a trophy mount (Allen: no plaque needed, "the
   turkey tail fan is important"); 10 low-poly gems in the big bottom triangles. One color, parts crown /
-  turkey-trophy / gems for him to color. No supports (beak tip ~3 mm2 in the air). Not printed yet.
+  turkey-trophy / gems for him to color. No supports (beak tip ~3 mm2 in the air). 2026-11-25 later: sits on top of the
+  head as is (43 cm round inside; Allen: "as is is fine"); two 5 mm teardrop holes low on the band, opposite, just
+  behind the sides (98.6 and 278.6 degrees, between gems) for a chin elastic; the turkey fused in (solid filled in
+  behind its whole outline, 12.6 cm3 into the wall, trimmed flush with the crown's real inside), so the parts are now
+  crown-with-turkey (one solid) and gems. Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:

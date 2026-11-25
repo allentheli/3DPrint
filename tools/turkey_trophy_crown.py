@@ -42,6 +42,18 @@ def load(path: Path) -> M:
     return solid
 
 
+def hollow(crown: M, cx: float, cy: float, band_top: float) -> M:
+    """The inside of the band, exactly: the hull of its inner wall's outline at many heights (extended above and
+    below), so whatever is cut with it ends flush with the inside of the crown."""
+    pts = []
+    for z in np.linspace(0.05, band_top - 0.2, 40):
+        polys = [np.asarray(p) for p in crown.slice(float(z)).to_polygons()]
+        inner = min(polys, key=lambda p: np.hypot(p[:, 0] - cx, p[:, 1] - cy).mean())
+        for zz in ([z, -5.0] if z < 0.1 else [z, band_top + 60.0] if z > band_top - 0.3 else [z]):
+            pts += [(x, y, zz) for x, y in inner]
+    return M.hull_points(np.array(pts))
+
+
 def crown_axis(crown: M) -> tuple[float, float]:
     b = crown.bounding_box()
     return (b[0] + b[3]) / 2, (b[1] + b[4]) / 2
@@ -85,7 +97,13 @@ def trophy(crown: M, turkey: M, cx: float, cy: float, cut: float, scale: float) 
     t = turkey.simplify(0.03)
     b = t.bounding_box()
     t = t.translate([-(b[0] + b[3]) / 2, -b[4], -cut]).trim_by_plane([0, 0, 1], 0.0)   # fan's back at y = 0
-    t = t.scale([scale, scale, scale]).refine_to_length(1.5)
+    t = t.scale([scale, scale, scale])
+    # Solid behind the turkey's whole outline, 8 mm back into the crown (the crown's faceted front leaves gaps
+    # behind a flat fan): the turkey is fused to the crown all over, not just along its ridges (Allen: "I like for
+    # it to be fused so its secure").
+    sil = t.rotate([-90, 0, 0]).project().offset(-0.4, m3d.JoinType.Round, circular_segments=24)
+    backfill = sil.extrude(8.0).rotate([90, 0, 0]).translate([0, 8.0, 0])
+    t = (t + backfill).refine_to_length(1.5)
     top = t.bounding_box()[5]
     zs, rs = front_radius(crown, cx, cy, top)
     embed = 1.5
@@ -143,6 +161,20 @@ def gem(center, normal, size: float) -> M:
     return M.hull_points(np.array(pts))
 
 
+def elastic_holes(cx: float, cy: float, angles=(98.6, 278.6), z: float = 8.0, d: float = 5.0) -> M:
+    """Round holes through the band (teardrop, point up, so the top prints without sagging)."""
+    r = d / 2
+    drop = CS.batch_hull([CS.circle(r, 48), CS.square([0.01, 0.01]).translate([-0.005, r * math.sqrt(2)])])
+    out = None
+    for a in angles:
+        h = drop.extrude(40.0).translate([0, 0, -20.0])          # along local z
+        h = h.rotate([90, 0, 0])                                  # now along -y..y, the drop in x-z
+        h = h.translate([0, -70.0, z]).rotate([0, 0, a])          # out at radius ~70, turned to angle a
+        h = h.translate([cx, cy, 0])
+        out = h if out is None else out + h
+    return out
+
+
 def unsupported(s: M, step: float = 0.2, max_from_upright: float = 50.0) -> list:
     """Spots wider than 1.5 mm printed over thin air (beyond `max_from_upright` degrees)."""
     reach = step * math.tan(math.radians(max_from_upright))
@@ -181,10 +213,19 @@ def build(crown_path: Path, turkey_path: Path, cut: float, scale: float):
         g = gem(f["center"], f["normal"], min(8.0, 0.75 * f["r_in"]))
         gems = g if gems is None else gems + g
     gems = gems - crown
+    tro = tro - inner_cone(crown, cx, cy, band_top) - hollow(crown, cx, cy, band_top)
+    overlap = (tro ^ crown).volume()
+    # Two holes for a chin elastic: opposite each other, just behind the sides, low on the band, between gems.
+    crown = crown - elastic_holes(cx, cy)
+    tro = tro - elastic_holes(cx, cy)
     tro = tro - crown
     keep = [c for c in tro.decompose() if c.volume() > 1.0]          # zero-size slivers from trimming against the wall
     tro = keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
-    return {"crown": crown, "turkey-trophy": tro, "gems": gems}, (cx, cy)
+    fused = crown + tro
+    keep = [c for c in fused.decompose() if c.volume() > 1.0]
+    fused = keep[0] if len(keep) == 1 else M.batch_boolean(keep, m3d.OpType.Add)
+    print(f"turkey sunk into the crown: {overlap / 1000:.1f} cm3 of overlap, now one solid ({len(fused.decompose())} piece)")
+    return {"crown-with-turkey": fused, "gems": gems}, (cx, cy)
 
 
 def main() -> None:
@@ -222,24 +263,37 @@ def write_files(parts: dict, cx: float, cy: float, out: Path) -> None:
 
 Your downloaded crown ("Low-Poly Geometric Crown", Canary_3D_Print) with your downloaded turkey ("Thanksgiving day
 Turkey", faffi) mounted on its front like a hunter's trophy: the turkey cut flat at the belly, its tail fan wrapped
-round the crown's front, the head and chest sticking out under the front point. A gem in each big triangle at the
-bottom of the band (10, in an even row). Both models are under MakerWorld's Standard Digital File License: for your own printing only.
+round the crown's front, the head and chest sticking out under the front point. The turkey is fused into the crown
+(solid plastic behind the whole fan, into the crown's wall): one piece. A gem in each big triangle at the bottom of
+the band (10, in an even row). Two holes for a chin elastic. Both models are under MakerWorld's Standard Digital
+File License: for your own printing only.
 
 ## Plate: `turkey-trophy-crown.3mf`
 
-- One piece, three parts: `crown`, `turkey-trophy`, `gems`, all set to slot 1. To color them, click a part in the
-  list on the left and pick another filament, or use the **Color painting** tool on the turkey. Coloring the turkey
-  and gems only changes colors on the layers where they are (the bottom 45 mm), so expect some color changes there.
+- Two parts, both slot 1: `crown-with-turkey` (one solid) and `gems`. To color the gems, click `gems` in the list on
+  the left and pick another filament. To color the turkey, use the **Color painting** tool on it. Colors only change
+  on the layers where they are (the bottom 45 mm).
 - Layer height **0.20 mm**. Supports **off**: the crown printed without them, and the turkey's legs and lower belly
   (the part that needed supports) are cut away. The beak tip has a few square millimetres hanging in the air; it
   prints with at most a slightly droopy tip. For a perfect beak, turn supports on with **On build plate only**.
-- Brim: **Outer brim only**, 5 mm, is a good idea (tall, heavy-fronted).
+- Brim: **Outer brim only**, 5 mm.
 - Don't press **Arrange**.
+
+## Chin elastic
+
+The crown sits on top of the head (43 cm round inside). Two 5 mm holes, low on the band just behind each side.
+Thread hat elastic (round cord or thin flat elastic) through one hole from the outside, knot it inside, run it
+under the chin, and knot it inside the other hole at a comfortable length.
 """)
+
     render_shaded(view_parts, out / "crown-front.png", view=(10.0, -12.0), px_per_mm=4.0, labels=False,
-                  colors={"crown": GOLD, "turkey-trophy": GOLD, "gems": GOLD})
+                  colors={"crown-with-turkey": GOLD, "gems": GOLD})
     render_shaded(view_parts, out / "crown-colored-idea.png", view=(18.0, -30.0), px_per_mm=4.0, labels=False,
-                  colors={"crown": GOLD, "turkey-trophy": BROWN, "gems": RED})
+                  colors={"crown-with-turkey": GOLD, "gems": RED})
+    render_shaded(view_parts, out / "crown-side.png", view=(8.0, -100.0), px_per_mm=4.0, labels=False,
+                  colors={"crown-with-turkey": GOLD, "gems": RED})
+    render_shaded(view_parts, out / "crown-inside.png", view=(55.0, 170.0), px_per_mm=4.0, labels=False,
+                  colors={"crown-with-turkey": GOLD, "gems": RED})
 
 
 if __name__ == "__main__":
