@@ -174,7 +174,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   spot over air at 45 degrees, one first-layer patch per piece (rim beads moved in: they were 72 loose dots), tab gap
   0.25 mm, screws mesh with no overlap (stack offset corrected 0.1 mm), and the screw holes of the middle and bottom ball
   got a 45-degree roof (flat 18 mm ceilings sat 0.3 mm past the peg tip). Plate 2: 3 walls, 15% infill (the designer's).
-  Not printed yet.
+  Then Allen: "the turkey only look good straight on especially that thing on its beak" (the walls back to the flat
+  back made the snood a fin and the eyes tubes from the side). Now only the neck and head have walls (hidden in the
+  fan); eyes, beak, wattle, snood and crown are real 3D. The snood runs from the forehead along the beak, over its tip,
+  and rests on the wattle. Still no supports: the eyes start inside the head; overhang specks total about 77 mm2
+  (largest 9 mm2, under the crown). Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:

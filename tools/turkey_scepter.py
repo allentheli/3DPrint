@@ -264,26 +264,31 @@ def turkey(p: dict = P, colors: bool = True) -> dict[str, M]:
 
     # Neck and head (bare red skin), wattle, snood, beak.
     hx, hy = p["head"]
-    # (Everything in front of the fan gets a wall back to the flat back: see relief().)
+    # The neck and head get a wall back to the flat back (hidden in the fan: see relief()). The face does not (Allen,
+    # 2026-11-25: with walls the turkey "only look good straight on especially that thing on its beak"): the eyes,
+    # beak, wattle, snood and crown are real 3D shapes, held up by tree supports while printing.
     parts["red"].append(chain([(0, by + 30, 0), (1.5, hy - 26, 3), (hx, hy - 8, 3)], [11, 9, 9], rel=True))
     parts["red"].append(relief(ell([hx, hy, 3], p["head_r"])))
-    parts["darkred"].append(relief(ell([hx - 1, hy - 23, 10], [6.5, 9, 6])))
-    parts["orange"].append(relief(M.batch_hull([ball([hx, hy - 4, 14], 5.6), ball([hx, hy - 12, 25.5], 1.3)])))
-    parts["darkred"].append(chain([(hx, hy + 2, 14.5), (hx + 2.5, hy - 3, 22.5), (hx + 5, hy - 11, 26.5),
-                                   (hx + 6.5, hy - 20, 25), (hx + 7, hy - 26, 22)], [2.7, 2.6, 2.4, 2.2, 2.8], rel=True))
+    parts["darkred"].append(ell([hx - 1, hy - 23, 10], [6.5, 9, 6]))
+    parts["orange"].append(M.batch_hull([ball([hx, hy - 4, 14], 5.6), ball([hx, hy - 12, 25.5], 1.3)]))
+    # The snood: from the forehead along the top of the beak, flopping over its tip and hanging down to rest on the
+    # wattle (so it is attached at both ends).
+    parts["darkred"].append(chain([(hx, hy + 4, 15.0), (hx + 0.8, hy - 1, 19.6), (hx + 2.5, hy - 6.5, 24.0),
+                                   (hx + 4.5, hy - 11, 26.0), (hx + 4.0, hy - 16, 22.0), (hx + 3.0, hy - 22, 17.2)],
+                                  [2.6, 2.8, 2.6, 2.4, 2.4, 2.9]))
 
     # Googly eyes, looking two different ways.
     eyes = [((hx - 10.6, hy + 7, 12.0), 10.5, (-0.62, 0.45, 0.64)),      # left: up and out
             ((hx + 11.0, hy + 8.5, 12.0), 11.2, (0.45, -0.55, 0.70))]     # right: down and out
     for c, r, d in eyes:
         d = np.asarray(d) / np.linalg.norm(d)
-        parts["white"].append(relief(ball(c, r)))
+        parts["white"].append(ball(c, r))
         parts["black"].append(ball(np.asarray(c) + (r - 2.3) * d, 4.4))
 
     # A little crown, on crooked.
     place = lambda s: s.rotate([0, 0, -17]).translate([hx + 4, hy + 14, 1])
-    parts["gold"].append(union([relief(place(c)) for c in crown_pieces()]))
-    parts["red"].append(relief(place(ball([0, 4.0, 12.0], 2.2))))
+    parts["gold"].append(union([place(c) for c in crown_pieces()]))
+    parts["red"].append(place(ball([0, 4.0, 12.0], 2.2)))
 
     # No legs (Allen: a weak spot): the body sits on the round base; the turkey ends flat at the base's top. Its toes
     # rest on the base, peeking out from under the belly (in the print they stand up from the belly).
@@ -530,6 +535,9 @@ Printed in one color; the kids color it in afterwards with acrylic markers. **Wh
 
 - The turkey lying on its back (its back is flat). The tab at its bottom edge goes into the base.
 - Profile **0.24mm Draft**. **Sparse infill density 10%** (Strength tab). **Supports off**. No brim needed.
+- The face is real 3D (round eyes, crown, snood): the eyes start inside the head and the snood rests on the beak and
+  the wattle, so it still needs no supports; a few specks of 2-9 mm2 (under the crown, eyes, toes) print as small
+  overhangs and may sag a hair, under the paint.
 - Roughly {h1:.0f} hours, {g1:.0f} g (my rough guess; Bambu Studio shows the real time after **Slice plate**).
 
 ## Plate 2: `turkey-scepter-2-shaft.3mf`
