@@ -196,8 +196,9 @@ def turkey(p: dict = P) -> dict[str, M]:
         f = M.batch_hull([ball([*b0, ZB], [6, 6, 3.5]), ball([*b1, ZB], [p["fan_tip"], p["fan_tip"], p["fan_thick"]])])
         back.append(front_half(f))
         k = abs(int(round((a - angs[0]) / (angs[1] - angs[0]))) - (n - 1) // 2)
-        gem = M.sphere(1.0, 10).scale([10.5, 9.3, 4.2]).rotate([0, 0, a]).translate([*(C + (R - 13.5) * u), ZB + p["fan_thick"] - 0.8])
-        parts[("ruby", "sapphire", "emerald")[k % 3]].append(gem)
+        at = lambda s: s.rotate([0, 0, a]).translate([*(C + (R - 13.5) * u), ZB + p["fan_thick"] - 1.2])
+        parts["gold"].append(at(hex_prism(10.6, 1.6, stretch=1.12)))                   # setting
+        parts[("ruby", "sapphire", "emerald")[k % 3]].append(at(hex_gem(9.2, 3.6, stretch=1.12).translate([0, 0, 1.0])))
     back = union(back)
     bands = [("bronze", 0, 0.52), ("tan", 0.52, 0.59), ("bronze", 0.59, 0.74), ("gold", 0.74, 2)]
     for col, r0, r1 in bands:
@@ -289,9 +290,8 @@ def base(turkey_parts: dict[str, M], p: dict = P) -> dict[str, M]:
     for k in range(p["gems"]):
         a = 360.0 * k / p["gems"]
         place = lambda s: s.translate([0, 0, r]).rotate([0, a, 0]).translate([0, band_mid, 0])
-        gold.append(place(M.cylinder(2.2, 7.0, 6.2, 40).translate([0, 0, -0.5])))        # bezel
-        gem = M.sphere(1.0, 8).scale([5.6, 5.6, 3.0]).translate([0, 0, 1.8])
-        gems[("ruby", "sapphire", "emerald")[k % 3]].append(place(gem))
+        gold.append(place(hex_prism(7.0, 2.2).translate([0, 0, -0.5])))                  # setting
+        gems[("ruby", "sapphire", "emerald")[k % 3]].append(place(hex_gem(5.8, 2.8).translate([0, 0, 1.2])))
     out = {"gold": union(gold), **{k: union(v) for k, v in gems.items()}}
     # Toes: lying on the base, from under the belly forward; never inside the turkey.
     toes, claws = [], []
@@ -305,6 +305,25 @@ def base(turkey_parts: dict[str, M], p: dict = P) -> dict[str, M]:
     out["orange"] = union(toes) - tk
     out["dark"] = union(claws) - tk
     return out
+
+
+def _hexagon(r: float, z: float, turn: float = 0.0, stretch: float = 1.0) -> list:
+    return [(stretch * r * math.cos(math.radians(60 * k + turn)), r * math.sin(math.radians(60 * k + turn)), z)
+            for k in range(6)]
+
+
+def hex_gem(r: float, h: float, stretch: float = 1.0) -> M:
+    """A hexagonal cut gem facing +z from z = 0: a thin girdle, then a crown of star facets up to a flat table.
+    Points along x; `stretch` makes it longer along x."""
+    g = 0.5
+    pts = (_hexagon(r, 0.0, stretch=stretch) + _hexagon(r, g, stretch=stretch)
+           + _hexagon(0.80 * r, g + 0.5 * h, turn=30, stretch=stretch) + _hexagon(0.52 * r, g + h, stretch=stretch))
+    return M.hull_points(np.array(pts))
+
+
+def hex_prism(r: float, h: float, stretch: float = 1.0) -> M:
+    """A hexagonal gold setting under a gem, z = 0..h, a little bigger than the gem."""
+    return M.hull_points(np.array(_hexagon(r, 0.0, stretch=stretch) + _hexagon(r - 0.4, h, stretch=stretch)))
 
 
 def crown() -> M:

@@ -158,8 +158,9 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   a round gold base, its toes peeking out onto it. Allen circled the SPQR plaque and thunderbolts: "make the circular base
   larger and replace the circled red part", so the top piece is cut just above the column's top ring and a 10 cm base sits
   there (45-degree flare from the column, beaded lip and rim, 18 ruby/sapphire/emerald jewels). "Make the tip of each of
-  the turkey feather tails into gems too": each back-row feather ends in a faceted jewel in a gold setting (mirrored colors;
-  the pearls are gone). Allen: the scepter need not match the file exactly. Whole scepter about 60 cm, fan 22 cm wide.
+  the turkey feather tails into gems too": each back-row feather ends in a jewel in a gold setting (mirrored colors;
+  the pearls are gone). "Make the gems like gem shaped hexagonal": every jewel is a hexagonal cut gem (girdle, star facets,
+  flat table) in a hexagonal gold setting, the feather-tip ones a little longer along the feather. Allen: the scepter need not match the file exactly. Whole scepter about 60 cm, fan 22 cm wide.
   Mock-ups sent; not printable yet (next: a hidden peg from the turkey into the base, the base onto the column, overhangs,
   plates).
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
