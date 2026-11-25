@@ -156,7 +156,7 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   gold band, gold pearls), bronze scalloped breast, barred wings, red head with snood and wattle, googly eyes looking
   different ways, a crooked gold crown; flat back, relief like the eagle. No legs (Allen: a weak spot): the turkey is
   lowered so its body sits on a round gold base (66 mm, beaded rim, 12 ruby and sapphire jewels round the side), its toes
-  peeking out onto it. Allen: the scepter need not match the file exactly. Whole scepter about 58 cm. Mock-ups sent; not
+  peeking out onto it. Allen: the scepter need not match the file exactly. Whole scepter about 60 cm. Mock-ups sent; not
   printable yet (next: a hidden peg from the turkey into the base, the base fixed to the plaque, overhangs, plates).
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
