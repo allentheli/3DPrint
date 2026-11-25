@@ -123,6 +123,13 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   less after the inner bevel). Now a 45-degree foot inside the lid's rim (about 1,600 mm2 on the plate) plus a brim
   in Bambu Studio (Others, Brim type: Outer and inner brim). Fallback if it still lifts: print the lid upside down
   (top on the plate) with the pictures colored (`top_style: color`) or cut in. Colored front pictures (glued-in pieces) not built. Not printed.
+- **Turkey crown (2026-11-25, Allen: "funny but fancy Thanksgiving turkey crown" for a yearly photo):**
+  `python tools/turkey_crown.py` writes `output/turkey-crown/`: "King of the Feast", two flat 1.6 mm pieces
+  (front 230 x 91 mm, back 170 x 26 mm) that bend round the head, joined at the sides by two hair ties over red
+  mushroom buttons (fits kids and grown-ups). Gold crown, raised border and pearls, red domed jewels, faceted
+  orange gem; a cartoon turkey medallion (banded tail fan, googly eyes, wattle, its own tiny crown); drumstick, pie,
+  pumpkin and corn on the points; GOBBLE GOBBLE on the back. Face-up, colors only in the raised layers (gold,
+  brown, orange, red in slots 1-4; about 18 color changes, roughly 2 h, 40 g). Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
