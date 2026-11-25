@@ -136,6 +136,13 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   turkey-feather fleurs, maple leaves, pearl-tipped spikes, four beaded gothic arches (never past 50 degrees from
   upright, so no supports) to an orb, a turkey on a flat platform on top (brown in slot 2: one color change). Brim
   recommended (tall piece on a thin ring). Roughly 5 h, 120 g. Not printed yet.
+- **Turkey trophy crown (2026-11-25, Allen's two MakerWorld downloads, Standard Digital File License, never in git;
+  he picked this over our own crowns):** `python -I tools/turkey_trophy_crown.py <Crown01.3mf> <turkey_ams.3mf>`
+  (`photos/crown-model/`, `photos/turkey-model/`) writes `output/turkey-trophy-crown/`: the low-poly crown, the turkey
+  (x1.2) cut flat at the belly with its whole tail fan wrapped round the crown's front (following the crown's
+  curve and flare, 1.5 mm into it) under the front point, like a trophy mount (Allen: no plaque needed, "the
+  turkey tail fan is important"); 10 low-poly gems in the big bottom triangles. One color, parts crown /
+  turkey-trophy / gems for him to color. No supports (beak tip ~3 mm2 in the air). Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
