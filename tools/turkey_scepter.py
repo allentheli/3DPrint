@@ -10,7 +10,8 @@ printing only); neither it nor the output goes into git. The turkey is our own d
 - a heraldic, front-facing turkey the size of the eagle it replaces: a tail fan spread as wide as the eagle's wings
   (two rows of banded feathers, gold tips and pearls), a bronze breast with a beard, drooping wings,
 - a bare red head with a dangly snood, a wattle, and big googly eyes looking two different ways,
-- a little gold crown sitting crooked on its head, and orange feet gripping a gold perch on top of the SPQR plaque.
+- a little gold crown sitting crooked on its head; no legs (Allen: a weak spot): its body sits on a round gold base
+  with jewels round the side, its toes peeking out from under the belly.
 
 The turkey is a relief with a flat back (like a plaque), so it can print back-down.
 
@@ -48,6 +49,8 @@ COLORS = {
     "white": ("#F6F3EC", False),
     "black": ("#0E0E0E", False),
     "orange": ("#E8820E", False),
+    "ruby": ("#B3122E", False),
+    "sapphire": ("#1E4DB5", False),
 }
 
 ZB = -14.0          # the turkey's flat back (the plaque's mid-plane is z = 0, its faces z = +-17.5)
@@ -177,11 +180,12 @@ def union(parts) -> M:
 # ---------------------------------------------------------------- the turkey
 
 P = dict(
-    perch=(27.0, 9.0, 11.0),      # gold perch on the plaque: half width, height, half depth
-    fan_c=(0.0, 80.0), fan_r=112.0, fan_n=15, fan_span=(-12.0, 192.0), fan_tip=14.5, fan_thick=4.2,
+    base_r=33.0, base_h=17.0,     # round gold base on the plaque (the turkey's body sits on it; no legs)
+    gems=12,
+    fan_c=(0.0, 67.0), fan_r=112.0, fan_n=15, fan_span=(-12.0, 192.0), fan_tip=14.5, fan_thick=4.2,
     row2_r=80.0, row2_tip=12.5, row2_thick=11.0,
-    body=(0.0, 70.0, 39.0, 46.0, 31.0),          # center x, y; radii x, y, z (dome on the back plane)
-    head=(3.0, 146.0), head_r=(15.0, 16.0, 13.0),
+    body=(0.0, 57.0, 39.0, 46.0, 31.0),          # center x, y; radii x, y, z (dome on the back plane)
+    head=(3.0, 133.0), head_r=(15.0, 16.0, 13.0),
 )
 
 
@@ -189,12 +193,6 @@ def turkey(p: dict = P) -> dict[str, M]:
     parts: dict[str, list[M]] = {k: [] for k in COLORS}
     cx, cy = p["fan_c"]
     C = np.array([cx, cy])
-
-    # Gold perch (the eagle stood on a block too), rounded.
-    hw, ph, hd = p["perch"]
-    perch = M.batch_hull([ball([sx * (hw - 3), y, sz * (hd - 3)], 3.0)
-                          for sx in (-1, 1) for sz in (-1, 1) for y in (3.0, ph - 3.0)])
-    parts["gold"].append(perch)
 
     # Tail fan, back row: long banded feathers with a gold band, buff tips and a gold pearl on each.
     R, n = p["fan_r"], p["fan_n"]
@@ -242,9 +240,9 @@ def turkey(p: dict = P) -> dict[str, M]:
 
     # Wings, drooping at the sides, with tan bars.
     for side in (-1, 1):
-        w = front_half(ell([side * 37, by - 14, ZB], [16, 38, 24], rot_z=side * 16))
-        w2 = front_half(ell([side * 37, by - 14, ZB], [16.8, 38.8, 24.8], rot_z=side * 16))
-        bars = union([w2 ^ M.cube([200, 3.2, 100]).translate([-100, by - 40 + 8 * k, -50]) for k in range(4)])
+        w = front_half(ell([side * 37, by - 5, ZB], [16, 32, 24], rot_z=side * 16))
+        w2 = front_half(ell([side * 37, by - 5, ZB], [16.8, 32.8, 24.8], rot_z=side * 16))
+        bars = union([w2 ^ M.cube([200, 3.2, 100]).translate([-100, by - 32 + 7.5 * k, -50]) for k in range(4)])
         parts["bronze"].append(w)
         parts["tan"].append(bars)
 
@@ -270,17 +268,42 @@ def turkey(p: dict = P) -> dict[str, M]:
     parts["gold"].append(place(crown()))
     parts["red"].append(place(ball([0, 4.0, 12.0], 2.2)))
 
-    # Legs and feet gripping the perch's front edge.
-    top = ph
+    # No legs (Allen: a weak spot): the body sits on the round base; the turkey ends flat at the base's top.
+    above = M.cube([1000, 1000, 1000]).translate([-500, p["base_h"], -500])
+    return {k: union(v) ^ above for k, v in parts.items() if v}
+
+
+def base(turkey_parts: dict[str, M], p: dict = P) -> dict[str, M]:
+    """A round gold base on the plaque, jewels round its side, a beaded rim, and the turkey's toes peeking out from
+    under its belly onto it."""
+    r, h = p["base_r"], p["base_h"]
+    prof = [(0, 0), (r + 2.5, 0), (r + 3.5, 1.2), (r + 3.5, 2.8), (r + 2.0, 3.8), (r, 4.2), (r, h - 4.2),
+            (r + 2.0, h - 3.8), (r + 3.5, h - 2.8), (r + 3.5, h - 1.2), (r + 2.5, h), (0, h)]
+    drum = M.revolve(m3d.CrossSection([np.array(prof, float)]), 96).rotate([-90, 0, 0])   # axis z -> y
+    gold = [drum]
+    for k in range(48):                                   # beads round the top rim
+        a = math.radians(k * 7.5)
+        gold.append(ball([(r + 3.3) * math.sin(a), h - 0.2, (r + 3.3) * math.cos(a)], 1.5))
+    gems = {"ruby": [], "sapphire": []}
+    for k in range(p["gems"]):
+        a = 360.0 * k / p["gems"]
+        place = lambda s: s.translate([0, 0, r]).rotate([0, a, 0]).translate([0, h / 2, 0])
+        gold.append(place(M.cylinder(2.0, 6.0, 5.4, 32).translate([0, 0, -0.5])))        # bezel
+        gem = M.sphere(1.0, 8).scale([4.6, 4.6, 2.6]).translate([0, 0, 1.6])
+        gems["ruby" if k % 2 == 0 else "sapphire"].append(place(gem))
+    out = {"gold": union(gold), **{k: union(v) for k, v in gems.items()}}
+    # Toes: lying on the base, from under the belly forward; never inside the turkey.
+    toes, claws = [], []
     for side in (-1, 1):
-        x0 = side * 14
-        parts["orange"].append(chain([(side * 12, by - ry + 6, -2), (x0, top + 4, 2)], [4.2, 3.4]))
-        for dx in (-0.4, 0.0, 0.4):
-            x1 = x0 + side * 2 + dx * 14
-            parts["orange"].append(chain([(x0, top + 3, 2), (x1, top + 2.6, hd - 1), (x1 + dx * 2, top - 3, hd + 1.8)],
-                                         [2.8, 2.5, 2.1]))
-            parts["dark"].append(chain([(x1 + dx * 2, top - 3, hd + 1.8), (x1 + dx * 2.4, top - 7.5, hd + 0.8)], [1.6, 0.6]))
-    return {k: union(v) for k, v in parts.items() if v}
+        x0 = side * 11
+        for dx in (-0.45, 0.0, 0.45):
+            x1 = x0 + side * 1.5 + dx * 13
+            toes.append(chain([(x0, h + 1.8, 2.0), (x1, h + 1.7, 15.0), (x1 + dx * 1.5, h + 1.4, 19.5)], [2.9, 2.5, 2.1]))
+            claws.append(ball([x1 + dx * 2.2, h + 1.0, 21.0], [1.4, 1.1, 1.8]))
+    tk = union(list(turkey_parts.values()))
+    out["orange"] = union(toes) - tk
+    out["dark"] = union(claws) - tk
+    return out
 
 
 def crown() -> M:
@@ -333,12 +356,14 @@ def main() -> None:
     objs = read_objects(args.scepter)
     sc = scepter(objs)
     tk = disjoint(turkey())
-    for k, s in tk.items():
+    bs = base(tk)
+    for k, s in list(tk.items()) + list(bs.items()):
         assert s.status() == m3d.Error.NoError, k
     b = union(list(tk.values())).bounding_box()
     print(f"turkey {b[3] - b[0]:.0f} wide x {b[4] - b[1]:.0f} tall x {b[5] - b[2]:.0f} deep mm")
     scene = {k: (s.simplify(0.02), "gold") for k, s in sc.items()}
     scene.update({f"turkey-{k}": (s.translate([0, PLAQUE_TOP, 0]), k) for k, s in tk.items()})
+    scene.update({f"base-{k}": (s.translate([0, PLAQUE_TOP, 0]), k) for k, s in bs.items()})
     to_glb(scene, args.out / "mockup.glb")
     print("wrote", args.out / "mockup.glb")
 
