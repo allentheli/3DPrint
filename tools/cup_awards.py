@@ -55,6 +55,10 @@ AWARDS = [
 
 PLATE = (45.0, 17.5, 2.0)
 CAP, GAP, MAX_W, RAISE = 4.8, 2.3, 40.5, 0.6
+YEAR = "2026"                  # Allen: "I like the year on them 2026": a small last line on every plate that lacks it
+# Letter heights by number of lines (the 3-line plates: two title lines and the smaller year).
+SIZES = {1: [6.0], 2: [CAP, CAP], 3: [3.9, 3.9, 3.0]}
+GAPS = {1: 0.0, 2: GAP, 3: 1.5}
 GOLD, BROWN = (224, 172, 52), (92, 58, 36)
 
 
@@ -80,26 +84,28 @@ def read_cup(path: Path) -> dict[str, M]:
     return out
 
 
-def line_shape(text: str) -> CS:
-    cs = text_outline(text, CAP)
+def line_shape(text: str, cap: float = CAP) -> CS:
+    cs = text_outline(text, cap)
     w = cs.bounds()[2] - cs.bounds()[0]
     if w > MAX_W:
-        cs = text_outline(text, CAP * MAX_W / w)
+        cs = text_outline(text, cap * MAX_W / w)
     r = 0.16                                               # rounded corners, like the original's rounded font
     return cs.offset(-r, m3d.JoinType.Round).offset(r, m3d.JoinType.Round)
 
 
 def plate_text(award: str) -> CS:
-    """One or two lines (split by |), centred on the plate."""
-    lines = [line_shape(t.strip()) for t in award.split("|") if t.strip()]
+    """One to three lines (split by |), centred on the plate."""
+    texts = [t.strip() for t in award.split("|") if t.strip()]
+    lines = [line_shape(t, c) for t, c in zip(texts, SIZES[len(texts)])]
     hs = [ln.bounds()[3] - ln.bounds()[1] for ln in lines]
-    total = sum(hs) + GAP * (len(lines) - 1)
+    gap = GAPS[len(texts)]
+    total = sum(hs) + gap * (len(lines) - 1)
     y = total / 2
     placed = []
     for ln, h in zip(lines, hs):
         b = ln.bounds()
         placed.append(ln.translate([-(b[0] + b[2]) / 2, y - b[3]]))
-        y -= h + GAP
+        y -= h + gap
     out = placed[0]
     for p in placed[1:]:
         out = out + p
@@ -172,8 +178,11 @@ def main() -> None:
     ap.add_argument("--awards", nargs="*", default=AWARDS, help='"LINE 1|LINE 2" for each plate')
     ap.add_argument("--mockup", nargs="*", type=int, default=[1, 2, 3, 4], help="plate numbers to show on cups")
     ap.add_argument("--out", type=Path, default=ROOT / "output" / "cup-awards")
+    ap.add_argument("--year", default=YEAR, help="added as a small last line where the text has no year ('' for none)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
+    if args.year:
+        args.awards = [a if args.year in a else f"{a}|{args.year}" for a in args.awards]
     parts = read_cup(args.cup)
     spots = layout(len(args.awards))
     objects = []

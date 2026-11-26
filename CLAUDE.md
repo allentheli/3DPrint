@@ -207,7 +207,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   shrunk to fit 40.5 mm; gold slot 1, text slot 2), `award-plates.png` (numbered), `mockup.glb`. Allen's texts: I ATE /
   - 2026, THANKSGIVING CHAMPION, LEFTOVER LEGEND ("is good LOL"); potato fan options TOP TATER, SPUD STUD, MASHED POTATO
   MVP, CHAMPION OF POTATOES; more: STRETCHY PANTS AWARD, MOST STUFFED, GRAVY BOSS, PIE MASTER, FOOD COMA CHAMPION,
-  TURKEY WHISPERER, SECONDS AND THIRDS CLUB, PROFESSIONAL NAPPER, WORLD'S BEST DISHWASHER. Cups print from his file
+  TURKEY WHISPERER, SECONDS AND THIRDS CLUB, PROFESSIONAL NAPPER, WORLD'S BEST DISHWASHER. Allen: "I like the year on
+  them 2026": every plate without a year gets a small third line `--year 2026` (titles 3.9 mm, year 3.0 mm). Cups print from his file
   (about 2 h each, my guess). Arachne for the thin letters. Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
