@@ -190,9 +190,9 @@ def main() -> None:
                 assert s.status() == m3d.Error.NoError and not s.is_empty(), a
             name = f"{n:02d}-" + re.sub(r"[^a-z0-9]+", "-", a.replace("|", " ").lower()).strip("-")
             objects.append((name, [("medal", gold.translate([x, y, 0]), 1, GOLD), ("letters", letters.translate([x, y, 0]), 2, BROWN)]))
-            if gi == 1:
-                scene[f"{name}-gold"] = (gold.translate([x - 128, y - 128, 0]), "gold")      # standing, facing you
-                scene[f"{name}-ink"] = (letters.translate([x - 128, y - 128, 0]), "ink")
+            dy = -(gi - 1) * 185.0                                  # each plate's medals below the last, in the picture
+            scene[f"{name}-gold"] = (gold.translate([x - 128, y - 128 + dy, 0]), "gold")      # standing, facing you
+            scene[f"{name}-ink"] = (letters.translate([x - 128, y - 128 + dy, 0]), "ink")
         write_bambu_3mf(objects, args.out / f"medals-{gi}.3mf", plate_name=f"medals-{gi}")
         print(f"medals-{gi}.3mf: {len(group)} medals")
     TS.to_glb(scene, args.out / "mockup.glb")
