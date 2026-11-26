@@ -210,6 +210,11 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   TURKEY WHISPERER, SECONDS AND THIRDS CLUB, PROFESSIONAL NAPPER, WORLD'S BEST DISHWASHER. Allen: "I like the year on
   them 2026": every plate without a year gets a small third line `--year 2026` (titles 3.9 mm, year 3.0 mm). Cups print from his file
   (about 2 h each, my guess). Arachne for the thin letters. Not printed yet.
+- **Medals (2026-11-26, Allen: the cups take "a long time to print, especially 5 of them"; "medals can be good, but I
+  dont have ribbons"):** `python tools/medals.py [--awards ...] [--year 2026]` writes `output/medals/`: 60 mm gold
+  medals, 3 mm, raised rim and laurel, the award (same texts as the cup plates) and 2026 in raised letters (slot 2), a
+  top tab with a 13 x 3.6 mm slot for kitchen twine, yarn, a shoelace or gift-wrap ribbon; 9 per plate
+  (`medals-1.3mf`, `medals-2.3mf`), `medals.txt`, `medals-picture.png`. About 20 min each (my guess). Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
