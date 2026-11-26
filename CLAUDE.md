@@ -179,6 +179,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   fan); eyes, beak, wattle, snood and crown are real 3D. The snood runs from the forehead along the beak, over its tip,
   and rests on the wattle. Still no supports: the eyes start inside the head; overhang specks total about 77 mm2
   (largest 9 mm2, under the crown). Not printed yet.
+- **Golden Drumstick trophy (2026-11-26, Allen picked it from my Thanksgiving photo-prop ideas):** `python tools/golden_drumstick.py`
+  writes `output/golden-drumstick/mockup.glb`: two-tier walnut base, gold plaque "GOLDEN DRUMSTICK / BIGGEST EATER 2026"
+  (raised letters, shrunk to fit), round gold pedestal, a giant gold drumstick the cartoon way (meat down, bone up at
+  18 degrees; standing on the bone with the knob down looked wrong), a three-tooth bite out of its right side (paler
+  inside), the scepter turkey's crown on the knob, gold laurel branches rooted on the base. 110 x 72 x 176 mm. Mock-up
+  sent; no print files yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
