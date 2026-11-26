@@ -31,7 +31,9 @@ def option_zones(cfg: dict, product: str) -> dict:
     nx, ny, nw, nh = c["name_box"]
     zones = {"tidy_box": (nx + nw + 6.0, ny + 0.5, BOX)}
     x0, y = c["margin"] + 8.0, ny - 19.0              # every card, clicker too (Allen: figurine clickers)
-    if cfg["products"].get(product, {}).get("attachment") != "strips":    # flexis are flat for now
+    prod = cfg["products"].get(product, {})
+    # Flexis are flat for now; clickers always (Allen, 2026-11-15), so their cards offer no shapes.
+    if prod.get("attachment") != "strips" and not prod.get("always_style"):
         zones["shape_boxes"] = [(key, x0 + i * STEP, y, BOX) for i, (key, _) in enumerate(SHAPES)]
     return zones
 
@@ -74,8 +76,15 @@ def _mark_fraction(cfg: dict, page: np.ndarray, ppm: float, x: float, y: float, 
         return 0.0
     rgb = cv2.cvtColor(inner, cv2.COLOR_BGR2RGB).reshape(-1, 3).astype(np.float64)
     lab = _srgb_to_lab(rgb)
+    # The paper right around this box, not the whole card: a phone photo is darker on one side.
+    around = _crop(page, ppm, x - 4.0, y - 4.0, s + 8.0, s + 8.0)
+    if around.size:
+        near = _srgb_to_lab(cv2.cvtColor(around, cv2.COLOR_BGR2RGB).reshape(-1, 3).astype(np.float64))[:, 0]
+        paper_l = min(paper_l, float(np.percentile(near, 95)))
     chroma = np.hypot(lab[:, 1], lab[:, 2])
-    ink = (lab[:, 0] < paper_l - 28.0) | ((chroma > 25.0) & (lab[:, 0] < paper_l - 6.0))
+    # A pencil tick counts too (Areen's Puffy + lines, 2026-11-15: a light gray tick about 30 lighter than
+    # marker); paper grain and a clean box stay well within 10 of the paper.
+    ink = (lab[:, 0] < paper_l - 14.0) | ((chroma > 25.0) & (lab[:, 0] < paper_l - 6.0))
     ink &= ~_guide_pixels(cfg, inner).reshape(-1)
     return float(ink.mean())
 
@@ -92,11 +101,22 @@ def read_options(cfg: dict, read) -> dict:
     out: dict = {"style": None, "tidy": False, "notes": [], "warnings": []}
     found_any = False
     marks = []
-    for key, x, y, s in zones.get("shape_boxes", []):
-        if not _box_present(cfg, page, ppm, x, y, s):
-            continue
+    boxes = zones.get("shape_boxes", [])
+    # The boxes come all together or not at all (older cards have none). A big tick can cover a
+    # box's printed outline (2026-11-15: Jack's and Avery's Puffy ticks were skipped), so if any
+    # box is there, read them all.
+    # A faint scan can lose every outline (Clicker_keychain_6): one box clearly marked and the others
+    # clean is a tick too; an older card with pictures here would mark several.
+    fractions = [(_mark_fraction(cfg, page, ppm, x, y, s, paper_l), key) for key, x, y, s in boxes]
+    least = cfg["reader"]["option_mark_min"]
+    ticked = [f for f, _ in fractions if f >= least]
+    # ...and a tick or X fills only part of its box (about 0.4 on tonight's cards); a box filled
+    # solid there (0.7 in the old-card test) is more likely an older card's picture.
+    lone_tick = (len(ticked) == 1 and ticked[0] <= 0.6
+                 and all(f < least / 2 for f, _ in fractions if f < least))
+    if boxes and (lone_tick or any(_box_present(cfg, page, ppm, x, y, s) for _, x, y, s in boxes)):
         found_any = True
-        marks.append((_mark_fraction(cfg, page, ppm, x, y, s, paper_l), key))
+        marks = fractions
     picked = sorted([m for m in marks if m[0] >= cfg["reader"]["option_mark_min"]], reverse=True)
     if picked:
         out["style"] = picked[0][1]
@@ -105,7 +125,7 @@ def read_options(cfg: dict, read) -> dict:
             out["warnings"].append("more than one shape ticked on the card ("
                                    + ", ".join(WORDS[k] for _, k in picked) + f"); used {WORDS[picked[0][1]]}")
     x, y, s = zones["tidy_box"]
-    if _box_present(cfg, page, ppm, x, y, s):
+    if found_any or _box_present(cfg, page, ppm, x, y, s):   # a card with shape boxes has this one too
         found_any = True
         if _mark_fraction(cfg, page, ppm, x, y, s, paper_l) >= cfg["reader"]["option_mark_min"]:
             out["tidy"] = True

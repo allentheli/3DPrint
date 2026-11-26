@@ -80,7 +80,9 @@ def test_round_figurines_get_their_own_plate_and_notes(cfg, tmp_path):
     assert r.problems == []
     styles = {pp.piece.name: (pl.number, pp.piece.style) for pl in r.plates for pp in pl.pieces}
     assert styles["key-04"][1] == "figurine" and styles["clip-03"][1] == "flat"
-    assert styles["key-04"][0] != styles["clip-03"][0], "figurines go on their own plate"
+    assert styles["key-04"][0] != styles["clip-03"][0], "figurines go on their own plate, even by default"
+    stems = [pl.stem for pl in r.plates]
+    assert len(set(stems)) == len(stems) and any(s.endswith("-figurines") for s in stems)
     notes = r.files["notes"].read_text()
     assert "Enable support" in notes and "tree(auto)" in notes
     assert "peel the tree supports" in notes

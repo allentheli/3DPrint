@@ -171,8 +171,12 @@ def cmd_run(args: argparse.Namespace) -> int:
                        allow_uncalibrated=not args.ask_colors, styles=styles,
                        figurine_back=per_card(args.figurine_back), figurine_base=per_card(args.figurine_base),
                        tidy=set(args.tidy or ()), names=_names(args.names), one_plate=args.one_plate,
-                       no_dots=set(args.no_dots or ()), sizes=per_card(args.scale),
-                       products=per_card(args.as_product))
+                       no_dots=set(args.no_dots or ()), no_pencil=set(args.no_pencil or ()),
+                       sizes=per_card(args.scale),
+                       products=per_card(args.as_product), keep_whole=per_card(args.keep_whole),
+                       only={o.lower() for o in args.only or ()}, together=args.together,
+                       quick={q.lower() for q in args.quick or ()},
+                       drop_strays=set(args.drop_strays or ()), light=set(args.light_pencil or ()))
     for line in result.calibration:
         print(f"calibration: {line}")
     for piece in result.pieces:
@@ -182,7 +186,20 @@ def cmd_run(args: argparse.Namespace) -> int:
         for w in piece.design.warnings:
             print(f"    check: {w}")
     for n, paths in result.files.get("plates", {}).items():
-        print(f"plate {n}: {paths['3mf']}")
+        e = paths.get("estimate")
+        from .printtime import duration
+
+        print(f"plate {n}: {paths['3mf']}" + (f" (rough {duration(e['minutes'])}, {e['changes']} color changes)" if e else ""))
+    if result.files.get("take_out"):
+        print("take these out of the kids' plates (they print on the quick plate):")
+        for name, stem in result.files["take_out"]:
+            print(f"  {name} from {stem}.3mf")
+    if result.files.get("quickest"):
+        from .printtime import quickest_lines
+
+        print("quickest first (rough minutes of printing each):")
+        for line in quickest_lines(cfg, result.files["quickest"]):
+            print("  " + line[2:].replace("**", ""))
     if result.files.get("contact_sheet"):
         print(f"contact sheet: {result.files['contact_sheet']}")
     if result.files.get("notes"):
@@ -211,7 +228,7 @@ def cmd_poop_containers(args: argparse.Namespace) -> int:
     kinds = args.kinds or list(KINDS)
     for r in write_containers(cfg, Path(args.out), kinds=kinds, sizes=args.sizes or ["medium"]):
         con = r["container"]
-        print(f"{con.name}: {r['dir']}  (holes {con.info['holes']}, opening {con.info['opening_mm']:.0f} mm, "
+        print(f"{con.name}: {r['dir']}  (windows {con.info['holes']}, {con.info['open_cm2']:.0f} cm² open, opening {con.info['opening_mm']:.0f} mm, "
               f"about {con.info['volume_ml']:.0f} ml, rough {r['minutes']:.0f} min)")
     return 0
 
@@ -325,8 +342,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-border", dest="border", action="store_false", help="force the border off")
     p.add_argument("--tab", default=None, help="keychain tab position: top, top-left, top-right, left, right")
     p.add_argument("--map", action="append", help="filament override, e.g. 'clip-03 pink=Magenta'")
-    p.add_argument("--one-plate", action="store_true",
-                   help="everything on one plate in one 3MF (clicker cases and figurines too, any number of colors)")
+    p.add_argument("--one-plate", dest="one_plate", action="store_true", default=None,
+                   help="clicker cases on the charms' plate (any number of colors); the default "
+                        "(config printer.one_plate). Round-back figurines always get their own plate")
+    p.add_argument("--only", action="extend", nargs="+", metavar="CARD_OR_KID",
+                   help="build just these cards (key-03) or kids (jack), e.g. for a plate to print first")
+    p.add_argument("--quick", action="extend", nargs="+", metavar="CARD",
+                   help="also put these cards together on a quick plate, to print first; the run says which "
+                        "pieces to delete from the kids' plates")
+    p.add_argument("--together", dest="together", action="store_true", default=None,
+                   help="all kids' pieces on shared plates (the default, config printer.plate_per_kid)")
+    p.add_argument("--per-kid", dest="together", action="store_false",
+                   help="a plate per kid instead")
+    p.add_argument("--separate-plates", dest="one_plate", action="store_false",
+                   help="clicker cases on a plate of their own")
     p.add_argument("--names", action="extend", nargs="+", metavar="CARD=NAME",
                    help="name pieces after the kid, e.g. key-01=Jack clip-02=Mia (from the names sheet)")
     p.add_argument("--off-palette", choices=["nearest", "swap"], default="nearest",
@@ -344,9 +373,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-dots", action="append", nargs="?", const="*", metavar="CARD",
                    help="drop the small dots kept as eyes (they are circled on the preview), for a drawing whose "
                         "dots are pencil specks: '--no-dots pend-01' for one card (repeat for more), '--no-dots' for all")
+    p.add_argument("--light-pencil", action="append", nargs="?", const="*", metavar="CARD",
+                   help="read very light pencil whole, for a card that came back as broken dashes")
+    p.add_argument("--drop-strays", action="append", nargs="?", const="*", metavar="CARD",
+                   help="keep only the main drawing: separate marks around it are left out, e.g. "
+                        "'--drop-strays click-01-c' (repeat for more, alone for every card)")
+    p.add_argument("--no-pencil", action="append", nargs="?", const="*", metavar="CARD",
+                   help="read only the marker, not pencil, for a card whose erased pencil draft came back as "
+                        "extra lines: '--no-pencil key-03' for one card (repeat for more), '--no-pencil' for all")
     p.add_argument("--scale", action="append", metavar="[CARD=]FACTOR",
                    help="make a piece bigger or smaller than drawn, before the print fixes: "
                         "'--scale fig-01=1.5' for one card (repeat for more), '--scale 1.5' for every card")
+    p.add_argument("--keep-whole", action="append", metavar="CARD=FROM-TO",
+                   help="flexis: no cuts in this band, in percent from the top, e.g. '--keep-whole flexi-01=0-40' keeps "
+                        "a face in the top 40%% whole (repeat for more cards)")
     p.add_argument("--as", dest="as_product", action="append", metavar="[CARD=]PRODUCT",
                    help="make a card's drawing into another product, e.g. '--as key-02=flexi' (repeat for more)")
     p.add_argument("--ask-colors", action="store_true",

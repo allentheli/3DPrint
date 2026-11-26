@@ -564,3 +564,101 @@ def test_a_ring_eye_keeps_its_rings(cfg):
     assert all(h.buffer(-0.17).area > 0 for h in gaps), "every gap is at least about 0.35 mm wide, so it prints"
     assert blob and all(not g.interiors for g in blob), "the pinhole in the blob is filled"
     assert any("little closed marks kept" in f for f in d.fixes)
+
+
+def test_an_erased_pencil_draft_can_be_left_out(cfg, tmp_path):
+    """Party kids may draft in pencil and erase it (Allen, 2026-11-14). A well-erased line is too
+    faint to read; one still clearly visible reads as a pencil line and would print, so
+    --no-pencil reads only the marker for that card."""
+    from PIL import ImageDraw
+
+    from tests.synthetic import BLACK, card_image, photograph
+
+    photos = tmp_path / "photos"
+    photos.mkdir()
+    img, lay, ppm, P = card_image(cfg, "keychain", 1, photos)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.36
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], outline=BLACK, width=int(3.5 * ppm))
+    rng = np.random.default_rng(3)
+    for y, g in ((cy + 0.4 * r, 232), (cy - 0.4 * r, 185)):      # a ghost of a line, a half-erased line
+        for t in np.linspace(0, 1, 400):
+            if rng.random() < 0.25:
+                continue
+            x = cx - 0.55 * r + 1.1 * r * t
+            v = int(np.clip(g + rng.normal(0, 8), 0, 255))
+            d.rectangle([P(x, y + 0.3), P(x + 0.35, y - 0.3)], fill=(v, v, v))
+    photograph(img, photos / "keychain-1.jpg", seed=1)
+
+    def ink_area(**kw):
+        res = run_batch(cfg, sorted(photos.glob("*.jpg")), tmp_path / f"out-{len(kw)}", **kw)
+        design = res.pieces[0].design
+        return design, sum(i.geometry.area for i in design.inks)
+
+    line_mm2 = 1.1 * r / 3 * 1.0          # one stroke at real size, thickened to the 1 mm minimum
+    _, with_pencil = ink_area()
+    design, marker_only = ink_area(no_pencil={"key-01"})
+    assert any("pencil not read" in f for f in design.fixes)
+    extra = with_pencil - marker_only
+    # Read with pencil, only the half-erased line comes back (the ghost is too faint);
+    # with --no-pencil it is gone too.
+    assert 0.6 * line_mm2 < extra < 1.6 * line_mm2, (extra, line_mm2)
+
+
+def test_stray_marks_around_a_drawing_can_be_left_out(cfg, tmp_path):
+    """Allen, 2026-11-15 (Areen's cat clicker): "the 2 extra dots outside r nothing, just keep the cat".
+    --drop-strays keeps the main drawing; marks inside it (the eye) stay."""
+    from PIL import ImageDraw
+
+    from tests.synthetic import BLACK, PINK, card_image, photograph
+
+    photos = tmp_path / "photos"
+    photos.mkdir()
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 2, photos)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.28
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=PINK, outline=BLACK, width=int(4.5 * ppm))
+    d.ellipse([P(cx - 3, cy + 3), P(cx + 3, cy - 3)], fill=BLACK)                      # an eye, inside
+    for dx in (-1, 1):                                                                 # two marks outside
+        x = cx + dx * (r + 12)
+        d.ellipse([P(x - 4, cy + r + 4), P(x + 4, cy + r - 4)], outline=BLACK, width=int(2.5 * ppm))
+    photograph(img, photos / "keychain-2.jpg", seed=2)
+    res = run_batch(cfg, [photos / "keychain-2.jpg"], tmp_path / "a")
+    assert any("separate pieces joined" in f for f in res.pieces[0].design.fixes)
+    res = run_batch(cfg, [photos / "keychain-2.jpg"], tmp_path / "b", drop_strays={"key-02"})
+    design = res.pieces[0].design
+    assert any("2 separate mark(s) outside the main drawing left out" in f for f in design.fixes)
+    assert not any("separate pieces joined" in f for f in design.fixes)
+    w, h = res.pieces[0].size()
+    assert w < 2 * (bw * 0.28) / 3 + 6, "only the circle and its border are left"
+    black = next(i for i in design.inks if i.name == "black")
+    assert any(i.name == "pink" for i in design.inks) and len(black.geometry.geoms) >= 2, "the eye inside stays"
+
+
+def test_a_big_tick_over_the_box_outline_still_counts(cfg, tmp_path):
+    """2026-11-15: Jack and Avery ticked Puffy with a big marker tick that covered the box's
+    printed outline; the box was taken as missing and the card came out flat."""
+    from PIL import ImageDraw
+
+    from charm_maker.options import option_zones
+    from tests.synthetic import BLACK, PINK, card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 7, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy = bx + bw / 2, by + bh / 2
+    d = ImageDraw.Draw(img)
+    r = bw * 0.3
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], fill=PINK, outline=BLACK, width=int(4.5 * ppm))
+    key, x, y, s = next(z for z in option_zones(cfg, "keychain")["shape_boxes"] if z[0] == "puffy")
+    # A fat brown tick from inside the box out over its outline and beyond.
+    pts = [P(x + 0.2 * s, y + 0.55 * s), P(x + 0.45 * s, y + 0.15 * s), P(x + 1.3 * s, y + 1.6 * s)]
+    d.line(pts, fill=(150, 80, 30), width=int(2.2 * ppm), joint="curve")
+    d.line([P(x - 0.3, y - 0.3), P(x + s + 0.3, y - 0.3)], fill=(150, 80, 30), width=int(1.5 * ppm))
+    photo = photograph(img, tmp_path / "keychain-7.jpg", seed=7)
+    res = run_batch(cfg, [photo], tmp_path / "out")
+    assert res.pieces[0].style == "puffy", res.pieces[0].design.fixes

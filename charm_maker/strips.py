@@ -93,6 +93,7 @@ def plan_strips(cfg: dict, design: Design) -> dict:
         return g.area >= solid * g.convex_hull.area and max(ex) <= aspect * max(min(ex), 1e-6)
     edge = design.outline.exterior
     small = [Point(x, y).buffer(0.8) for x, y in design.dots]
+    soft = []          # bigger closed shapes (a foot, a pocket): avoided when there is another way
     for ink in design.inks:
         for g in _as_multi(ink.geometry).geoms:
             # A small, roughly round mark inside the drawing (a nose, a dot); slivers of color
@@ -102,9 +103,11 @@ def plan_strips(cfg: dict, design: Design) -> dict:
             for ring in g.interiors:
                 hole = Polygon(ring)
                 if hole.area < st["closed_mark_area"] and compact(hole):   # round or neat: an eye, a tooth
-                    small.append(hole.convex_hull.buffer(1.2))              # paper and its ring line
+                    zone = hole.convex_hull.buffer(1.2)                     # paper and its ring line
+                    (small if hole.area < st["closed_hard_area"] else soft).append(zone)
     forbid = to_work(unary_union(small)) if small else None
     near = forbid.buffer(1.0) if forbid is not None else None
+    avoid = [to_work(z) for z in soft]
     X0, Y0, X1, Y1 = outline.bounds
     X0, X1 = X0 - 5, X1 + 5
     H = Y1 - Y0
@@ -136,6 +139,7 @@ def plan_strips(cfg: dict, design: Design) -> dict:
                     cost += 1000
                 elif near is not None and slot.intersects(near):
                     cost += 20
+                cost += st["soft_cost"] * sum(1 for z in avoid if slot.intersects(z))
                 if best is None or cost < best[0]:
                     best = (cost, x)
             if best is not None:
@@ -165,15 +169,31 @@ def plan_strips(cfg: dict, design: Design) -> dict:
         if inks is not None:      # ink cut through, or run along closely (a cut beside a line shows)
             w = j["seam_gap"] / 2 + 0.6
             cost += line.buffer(w, cap_style=2).intersection(inks).area / (2 * w)
-        if forbid is not None and line.buffer(j["seam_gap"] / 2).intersects(forbid):
-            cost += 1000
-        elif near is not None and line.buffer(j["seam_gap"] / 2).intersects(near):
-            cost += 20
+        band = line.buffer(j["seam_gap"] / 2)
+        # What the cut costs the drawing's features (not its plain ink): this alone decides
+        # whether one strip fewer is better, so a colored-in drawing still gets all its strips.
+        harm = 0.0
+        if forbid is not None and band.intersects(forbid):
+            harm += 1000
+        elif near is not None and band.intersects(near):
+            harm += 20
+        harm += st["soft_cost"] * sum(1 for z in avoid if band.intersects(z))
+        cost += harm
         joints = place_joints(y, xl, xr)
         if not joints:
             return None
+        # The cut must leave exactly two pieces here: a notch must never cut a bit off on its own.
+        def loose(xs_):
+            pieces = _as_multi(outline.difference(cut_shape(j, y, xs_, X0, X1))).geoms
+            return sum(1 for q in pieces if q.area > 1.0) != 2
+        if loose([x for _, x in joints]):
+            if len(joints) == 2:
+                joints = place_joints_one(y, xl, xr)
+            if not joints or loose([x for _, x in joints]):
+                return None
         cost += sum(c for c, _ in joints)
-        return cost, xl, xr, [x for _, x in joints]
+        harm += sum(c for c, _ in joints if c >= st["soft_cost"])     # a joint on a feature
+        return cost, xl, xr, [x for _, x in joints], harm
 
     # Every height a cut could go, scored once; then the cuts are chosen together (so one cut can
     # move to give the next a clean spot), keeping the strips close to even.
@@ -184,7 +204,7 @@ def plan_strips(cfg: dict, design: Design) -> dict:
 
     def choose(n_strips: int):
         ideal = [Y1 - k * H / n_strips for k in range(1, n_strips)]
-        win = 0.6 * H / n_strips
+        win = 0.75 * H / n_strips
         best: list[dict] = []
         for k, target in enumerate(ideal):
             row = {}
@@ -209,20 +229,28 @@ def plan_strips(cfg: dict, design: Design) -> dict:
             chosen.append(y)
         return total, sorted(chosen, reverse=True)
 
+    # Fewer strips if that keeps the face whole: each strip less costs `strip_cost`, so a cut
+    # across a face (several small areas between lines) loses to one strip less, while a cut
+    # through a single foot does not. A cut through an eye is avoided at almost any price.
+    # A band asked to stay whole (`--keep-whole flexi-01=0-40`: the top 40%, a face): no cut there,
+    # and none just above it either, since a cut's notches reach down into the strip below.
+    keep = design.extras.get("keep_whole")
+    if keep:
+        lo, hi = Y1 - keep[1] / 100.0 * H, Y1 - keep[0] / 100.0 * H
+        ys = [y for y in ys if not (lo - 0.5 <= y <= hi + depth + 0.5)]
     picked = None
-    for n_try in range(n, 1, -1):                 # fewer strips if that keeps the face whole
+    for n_try in range(n, 1, -1):
         got = choose(n_try)
         if got is None:
             continue
-        crosses = any(scored[y][0] >= 1000 for y in got[1])
-        if picked is None or (picked[2] and not crosses):
-            picked = (n_try, got[1], crosses)
-        if not crosses:
-            break
+        crosses = any(scored[y][4] >= 1000 for y in got[1])
+        score = sum(scored[y][4] for y in got[1]) + st["strip_cost"] * (n - n_try) + (100000 if crosses else 0)
+        if picked is None or score < picked[3]:
+            picked = (n_try, got[1], crosses, score)
     cuts = []
     for y in (picked[1] if picked else []):
-        cost, xl, xr, xs = scored[y]
-        cuts.append({"y": y, "x": (xl, xr), "joints": xs, "crosses_small_mark": cost >= 1000})
+        cost, xl, xr, xs, harm = scored[y]
+        cuts.append({"y": y, "x": (xl, xr), "joints": xs, "crosses_small_mark": harm >= 1000})
     shape = unary_union([cut_shape(j, c["y"], c["joints"], X0, X1) for c in cuts]) if cuts else None
     tunnels, pins = [], []
     for c in cuts:
@@ -258,14 +286,16 @@ def plan_strips(cfg: dict, design: Design) -> dict:
 
 
 def scale_up_small(cfg: dict, design: Design) -> None:
-    """A flexi needs room for its strips: a drawing shorter than size_min on its long side is
-    scaled up to it (like the clicker; Allen: kids don't think in sizes)."""
+    """A flexi is about default_size (80 mm) on its long side, like Allen's examples: a drawing
+    drawn smaller is scaled up to it (like the clicker; Allen: kids don't think in sizes), so the
+    strips and joints have room and the cuts can go around the face."""
     from .shape import scale_design
 
     prod = cfg["products"][design.product]
     minx, miny, maxx, maxy = design.outline.bounds
     long_ = max(maxx - minx, maxy - miny)
-    if long_ < prod["size_min"] - 0.05:
-        k = prod["size_min"] / long_
+    target = float(prod["default_size"])
+    if long_ < target - 2.0:
+        k = target / long_
         scale_design(design, k)
-        design.fixes.append(f"drawing scaled up {k:.2f}x to {prod['size_min']} mm, so the strips have room")
+        design.fixes.append(f"drawing scaled up {k:.2f}x to {target:g} mm, the flexi's size, so the strips have room")

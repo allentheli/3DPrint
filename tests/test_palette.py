@@ -82,10 +82,18 @@ def test_kid_cards_carry_the_new_rules(cfg_path, tmp_path):
     cfg = load_config(cfg_path)
     pdf = write_cards_pdf(cfg, ["hair_clip"], tmp_path / "c.pdf", count=1)
     text = pymupdf.open(str(pdf))[0].get_text()
-    for rule in ("Use the colors in the printer", "Big and bold", "Color it in"):
+    # Allen (2026-11-13): coloring is optional; he fills the colors of a line drawing in Bambu Studio.
+    for rule in ("Draw big and bold", "Close the lines", "Color it in, or we will"):
         assert rule in text
     for old in ("black + 1 color", "no pencil", "fat marker"):
         assert old not in text
+    for mode, rules in (("yes", ("Use the colors in the printer", "Big and bold", "Color it in")),
+                        ("no", ("Use a black marker", "Big and bold", "Close the lines (we add colors)"))):
+        cfg["cards"]["kids_color"] = mode
+        pdf = write_cards_pdf(cfg, ["hair_clip"], tmp_path / f"c-{mode}.pdf", count=1)
+        text = pymupdf.open(str(pdf))[0].get_text()
+        for rule in rules:
+            assert rule in text, (mode, rule)
 
 
 def test_half_drawn_cards_and_calibration_card(cfg_path, tmp_path):

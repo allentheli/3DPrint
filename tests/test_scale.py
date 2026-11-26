@@ -25,3 +25,26 @@ def test_one_card_made_bigger(cfg, tmp_path):
 def test_a_silly_size_is_refused(cfg, tmp_path):
     with pytest.raises(ValueError, match="between 0.25 and 4"):
         run_batch(cfg, [], tmp_path / "out", sizes={"fig-01": 10})
+
+
+def test_a_pen_line_stays_one_color_when_made_much_bigger(cfg, tmp_path):
+    """Alison's dog keychain (2026-11-15): a small pen drawing made 3.9 times bigger split into a
+    black middle and a gray edge, because its colors were read at the bigger size. Colors are
+    read as drawn; only the fixes see it bigger."""
+    from PIL import ImageDraw
+
+    from tests.synthetic import card_image, photograph
+
+    img, lay, ppm, P = card_image(cfg, "keychain", 7, tmp_path)
+    bx, by, bw, bh = lay.box
+    cx, cy, r = bx + bw * 0.3, by + bh * 0.7, 18.0          # a small face in one corner, card mm
+    d = ImageDraw.Draw(img)
+    d.ellipse([P(cx - r, cy + r), P(cx + r, cy - r)], outline=BLACK, width=max(2, int(1.6 * ppm)))
+    for ex in (-6.0, 6.0):
+        d.ellipse([P(cx + ex - 2, cy + 6), P(cx + ex + 2, cy + 2)], outline=BLACK, width=max(2, int(1.2 * ppm)))
+    d.line([P(cx - 6, cy - 7), P(cx + 6, cy - 7)], fill=BLACK, width=max(2, int(1.4 * ppm)))
+    photo = photograph(img, tmp_path / "key-07.jpg", seed=7)
+    res = run_batch(cfg, [photo], tmp_path / "out", sizes={"key-07": 3.9})
+    piece = res.pieces[0]
+    inks = [n for n in piece.parts if not n.endswith(" base")]
+    assert len(inks) == 1, f"one pen color, not a dark middle and a gray edge: {inks}"

@@ -679,7 +679,8 @@ def bridge_components(shape, width_mm: float) -> tuple[Polygon, int]:
 
 
 def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on: bool,
-               name: str, product: str, tidy: bool = False, keep_dots: bool = True) -> Design:
+               name: str, product: str, tidy: bool = False, keep_dots: bool = True,
+               drop_strays: bool = False) -> Design:
     """Apply every print fix in spec order and vectorize. `tidy` redraws every stroke at
     one even thickness with smooth edges (off unless asked for)."""
     pr = cfg["process"]
@@ -779,6 +780,23 @@ def fix_design(cfg: dict, layers: list[InkLayer], px_per_mm: float, *, border_on
         resolved.append((layer, m))
     if taken is None or not taken.any():
         raise ValueError("no ink found in the drawing box")
+    if drop_strays:
+        # Only the main drawing: separate marks around it are left out (Allen, 2026-11-15: "the 2
+        # extra dots outside r nothing, just keep the cat"). Inside its outline, everything stays.
+        n_c, labels, stats, _ = cv2.connectedComponentsWithStats(_u8(fill_all_holes(taken)), connectivity=8)
+        if n_c > 2:
+            keep = labels == 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+            resolved = [(layer, m & keep) for layer, m in resolved]
+            taken &= keep
+            hh = keep.shape[0]
+            kept_dots = [(x, y) for x, y in kept_dots
+                         if keep[min(hh - 1, max(0, int(hh - y * px_per_mm))), min(keep.shape[1] - 1, max(0, int(x * px_per_mm)))]]
+            at = next((i for i, f in enumerate(fixes) if "small dot(s) kept" in f), None)
+            if at is not None:             # the dots count only the ones still there
+                fixes.pop(at)
+                if kept_dots:
+                    fixes.insert(at, f"{len(kept_dots)} small dot(s) kept, circled in blue (eyes or dots in the drawing)")
+            fixes.append(f"{n_c - 2} separate mark(s) outside the main drawing left out (asked for)")
 
     silhouette = fill_all_holes(taken)
     sil_poly = unary_union(mask_to_polygons(silhouette, px_per_mm))
