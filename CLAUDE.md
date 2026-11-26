@@ -222,6 +222,15 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   odd edges), nothing over air; about 25 min each (my guess). Allen's picks (2026-11-26), `output/medals-picked/`, 5 per
   plate: LEFTOVER LEGEND, SPUD STUD, MOST STUFFED, GRAVY BOSS, PIE MASTER | CLEAN PLATE CLUB, WISHBONE WINNER, GOBBLE
   GOBBLE GURU, DESSERT FIRST CLUB, MOST THANKFUL (all with 2026). Not printed yet.
+- **Coloring guide (2026-11-26, Allen: kids color the scepter and the crown with acrylic markers; crown printed
+  yellow, scepter turkey white, its stick and base yellow):** `output/coloring-guide/coloring-guide.pdf` (Letter,
+  landscape, 2 pages: big renders, a close-up, and a swatch list of which color goes where). Scepter: our mock-up
+  colors, with "gold" shown as yellow marker. Crown: the trophy crown rebuilt (`turkey_trophy_crown.build`, cut 17,
+  scale 1.2) and the turkey colored from the downloaded model's own Bambu paint (`paint_color` per triangle, decoded:
+  unpainted = filament 1 brown, then orange, red, white), carried through the same shift/scale/wrap and matched to the
+  final faces within 0.8 mm (1.6 mm colored filler behind the fan); the 12 tip balls (icosahedra, faces of ~20 mm2) and
+  10 band gems in red/blue/green (Allen: "I want the crown top the circular stuff at the tips to be colored"). Built
+  with one-off scripts in the session scratchpad and the three.js renderer there (not in git).
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
