@@ -199,6 +199,16 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   FIRST ASLEEP, LEFTOVER LEGEND / SECONDS AND THIRDS, CORNIEST JOKE / BEST WORST JOKE (all "2026"). The food toppers
   stay available with `--only potatoes pie gravy food-coma drumstick-2`. Rough estimate about 3 h each at full size
   (the solid base is most of it), about 2 h at 80%. Mock-ups only; no print files yet.
+- **Cup awards (2026-11-26, Allen: "we can use this, and we can edit the text"):** BK-Projects' "Trophy Cup with Easy
+  Customizable Text Plate" (`photos/cup-trophy/CupBambu.3mf`, MakerWorld Standard Digital File License, never in git):
+  gold cup on a brown base with a 1.1 mm recess front and back for a separate 45 x 17.5 x 2 mm plate (glued).
+  `python -I tools/cup_awards.py <CupBambu.3mf> [--awards "LINE 1|LINE 2" ...]` writes `output/cup-awards/`:
+  `award-plates.3mf` (the designer's plate as is, our raised text 0.6 mm, Inter Bold with rounded corners, up to 4.8 mm,
+  shrunk to fit 40.5 mm; gold slot 1, text slot 2), `award-plates.png` (numbered), `mockup.glb`. Allen's texts: I ATE /
+  - 2026, THANKSGIVING CHAMPION, LEFTOVER LEGEND ("is good LOL"); potato fan options TOP TATER, SPUD STUD, MASHED POTATO
+  MVP, CHAMPION OF POTATOES; more: STRETCHY PANTS AWARD, MOST STUFFED, GRAVY BOSS, PIE MASTER, FOOD COMA CHAMPION,
+  TURKEY WHISPERER, SECONDS AND THIRDS CLUB, PROFESSIONAL NAPPER, WORLD'S BEST DISHWASHER. Cups print from his file
+  (about 2 h each, my guess). Arachne for the thin letters. Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
