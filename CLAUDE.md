@@ -219,8 +219,8 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   turkey in the upper half (two rows of fan feathers, body, wings, head, googly eyes with dark pupil caps sunk 0.1 mm
   into the eyes, beak, wattle, a tapered little crown with balls on its points; at most about 3 mm off the face), the
   words under it (`text_y`), laurel lower down; 6 per plate (`medals-1..3.3mf`), `medal-closeup.png`. Files closed (0
-  odd edges), nothing over air; about 25 min each (my guess). Allen's picks (2026-11-26), `output/medals-picked/`, 5 per
-  plate: LEFTOVER LEGEND, TIPSY TURKEY / WINE NOT? (was SPUD STUD), MOST STUFFED, WEIRD UNCLE (was GRAVY BOSS), PIE MASTER | CLEAN PLATE CLUB, WISHBONE WINNER, GOBBLE
+  odd edges), nothing over air; about 25 min each (my guess). Allen's picks (2026-11-26), `output/medals-picked/`, 6 + 5
+  (`--per-plate 6`): LEFTOVER LEGEND, TIPSY TURKEY / WINE NOT? (was SPUD STUD), MOST STUFFED, WEIRD UNCLE (was GRAVY BOSS), FUN AUNT, PIE MASTER | CLEAN PLATE CLUB, WISHBONE WINNER, GOBBLE
   GOBBLE GURU, DESSERT FIRST CLUB, MOST THANKFUL (all with 2026). Not printed yet.
 - **Coloring guide (2026-11-26, Allen: kids color the scepter and the crown with acrylic markers; crown printed
   yellow, scepter turkey white, its stick and base yellow):** `output/coloring-guide/coloring-guide.pdf` (Letter,
