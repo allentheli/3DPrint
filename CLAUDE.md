@@ -214,7 +214,12 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   dont have ribbons"):** `python tools/medals.py [--awards ...] [--year 2026]` writes `output/medals/`: 60 mm gold
   medals, 3 mm, raised rim and laurel, the award (same texts as the cup plates) and 2026 in raised letters (slot 2), a
   top tab with a 13 x 3.6 mm slot for kitchen twine, yarn, a shoelace or gift-wrap ribbon; 9 per plate
-  (`medals-1.3mf`, `medals-2.3mf`), `medals.txt`, `medals-picture.png`. About 20 min each (my guess). Not printed yet.
+  (`medals-1.3mf`, `medals-2.3mf`), `medals.txt`, `medals-picture.png`. About 20 min each (my guess). Then Allen: "lets
+  try medals, and I want it to have a somewhat 3D turkey on top that doesnt stuck out too much": 68 mm now, a low-relief
+  turkey in the upper half (two rows of fan feathers, body, wings, head, googly eyes with dark pupil caps sunk 0.1 mm
+  into the eyes, beak, wattle, a tapered little crown with balls on its points; at most about 3 mm off the face), the
+  words under it (`text_y`), laurel lower down; 6 per plate (`medals-1..3.3mf`), `medal-closeup.png`. Files closed (0
+  odd edges), nothing over air; about 25 min each (my guess). Not printed yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
