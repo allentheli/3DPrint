@@ -191,7 +191,14 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   POTATOES / MOST MASHED: mashed-potato volcano, gravy crater and drips, butter pat, gold fork stuck in it), pie (PIE
   MASTER / LAST SLICE: pumpkin slice, crimped crust, whipped-cream swirl), gravy (GRAVY BOAT CAPTAIN / MOST GRAVY: boat
   on a saucer with a mast, sail and flag), food-coma (FOOD COMA CHAMPION / FIRST ASLEEP: roast turkey on a platter,
-  "Zzz" thought bubble). Mock-ups only; no print files yet.
+  "Zzz" thought bubble). Then Allen: "maybe others are just trophies with different words? ... and we can still have
+  the golden drumstick": the default run is now the Golden Drumstick (version 1) plus six word awards, all the same
+  trophy cup (`trophy_cup`: shaped to print standing with no supports, nothing past 45 degrees, angular handles,
+  shallow dish on top, red "#1") with only the plaque changed (`WORD_AWARDS`, or `--words "TITLE|LINE 2" ...`):
+  CHAMPION OF POTATOES / MOST MASHED, PIE MASTER / LAST SLICE, GRAVY BOAT CAPTAIN / MOST GRAVY, FOOD COMA CHAMPION /
+  FIRST ASLEEP, LEFTOVER LEGEND / SECONDS AND THIRDS, CORNIEST JOKE / BEST WORST JOKE (all "2026"). The food toppers
+  stay available with `--only potatoes pie gravy food-coma drumstick-2`. Rough estimate about 3 h each at full size
+  (the solid base is most of it), about 2 h at 80%. Mock-ups only; no print files yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:

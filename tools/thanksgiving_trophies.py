@@ -11,7 +11,10 @@
 
 Our own designs. Mock-ups for now: one GLB per award and a lineup.
 
-    python tools/thanksgiving_trophies.py [--only potatoes pie] [--out output/thanksgiving-trophies]
+Word awards (Allen: "maybe others are just trophies with different words?"): the same trophy cup, only the plaque
+changes; the Golden Drumstick stays the special one.
+
+    python tools/thanksgiving_trophies.py [--words "PIE MASTER|LAST SLICE 2026" ...] [--only drumstick potatoes ...]
 """
 
 from __future__ import annotations
@@ -80,18 +83,27 @@ def drumstick_solid(bite: bool) -> tuple[M, M | None]:
 
 # ---------------------------------------------------------------- toppers (each adds to `parts`, standing on y0)
 
-def drumstick_cup(parts, top: float, y0: float) -> None:
-    """A classic trophy cup (foot, knotted stem, bowl, two handles, "#1") with two crossed drumsticks in it."""
-    foot = revolve([(0, 0), (17, 0), (17, 2.5), (13.5, 4.0), (6.5, 9.0), (5.2, 13.0), (8.5, 15.0), (8.5, 17.5),
+def trophy_cup(parts, top: float, y0: float) -> None:
+    """The classic trophy cup for the word-only awards: foot, knotted stem, bowl with a shallow dish on top, two
+    handles and a red "#1". Shaped to print standing in one piece with no supports: nothing slopes out more than
+    45 degrees (so the handles are angular, out at 45 degrees and back in)."""
+    foot = revolve([(0, 0), (17, 0), (17, 2.5), (13.5, 4.0), (6.5, 9.0), (5.2, 13.0), (7.2, 15.0), (7.2, 17.5),
                     (5.2, 19.5), (5.2, 22.0), (0, 22.0)])
-    bowl = revolve([(0, 21.0), (6.0, 21.0), (13.0, 24.0), (20.0, 30.5), (24.0, 39.0), (26.0, 48.0), (26.5, 53.0),
-                    (28.5, 54.0), (28.5, 56.5), (26.0, 57.5), (0, 57.5)])
-    parts["gold"] += [foot.translate([0, y0, 0]), bowl.translate([0, y0, 0])]
-    for side in (-1, 1):                    # handles: C-shaped loops on each side
-        pts = [(side * (25.5 + 13 * math.sin(t)), y0 + 41 + 11 * math.cos(t), 0) for t in np.linspace(0.15, 2.9, 12)]
-        parts["gold"].append(chain(pts, [2.6] * len(pts)))
-    one = text_outline("#1", 13.0).extrude(4.0).translate([0, y0 + 40.0, 21.6])
-    parts["red"].append(one)                # raised 1.4 mm off the bowl's front
+    bowl = revolve([(0, 21.0), (5.2, 21.0), (24.0, 39.8), (26.0, 50.0), (26.5, 53.0), (29.0, 55.5), (29.0, 57.0),
+                    (27.0, 58.2), (0, 58.2)])
+    dish = ell([0, 58.2 + 1.0, 0], [23.0, 5.0, 23.0])
+    parts["gold"] += [foot.translate([0, y0, 0]), (bowl - dish).translate([0, y0, 0])]
+    for side in (-1, 1):
+        pts = [(side * 19.5, y0 + 36.0, 0), (side * 32.0, y0 + 48.0, 0), (side * 32.0, y0 + 52.0, 0),
+               (side * 26.0, y0 + 58.0, 0)]
+        parts["gold"].append(chain(pts, [2.4] * 4))
+    one = text_outline("#1", 13.0).extrude(3.6).translate([0, y0 + 42.0, 22.6])
+    parts["red"].append(one)                # stands about 1.6 mm off the bowl's front
+
+
+def drumstick_cup(parts, top: float, y0: float) -> None:
+    """The trophy cup with two crossed drumsticks sticking out of it (Golden Drumstick, version 2)."""
+    trophy_cup(parts, top, y0)
     for side, tilt, z, bite in ((-1, 24.0, -5.0, False), (1, -24.0, 5.0, True)):
         stick, lining = drumstick_solid(bite)
         place = lambda s: s.rotate([0, 0, tilt]).translate([side * 3.0, y0 + 50.0, z])
@@ -231,6 +243,18 @@ AWARDS = {
 }
 
 
+# Allen (2026-11-26): "maybe others are just trophies with different words? ... and we can still have the golden
+# drumstick". The word awards are all the same cup; only the plaque changes.
+WORD_AWARDS = [
+    ("CHAMPION OF POTATOES", "MOST MASHED 2026"),
+    ("PIE MASTER", "LAST SLICE 2026"),
+    ("GRAVY BOAT CAPTAIN", "MOST GRAVY 2026"),
+    ("FOOD COMA CHAMPION", "FIRST ASLEEP 2026"),
+    ("LEFTOVER LEGEND", "SECONDS AND THIRDS 2026"),
+    ("CORNIEST JOKE", "BEST WORST JOKE 2026"),
+]
+
+
 def award(key: str) -> dict[str, M]:
     title, sub, topper = AWARDS[key]
     parts, top, ped = GD.base(title, sub)
@@ -238,15 +262,28 @@ def award(key: str) -> dict[str, M]:
     return {k: union(v) for k, v in parts.items() if v}
 
 
+def word_award(title: str, sub: str) -> dict[str, M]:
+    parts, top, ped = GD.base(title, sub)
+    trophy_cup(parts, top, ped)
+    return {k: union(v) for k, v in parts.items() if v}
+
+
+def slug(title: str) -> str:
+    return "-".join(w.lower() for w in title.split() if w.isalnum())
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Thanksgiving award trophies (mock-ups)")
-    ap.add_argument("--only", nargs="*", default=list(AWARDS))
+    ap.add_argument("--words", nargs="*", default=None, metavar="TITLE|LINE2",
+                    help="word awards (the trophy cup), e.g. 'PIE MASTER|LAST SLICE 2026'; default: the six in WORD_AWARDS")
+    ap.add_argument("--only", nargs="*", default=["drumstick"], help="topper awards: " + ", ".join(AWARDS))
     ap.add_argument("--out", type=Path, default=ROOT / "output" / "thanksgiving-trophies")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
+    words = [tuple((w.split("|") + [""])[:2]) for w in args.words] if args.words is not None else WORD_AWARDS
+    todo = [(key, award(key)) for key in args.only] + [(slug(t), word_award(t, s)) for t, s in words]
     lineup = {}
-    for i, key in enumerate(args.only):
-        parts = award(key)
+    for i, (key, parts) in enumerate(todo):
         for k, s in parts.items():
             assert s.status() == m3d.Error.NoError and not s.is_empty(), (key, k)
         b = union(list(parts.values())).bounding_box()
@@ -254,6 +291,7 @@ def main() -> None:
         TS.to_glb({f"{key}-{k}": (s, k) for k, s in parts.items()}, args.out / f"{key}.glb")
         lineup.update({f"{key}-{k}": (s.translate([i * 130.0, 0, 0]), k) for k, s in parts.items()})
     TS.to_glb(lineup, args.out / "lineup.glb")
+    (args.out / "awards.txt").write_text("\n".join(key for key, _ in todo) + "\n")
     print("wrote", args.out)
 
 
