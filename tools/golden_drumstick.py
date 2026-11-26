@@ -56,8 +56,11 @@ def text_relief(text: str, height: float, raise_: float, max_w: float) -> M:
     return cs.extrude(raise_)
 
 
-def build(p: dict = P) -> dict[str, M]:
-    parts: dict[str, list[M]] = {k: [] for k in ("walnut", "gold", "palegold", "ink", "red")}
+def base(title: str, sub: str, p: dict = P):
+    """The trophy base shared by every award: two walnut tiers, a gold plaque with the title and a second line, a
+    round gold pedestal. Returns (parts by color, top of the wood, top of the pedestal)."""
+    from collections import defaultdict
+    parts: dict[str, list[M]] = defaultdict(list)
     lw, lh, ld = p["lower"]
     uw, uh, ud = p["upper"]
     b = p["chamfer"]
@@ -74,16 +77,19 @@ def build(p: dict = P) -> dict[str, M]:
     plaque = bevel_box(pw, ph, pt * 2, 0.6).translate([0, pc - ph / 2, ud / 2 - pt * 0.5])
     parts["gold"].append(plaque)
     zf = ud / 2 + pt * 0.5
-    parts["ink"].append(text_relief(p["title"], p["title_h"], 0.8, pw - 8).translate([0, pc + 3.2, zf - 0.05]))
-    parts["ink"].append(text_relief(p["sub"], p["sub_h"], 0.8, pw - 14).translate([0, pc - 4.4, zf - 0.05]))
+    parts["ink"].append(text_relief(title, p["title_h"], 0.8, pw - 8).translate([0, pc + 3.2, zf - 0.05]))
+    parts["ink"].append(text_relief(sub, p["sub_h"], 0.8, pw - 14).translate([0, pc - 4.4, zf - 0.05]))
 
     # Gold pedestal.
     y = top
     for r, h in ((21.0, 3.0), (16.0, 8.0), (18.5, 2.5)):
         parts["gold"].append(M.cylinder(h, r, r, 96).rotate([-90, 0, 0]).translate([0, y, 0]))
         y += h
-    ped = y
+    return parts, top, y
 
+
+def drumstick(parts, top: float, ped: float) -> None:
+    """Version 1's topper (added to `parts`)."""
     # The drumstick, the classic cartoon way: the meaty end down on the pedestal, the bone sticking up at a jaunty
     # angle with its two-ball knob on top, wearing the crown. A big bite out of the meat's right side.
     tilt = 18.0                                            # leans left
@@ -123,6 +129,11 @@ def build(p: dict = P) -> dict[str, M]:
                 off = 3.6 * np.array([math.cos(math.radians(lean)), math.sin(math.radians(lean))])
                 parts["gold"].append(leaf.translate([x0 + off[0], y0 + off[1], 9.0]))
         parts["gold"].append(ell([0, 0, 0], [5.0, 2.2, 1.5]).rotate([0, 0, 90 - side * 25]).translate([xs[-1] + side * 1.5, ys[-1] + 4.0, 9.0]))
+
+
+def build(p: dict = P) -> dict[str, M]:
+    parts, top, ped = base(p["title"], p["sub"], p)
+    drumstick(parts, top, ped)
     return {k: union(v) for k, v in parts.items() if v}
 
 

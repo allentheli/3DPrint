@@ -184,7 +184,14 @@ Every product builds; nothing is printed and measured yet. Waiting on Allen:
   (raised letters, shrunk to fit), round gold pedestal, a giant gold drumstick the cartoon way (meat down, bone up at
   18 degrees; standing on the bone with the knob down looked wrong), a three-tooth bite out of its right side (paler
   inside), the scepter turkey's crown on the knob, gold laurel branches rooted on the base. 110 x 72 x 176 mm. Mock-up
-  sent; no print files yet.
+  sent; no print files yet. Then Allen: "give me a 2nd version ... I want multiple awards/trophies, one is champion of
+  potatoes among others": `python tools/thanksgiving_trophies.py [--only ...]` writes one GLB per award and
+  `awards-lineup.png` to `output/thanksgiving-trophies/`, all on the same base (`golden_drumstick.base()`): drumstick
+  (version 1), drumstick-2 (two-handled cup with two crossed drumsticks and a red "#1"), potatoes (CHAMPION OF
+  POTATOES / MOST MASHED: mashed-potato volcano, gravy crater and drips, butter pat, gold fork stuck in it), pie (PIE
+  MASTER / LAST SLICE: pumpkin slice, crimped crust, whipped-cream swirl), gravy (GRAVY BOAT CAPTAIN / MOST GRAVY: boat
+  on a saucer with a mast, sail and flag), food-coma (FOOD COMA CHAMPION / FIRST ASLEEP: roast turkey on a platter,
+  "Zzz" thought bubble). Mock-ups only; no print files yet.
 - **Star tree topper (2026-11-22, Allen: "Give me a star with names"):** `python tools/star_topper.py Allen Emma
   Madison Alison [--size 176]` writes `output/star-topper/`: a chunky gold star, face-up, one name raised on each
   side arm (top left, top right, bottom left, bottom right, in the order given; Inter Bold, one size, as big as fits:
